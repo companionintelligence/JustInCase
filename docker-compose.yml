@@ -7,20 +7,15 @@ services:
     healthcheck:
       test: ["CMD", "true"]
 
-ollama:
-  image: ollama/ollama
-  container_name: ollama
-  ports:
-    - "11434:11434"
-  volumes:
-    - ollama_data:/root/.ollama
-  command: >
-    sh -c "
-      ollama serve &
-      sleep 2 &&
-      ollama pull llama3 &&
-      wait
-    "
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_MODELS=llama3
 
   survival-rag:
     build: .
