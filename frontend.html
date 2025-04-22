@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head><title>Survival Knowledge Search</title></head>
+<body>
+  <h2>Survival Knowledge Search</h2>
+  <input id="q" size="50"><button onclick="search()">Search</button>
+  <pre id="results"></pre>
+<script>
+function search() {
+  const q = document.getElementById('q').value;
+  fetch('/query', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({query: q})
+  }).then(r => r.json()).then(j => {
+    document.getElementById('results').textContent = j.answer + '\n\n' + JSON.stringify(j.matches, null, 2);
+  });
+}
+</script>
+</body>
+</html>
