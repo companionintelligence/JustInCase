@@ -1,21 +1,74 @@
 <!DOCTYPE html>
 <html>
-<head><title>Survival Knowledge Search</title></head>
+<head>
+  <title>Survival Knowledge Search v3</title>
+  <style>
+    body { font-family: sans-serif; }
+    #results { white-space: pre-wrap; margin-top: 1em; }
+    #error { color: red; white-space: pre-wrap; margin-top: 1em; }
+  </style>
+</head>
 <body>
-  <h2>Survival Knowledge Search</h2>
-  <input id="q" size="50"><button onclick="search()">Search</button>
+  <h2>Survival Knowledge Search v3</h2>
+  <input id="q" size="50" placeholder="Enter your question...">
+  <button onclick="search()">Search</button>
+  
   <pre id="results"></pre>
+  <pre id="error"></pre>
+
 <script>
+	
+
 function search() {
-  const q = document.getElementById('q').value;
+  const q = document.getElementById('q').value.trim();
+  document.getElementById('results').textContent = "Searching...";
+  document.getElementById('error').textContent = "";
+
+  if (!q) {
+    document.getElementById('error').textContent = "Error: Query cannot be empty.";
+    document.getElementById('results').textContent = "";
+    return;
+  }
+
+  console.log("Sending query:", q);
+
   fetch('/query', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({query: q})
-  }).then(r => r.json()).then(j => {
-    document.getElementById('results').textContent = j.answer + '\n\n' + JSON.stringify(j.matches, null, 2);
+  })
+  .then(async response => {
+    const contentType = response.headers.get("content-type") || "";
+    const isJson = contentType.includes("application/json");
+    let data;
+
+    if (isJson) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      throw new Error("Server returned non-JSON: " + text);
+    }
+
+    if (!response.ok) {
+      console.error("Server returned error:", data);
+      // Show the error provided by the server
+      document.getElementById('error').textContent = "Server Error: " + (data.error || "Unknown error");
+      document.getElementById('results').textContent = "";
+      return;
+    }
+
+    // If we got here, everything is good
+    console.log("Successful response:", data);
+    document.getElementById('results').textContent = data.answer + '\n\n' + JSON.stringify(data.matches, null, 2);
+  })
+  .catch(error => {
+    console.error("Fetch or parsing error:", error);
+    document.getElementById('error').textContent = "Error: " + error.message;
+    document.getElementById('results').textContent = "";
   });
 }
+
 </script>
 </body>
 </html>
+
