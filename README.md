@@ -2,6 +2,8 @@
 
 This project creates a self-contained, LLM-powered search engine over a curated set of survival PDFs. It is designed for **offline use**, **durability**, and **ease of deployment** — suitable even for novice users during emergency situations.
 
+![screenshot](screenshot.png?raw=true "screenshot")
+
 ---
 
 ## 📦 Components
