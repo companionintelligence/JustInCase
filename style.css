@@ -1,0 +1,105 @@
+:root {
+  color-scheme: light dark;
+  --background-light: #f9f9f9;
+  --background-dark: #121212;
+  --text-light: #333;
+  --text-dark: #eee;
+  --primary: #007acc;
+  --primary-dark: #005fa3;
+  --border-radius: 8px;
+  --max-width: 800px;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--background-light);
+  color: var(--text-light);
+  display: flex;
+  justify-content: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: var(--background-dark);
+    color: var(--text-dark);
+  }
+}
+
+.container {
+  max-width: var(--max-width);
+  width: 90%;
+  margin: 2em auto;
+  text-align: center;
+}
+
+h1 {
+  font-size: 2.5em;
+  margin-bottom: 0.2em;
+}
+
+.subtitle {
+  font-size: 1.1em;
+  margin-bottom: 1.5em;
+  color: gray;
+}
+
+.search-box {
+  display: flex;
+  gap: 0.5em;
+  justify-content: center;
+  margin-bottom: 1.5em;
+}
+
+.search-box input {
+  padding: 0.5em;
+  font-size: 1em;
+  border-radius: var(--border-radius);
+  border: 1px solid #ccc;
+  flex: 1;
+  max-width: 500px;
+}
+
+.search-box button {
+  padding: 0.5em 1em;
+  font-size: 1em;
+  border-radius: var(--border-radius);
+  border: none;
+  background-color: var(--primary);
+  color: white;
+  cursor: pointer;
+}
+
+.search-box button:hover {
+  background-color: var(--primary-dark);
+}
+
+#results {
+  text-align: left;
+  margin-top: 1em;
+  white-space: pre-wrap;
+}
+
+#results .answer {
+  font-size: 1.1em;
+  margin-bottom: 1em;
+}
+
+#results .document {
+  border-top: 1px solid #ccc;
+  padding-top: 0.5em;
+  margin-top: 0.5em;
+}
+
+#results .document a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: bold;
+}
+
+#error {
+  color: red;
+  margin-top: 1em;
+}
+

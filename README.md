@@ -90,7 +90,6 @@ This verifies:
 - `ingest.py`: extracts text and builds a vector index
 - `serve.py`: serves search API and frontend
 - `test.sh`: quick validation script
-- `frontend.html`: simple browser-based interface
 
 ---
 
