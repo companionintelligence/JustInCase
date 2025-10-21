@@ -41,7 +41,7 @@ services:
     environment:
       - TIKA_URL=http://tika:9998
       - OLLAMA_URL=http://ollama:11434
-    command: ["bash", "start.sh"]
+    command: ["python3", "start.py"]
 
 volumes:
   ollama_data:
