@@ -36,15 +36,19 @@ def check_model_exists(model_name, ollama_url):
         print(f"Error checking models: {e}")
     return False
 
-def pull_ollama_model(model_name, timeout=30):
+def pull_ollama_model(model_name, timeout=120):
     """Pull an Ollama model with timeout for slow connections"""
     print(f"Checking {model_name} model...")
     ollama_url = os.getenv("OLLAMA_URL", "http://ollama:11434")
     
-    # First check if model already exists
-    if check_model_exists(model_name, ollama_url):
-        print(f"Model {model_name} already exists locally")
-        return True
+    # First check if model already exists with retries
+    for retry in range(3):
+        if check_model_exists(model_name, ollama_url):
+            print(f"Model {model_name} already exists locally")
+            return True
+        if retry < 2:
+            print(f"Model check failed, retrying in 2 seconds...")
+            time.sleep(2)
     
     # Skip pulling if SKIP_MODEL_PULL is set
     if os.getenv("SKIP_MODEL_PULL", "").lower() == "true":
@@ -63,29 +67,59 @@ def pull_ollama_model(model_name, timeout=30):
     print(f"Note: Set SKIP_MODEL_PULL=true to skip this step")
     
     start_time = time.time()
+    last_progress_time = start_time
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as response:
+        with urllib.request.urlopen(req, timeout=10) as response:
             # Read the streaming response
             while True:
-                if time.time() - start_time > timeout:
+                current_time = time.time()
+                if current_time - start_time > timeout:
                     print(f"Timeout reached while pulling {model_name}")
                     return False
+                
+                # Reset timeout if we're making progress
+                if current_time - last_progress_time > 30:
+                    print(f"No progress for 30 seconds, checking if model exists anyway...")
+                    if check_model_exists(model_name, ollama_url):
+                        print(f"Model {model_name} found!")
+                        return True
                     
                 line = response.readline()
                 if not line:
                     break
+                    
+                last_progress_time = current_time
                 try:
                     status = json.loads(line)
                     if 'status' in status:
-                        print(f"  {status['status']}")
+                        status_msg = status['status']
+                        # Show download progress if available
+                        if 'completed' in status and 'total' in status:
+                            pct = (status['completed'] / status['total']) * 100
+                            print(f"  {status_msg} - {pct:.1f}%")
+                        else:
+                            print(f"  {status_msg}")
                     if status.get('status') == 'success':
                         print(f"Model {model_name} successfully pulled!")
                         return True
                 except json.JSONDecodeError:
                     pass  # Skip non-JSON lines
+    except urllib.error.URLError as e:
+        if "timed out" in str(e):
+            print(f"Connection timeout while pulling {model_name}, checking if model exists...")
+            if check_model_exists(model_name, ollama_url):
+                print(f"Model {model_name} found despite timeout!")
+                return True
+        print(f"Error pulling {model_name}: {e}")
+        return False
     except Exception as e:
         print(f"Error pulling {model_name}: {e}")
         return False
+    
+    # Final check if model exists
+    if check_model_exists(model_name, ollama_url):
+        print(f"Model {model_name} found after pull attempt")
+        return True
     
     return False
 
@@ -112,7 +146,7 @@ def main():
     models_available = True
     
     for model in models_needed:
-        if not pull_ollama_model(model, timeout=30):
+        if not pull_ollama_model(model, timeout=120):
             # Check if model exists anyway
             if not check_model_exists(model, ollama_url):
                 print(f"ERROR: Model {model} is not available and could not be pulled.")
