@@ -7,14 +7,86 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <h1>🧭 Just In Case Search</h1>
-    <div class="search-box">
-      <input id="q" placeholder="Ask me how to survive...">
-      <button onclick="search()">Search</button>
-    </div>
-    <div id="results"></div>
-    <div id="error"></div>
+  <div class="app">
+    <!-- Header with theme toggle -->
+    <header class="header">
+      <div class="header-content">
+        <h1 class="logo">🧭 Just In Case</h1>
+        <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+          <span class="sun-icon">☀️</span>
+          <span class="moon-icon">🌙</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Tab navigation -->
+    <nav class="tabs">
+      <button class="tab active" onclick="switchTab('search')">Search</button>
+      <button class="tab" onclick="switchTab('about')">About</button>
+    </nav>
+
+    <!-- Main content area -->
+    <main class="main-content">
+      <!-- Search tab -->
+      <div id="search-tab" class="tab-content active">
+        <div class="hero">
+          <h2 class="hero-title">Emergency Knowledge at Your Fingertips</h2>
+          <p class="hero-subtitle">Offline survival information when you need it most</p>
+        </div>
+        
+        <div class="search-container">
+          <div class="search-box">
+            <input id="q" placeholder="Ask me how to survive..." onkeypress="if(event.key==='Enter') search()">
+            <button onclick="search()" class="search-button">
+              <span>Search</span>
+              <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </button>
+          </div>
+          
+          <div style="text-align: center; margin-top: 1rem;">
+            <a href="prepare-coach.html" style="color: var(--primary); text-decoration: none; font-weight: 500;">
+              🤖 Try our Emergency Preparedness Coach →
+            </a>
+          </div>
+        </div>
+
+        <div id="results" class="results"></div>
+        <div id="error" class="error"></div>
+      </div>
+
+      <!-- About tab -->
+      <div id="about-tab" class="tab-content">
+        <div class="about-content">
+          <h2>About Just In Case</h2>
+          <p>The JIC project delivers a self-contained LLM-powered conversational search engine over curated emergency survival PDFs that works without the Internet.</p>
+          
+          <h3>What's Included</h3>
+          <ul>
+            <li>Survival guides and emergency procedures</li>
+            <li>Medical references and first aid</li>
+            <li>Agricultural and engineering resources</li>
+            <li>Educational materials for long-term resilience</li>
+          </ul>
+
+          <h3>How It Works</h3>
+          <p>This system uses local AI models to search through indexed PDF documents, providing instant answers to survival questions even when offline.</p>
+
+          <h3>Quick Tips</h3>
+          <ul>
+            <li>Ask specific questions for best results</li>
+            <li>Click on document links to view full PDFs</li>
+            <li>Keep this system updated with relevant local information</li>
+            <li>Use our <a href="prepare-coach.html">Preparedness Coach</a> to assess your readiness</li>
+          </ul>
+
+          <div class="about-footer">
+            <p>For more information, visit the <a href="https://github.com/PR0M3TH3AN/Survival-Data" target="_blank">project repository</a></p>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
   <script src="code.js"></script>
 </body>
