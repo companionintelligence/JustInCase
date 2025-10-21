@@ -78,3 +78,5 @@ Existing efforts include:
 14. https://collections.nlm.nih.gov/collections
 
 15. NERT is worth mentioning - there are several community emergency response efforts to participate in: https://sf-fire.org/nert
+
+16. https://www.opensourceecology.org

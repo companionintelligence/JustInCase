@@ -12,6 +12,8 @@ The world has changed, we now heavily rely on tools such as ChatGPT, Claude, Goo
 
 Validating a tool like this raises many questions. Who are typical users of the dataset? What are typical scenarios? Can we build a list of typical questions a user may ask of the dataset? Can we have regression tests against the ability of the dataset to resolve the queries? Are there differences in what is needed for short, medium or extended emergencies or extended survival situations? In this ongoing project we'll try to tackle these and improve this over time.
 
+Note as well that the general topic of ingesting large amounts of data and making that data conversationally accessible (by prompting the llm with appropriate context) is a well known one, and this proof of concept effectively is an implementation of that larger thesis.
+
 Please see the [docs](docs/index.md) for more details on typical questions, persona, categories, hardware.
 
 This is a work in progress and we welcome your participation. Please join us at https://discord.gg/7k8eqhMJWc .
@@ -40,6 +42,8 @@ Make sure your system supports Docker. See [https://docs.docker.com/get-docker/]
 Put any `.pdf` files or text files you want indexed into the `sources/` folder.
 
 > You can start with the [Survival Data Corpus](https://github.com/PR0M3TH3AN/Survival-Data)
+
+> Also see [fetch-source-data.sh](fetch-source-data.sh)
 
 ```bash
 git clone https://github.com/PR0M3TH3AN/Survival-Data.git
