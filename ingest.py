@@ -44,7 +44,9 @@ def get_embedding(text):
     })
     if response.status_code != 200:
         raise Exception(f"Failed to get embedding: {response.text}")
-    return response.json()["embeddings"][0]
+    embedding = response.json()["embeddings"][0]
+    print(f"Embedding dimension during ingestion: {len(embedding)}")
+    return embedding
 
 texts, docs = [], []
 
@@ -102,6 +104,7 @@ for i, text in enumerate(texts):
 # Build FAISS index
 if embeddings:
     dimension = len(embeddings[0])
+    print(f"Building FAISS index with dimension: {dimension}")
     index = faiss.IndexFlatL2(dimension)
     # Convert embeddings list to the format FAISS expects
     vectors = [[float(val) for val in emb] for emb in embeddings]

@@ -17,10 +17,13 @@ def get_embedding(text):
     })
     if response.status_code != 200:
         raise Exception(f"Failed to get embedding: {response.text}")
-    return response.json()["embeddings"][0]
+    embedding = response.json()["embeddings"][0]
+    print(f"Embedding dimension during query: {len(embedding)}")
+    return embedding
 
 # Load FAISS index and metadata
 index = faiss.read_index("data/index.faiss")
+print(f"Loaded FAISS index with dimension: {index.d}")
 with open("data/metadata.jsonl") as f:
     docs = [json.loads(line) for line in f]
 
