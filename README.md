@@ -103,8 +103,13 @@ If the automatic model pulling fails or times out, you can manually pull the req
 docker compose exec ollama ollama pull llama3.2:1b
 docker compose exec ollama ollama pull nomic-embed-text
 
-# Or skip automatic model pulling on startup
+# Environment variables to control model handling:
+
+# Skip automatic model pulling on startup
 SKIP_MODEL_PULL=true docker compose up --build
+
+# Skip all model checks (use if you're sure models are present)
+SKIP_MODEL_CHECK=true docker compose up --build
 ```
 
 ### Container naming
@@ -123,4 +128,44 @@ If you encounter "dimension mismatch" errors, this usually means the index was b
 rm -rf data/
 docker compose restart survival-rag
 ```
+
+### Understanding model storage
+
+**Important:** Ollama models are stored inside the Docker container, not on your host machine directly. However, they ARE persisted in a Docker volume called `ollama_data`.
+
+- Models location in container: `/root/.ollama/models`
+- Docker volume on host: `ollama_data` (managed by Docker)
+- Volume persists even when containers are stopped/removed
+
+To verify the volume exists and check its size:
+```bash
+# List Docker volumes
+docker volume ls | grep ollama
+
+# Inspect the volume
+docker volume inspect ollama_data
+
+# Check volume size (approximate)
+docker system df -v | grep ollama_data
+```
+
+If you need to completely reset and re-download models:
+```bash
+# Stop containers
+docker compose down
+
+# Remove the volume (this deletes all downloaded models!)
+docker volume rm ollama_data
+
+# Start fresh
+docker compose up --build
+```
+
+### Troubleshooting model persistence
+
+If models seem to disappear between restarts:
+
+1. **Check volume mounting**: Ensure docker-compose.yml has the volume properly defined
+2. **Don't use `docker compose down -v`**: The `-v` flag removes volumes!
+3. **Check disk space**: Ensure you have enough space for models (llama3.2:1b is ~1GB, nomic-embed-text is ~275MB)
 

@@ -19,21 +19,30 @@ def wait_for_service(url, service_name, max_retries=30):
             time.sleep(2)
     raise Exception(f"{service_name} failed to start after {max_retries} attempts")
 
-def check_model_exists(model_name, ollama_url):
-    """Check if a model exists in Ollama"""
-    try:
-        req = urllib.request.Request(f"{ollama_url}/api/tags")
-        with urllib.request.urlopen(req) as response:
-            data = json.loads(response.read())
-            models = data.get('models', [])
-            for model in models:
-                model_full_name = model.get('name', '')
-                # Check if the model name matches (with or without tag)
-                if model_full_name == model_name or model_full_name.startswith(model_name + ':'):
-                    print(f"Found model: {model_full_name}")
-                    return True
-    except Exception as e:
-        print(f"Error checking models: {e}")
+def check_model_exists(model_name, ollama_url, retry_count=3):
+    """Check if a model exists in Ollama with retries"""
+    for attempt in range(retry_count):
+        try:
+            req = urllib.request.Request(f"{ollama_url}/api/tags")
+            with urllib.request.urlopen(req, timeout=10) as response:
+                data = json.loads(response.read())
+                models = data.get('models', [])
+                for model in models:
+                    model_full_name = model.get('name', '')
+                    # Check if the model name matches (with or without tag)
+                    if model_full_name == model_name or model_full_name.startswith(model_name + ':'):
+                        print(f"✅ Found model: {model_full_name}")
+                        return True
+                # If we got a response but model not found, no need to retry
+                if attempt == 0:
+                    print(f"Model {model_name} not in list: {[m.get('name', '') for m in models]}")
+                return False
+        except Exception as e:
+            if attempt < retry_count - 1:
+                print(f"Error checking models (attempt {attempt + 1}/{retry_count}): {e}")
+                time.sleep(2)
+            else:
+                print(f"Failed to check models after {retry_count} attempts: {e}")
     return False
 
 def pull_ollama_model(model_name, timeout=300):
@@ -154,31 +163,51 @@ def main():
     except Exception as e:
         print(f"Could not list models: {e}")
     
-    # Pull models only if needed
-    models_needed = ["llama3.2:1b", "nomic-embed-text"]
-    missing_models = []
-    
-    for model in models_needed:
-        # Try to pull the model with increased timeout
-        pull_success = pull_ollama_model(model, timeout=300)
+    # Check if we should skip model operations entirely
+    if os.getenv("SKIP_MODEL_CHECK", "").lower() == "true":
+        print("SKIP_MODEL_CHECK=true, assuming models are available")
+    else:
+        # Pull models only if needed
+        models_needed = ["llama3.2:1b", "nomic-embed-text"]
+        missing_models = []
         
-        # Always check if model exists (regardless of pull result)
-        if not check_model_exists(model, ollama_url):
-            print(f"ERROR: Model {model} is not available.")
-            missing_models.append(model)
-        elif not pull_success:
-            print(f"Note: Model {model} pull failed but model exists locally.")
-    
-    if missing_models:
         print("\n" + "="*60)
-        print("IMPORTANT: Required models are not available!")
-        print("Missing models:", ", ".join(missing_models))
-        print("\nPlease run these commands manually when you have a better connection:")
-        for model in missing_models:
-            print(f"  docker compose exec ollama ollama pull {model}")
-        print("\nOr set SKIP_MODEL_PULL=true to skip automatic pulling")
-        print("="*60 + "\n")
-        raise Exception(f"Required models not available: {', '.join(missing_models)}")
+        print("Checking for required models...")
+        print("="*60)
+        
+        for model in models_needed:
+            # First, thoroughly check if model already exists
+            if check_model_exists(model, ollama_url, retry_count=5):
+                print(f"✅ Model {model} is already available locally")
+                continue
+            
+            # Model doesn't exist, try to pull it
+            if os.getenv("SKIP_MODEL_PULL", "").lower() == "true":
+                print(f"❌ Model {model} not found and SKIP_MODEL_PULL=true")
+                missing_models.append(model)
+            else:
+                print(f"Model {model} not found locally, attempting to pull...")
+                pull_success = pull_ollama_model(model, timeout=300)
+                
+                # Check again after pull attempt
+                if not check_model_exists(model, ollama_url):
+                    print(f"ERROR: Model {model} is still not available after pull attempt.")
+                    missing_models.append(model)
+        
+        if missing_models:
+            print("\n" + "="*60)
+            print("IMPORTANT: Required models are not available!")
+            print("Missing models:", ", ".join(missing_models))
+            print("\nOptions:")
+            print("1. Pull models manually when you have a better connection:")
+            for model in missing_models:
+                print(f"   docker compose exec ollama ollama pull {model}")
+            print("\n2. If you know the models are present, skip all model checks:")
+            print("   SKIP_MODEL_CHECK=true docker compose up")
+            print("\n3. Skip automatic model pulling:")
+            print("   SKIP_MODEL_PULL=true docker compose up")
+            print("="*60 + "\n")
+            raise Exception(f"Required models not available: {', '.join(missing_models)}")
     
     # Run ingestion if needed
     if not os.path.exists("data/index.faiss"):
