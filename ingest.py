@@ -6,7 +6,31 @@ import faiss
 import numpy as np
 import requests
 from fastembed import TextEmbedding
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+# Simple text splitter function
+def split_text(text, chunk_size=500, chunk_overlap=50):
+    """Split text into overlapping chunks."""
+    chunks = []
+    start = 0
+    text_len = len(text)
+    
+    while start < text_len:
+        # Find the end of the chunk
+        end = start + chunk_size
+        
+        # If we're not at the end of the text, try to break at a sentence or word boundary
+        if end < text_len:
+            # Look for sentence boundaries (., !, ?)
+            for sep in ['. ', '! ', '? ', '\n\n', '\n', ' ']:
+                sep_pos = text.rfind(sep, start + chunk_size - 100, end)
+                if sep_pos != -1:
+                    end = sep_pos + len(sep)
+                    break
+        
+        chunks.append(text[start:end])
+        start = end - chunk_overlap
+    
+    return chunks
 
 # Initialize embedding model with fastembed (much smaller than sentence-transformers)
 model = TextEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
@@ -15,12 +39,6 @@ model = TextEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
 sources_dir = sys.argv[1] if len(sys.argv) > 1 else "sources"
 os.makedirs("data", exist_ok=True)
 TIKA_URL = os.getenv("TIKA_URL", "http://tika:9998")
-
-# Initialize text splitter
-splitter = RecursiveCharacterTextSplitter(
-    chunk_size=500,     # Approx 500 characters per chunk
-    chunk_overlap=50    # Slight overlap for better context continuity
-)
 
 texts, docs = [], []
 
@@ -56,7 +74,7 @@ for root, dirs, files in os.walk(sources_dir):
             continue
 
         # Split into manageable chunks
-        chunks = splitter.split_text(raw_text)
+        chunks = split_text(raw_text)
 
         for chunk in chunks:
             chunk = chunk.strip()
