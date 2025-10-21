@@ -36,7 +36,7 @@ def check_model_exists(model_name, ollama_url):
         print(f"Error checking models: {e}")
     return False
 
-def pull_ollama_model(model_name, timeout=120):
+def pull_ollama_model(model_name, timeout=300):
     """Pull an Ollama model with timeout for slow connections"""
     print(f"Checking {model_name} model...")
     ollama_url = os.getenv("OLLAMA_URL", "http://ollama:11434")
@@ -68,37 +68,50 @@ def pull_ollama_model(model_name, timeout=120):
     
     start_time = time.time()
     last_progress_time = start_time
+    last_progress_percent = 0
     try:
-        with urllib.request.urlopen(req, timeout=10) as response:
+        with urllib.request.urlopen(req, timeout=30) as response:
             # Read the streaming response
             while True:
                 current_time = time.time()
                 if current_time - start_time > timeout:
-                    print(f"Timeout reached while pulling {model_name}")
+                    print(f"Timeout reached while pulling {model_name} after {timeout}s")
+                    # Check one more time if model exists
+                    if check_model_exists(model_name, ollama_url):
+                        print(f"Model {model_name} found despite timeout!")
+                        return True
                     return False
                 
                 # Reset timeout if we're making progress
-                if current_time - last_progress_time > 30:
-                    print(f"No progress for 30 seconds, checking if model exists anyway...")
+                if current_time - last_progress_time > 60:
+                    print(f"No progress for 60 seconds, checking if model exists anyway...")
                     if check_model_exists(model_name, ollama_url):
                         print(f"Model {model_name} found!")
                         return True
                     
-                line = response.readline()
-                if not line:
+                try:
+                    line = response.readline()
+                    if not line:
+                        break
+                except Exception as e:
+                    print(f"Error reading response: {e}")
                     break
                     
-                last_progress_time = current_time
                 try:
                     status = json.loads(line)
                     if 'status' in status:
                         status_msg = status['status']
                         # Show download progress if available
-                        if 'completed' in status and 'total' in status:
+                        if 'completed' in status and 'total' in status and status['total'] > 0:
                             pct = (status['completed'] / status['total']) * 100
-                            print(f"  {status_msg} - {pct:.1f}%")
+                            # Only print if progress changed significantly
+                            if pct - last_progress_percent >= 5 or pct >= 100:
+                                print(f"  {status_msg} - {pct:.1f}%")
+                                last_progress_percent = pct
+                                last_progress_time = current_time
                         else:
                             print(f"  {status_msg}")
+                            last_progress_time = current_time
                     if status.get('status') == 'success':
                         print(f"Model {model_name} successfully pulled!")
                         return True
@@ -146,8 +159,8 @@ def main():
     missing_models = []
     
     for model in models_needed:
-        # Try to pull the model
-        pull_success = pull_ollama_model(model, timeout=120)
+        # Try to pull the model with increased timeout
+        pull_success = pull_ollama_model(model, timeout=300)
         
         # Always check if model exists (regardless of pull result)
         if not check_model_exists(model, ollama_url):
