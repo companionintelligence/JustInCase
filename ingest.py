@@ -10,7 +10,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Setup directories and Tika URL
-pdf_dir = sys.argv[1]
+pdf_dir = sys.argv[1] if len(sys.argv) > 1 else "sources"
 os.makedirs("data", exist_ok=True)
 TIKA_URL = os.getenv("TIKA_URL", "http://tika:9998")
 
@@ -22,23 +22,31 @@ splitter = RecursiveCharacterTextSplitter(
 
 texts, docs = [], []
 
-# Process PDFs
-for fname in os.listdir(pdf_dir):
-    if not fname.endswith(".pdf"):
-        continue
-    
-    with open(os.path.join(pdf_dir, fname), "rb") as f:
-        resp = requests.put(f"{TIKA_URL}/tika", headers={"Accept": "text/plain"}, data=f)
-        raw_text = resp.text.strip()
+# Process PDFs recursively
+pdf_count = 0
+for root, dirs, files in os.walk(pdf_dir):
+    for fname in files:
+        if not fname.endswith(".pdf"):
+            continue
+        
+        full_path = os.path.join(root, fname)
+        # Create relative path from pdf_dir for display
+        rel_path = os.path.relpath(full_path, pdf_dir)
+        
+        with open(full_path, "rb") as f:
+            resp = requests.put(f"{TIKA_URL}/tika", headers={"Accept": "text/plain"}, data=f)
+            raw_text = resp.text.strip()
 
-    # Split into manageable chunks
-    chunks = splitter.split_text(raw_text)
+        # Split into manageable chunks
+        chunks = splitter.split_text(raw_text)
 
-    for chunk in chunks:
-        chunk = chunk.strip()
-        if len(chunk) > 100:  # Ignore very small/non-informative chunks
-            texts.append(chunk)
-            docs.append({"filename": fname, "text": chunk})
+        for chunk in chunks:
+            chunk = chunk.strip()
+            if len(chunk) > 100:  # Ignore very small/non-informative chunks
+                texts.append(chunk)
+                docs.append({"filename": rel_path, "text": chunk})
+        
+        pdf_count += 1
 
 # Generate embeddings
 vectors = model.encode(texts, show_progress_bar=True)
@@ -54,5 +62,5 @@ with open("data/metadata.jsonl", "w") as f:
     for doc in docs:
         f.write(json.dumps(doc) + "\n")
 
-print(f"Ingested {len(docs)} chunks from {len(os.listdir(pdf_dir))} PDFs.")
+print(f"Ingested {len(docs)} chunks from {pdf_count} PDFs.")
 
