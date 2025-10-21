@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM python:3.11-slim
 
 # Install only curl with no recommended packages to avoid X11 dependencies
