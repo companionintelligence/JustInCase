@@ -1,6 +1,6 @@
 services:
   tika:
-    image: apache/tika:2.9.1
+    image: apache/tika:latest
     container_name: tika
     pull_policy: if_not_present
     ports:
