@@ -3,9 +3,7 @@ import os
 import sys
 import json
 import faiss
-import numpy as np
 import requests
-from fastembed import TextEmbedding
 
 # Simple text splitter function
 def split_text(text, chunk_size=500, chunk_overlap=50):
@@ -32,13 +30,21 @@ def split_text(text, chunk_size=500, chunk_overlap=50):
     
     return chunks
 
-# Initialize embedding model with fastembed (much smaller than sentence-transformers)
-model = TextEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
-
-# Setup directories and Tika URL
+# Setup directories and URLs
 sources_dir = sys.argv[1] if len(sys.argv) > 1 else "sources"
 os.makedirs("data", exist_ok=True)
 TIKA_URL = os.getenv("TIKA_URL", "http://tika:9998")
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
+
+def get_embedding(text):
+    """Get embedding from Ollama using nomic-embed-text model"""
+    response = requests.post(f"{OLLAMA_URL}/api/embeddings", json={
+        "model": "nomic-embed-text",
+        "prompt": text
+    })
+    if response.status_code != 200:
+        raise Exception(f"Failed to get embedding: {response.text}")
+    return response.json()["embedding"]
 
 texts, docs = [], []
 
@@ -86,12 +92,22 @@ for root, dirs, files in os.walk(sources_dir):
 
 # Generate embeddings
 print("Generating embeddings...")
-embeddings = list(model.embed(texts))
-vectors = np.array(embeddings)
+embeddings = []
+for i, text in enumerate(texts):
+    if i % 10 == 0:
+        print(f"Processing {i}/{len(texts)} embeddings...")
+    embedding = get_embedding(text)
+    embeddings.append(embedding)
 
 # Build FAISS index
-index = faiss.IndexFlatL2(vectors.shape[1])
-index.add(vectors)
+if embeddings:
+    dimension = len(embeddings[0])
+    index = faiss.IndexFlatL2(dimension)
+    # Convert embeddings list to the format FAISS expects
+    vectors = [[float(val) for val in emb] for emb in embeddings]
+    index.add(vectors)
+else:
+    raise Exception("No embeddings generated")
 
 # Save FAISS index and metadata
 faiss.write_index(index, "data/index.faiss")

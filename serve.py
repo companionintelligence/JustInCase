@@ -2,22 +2,27 @@ import os
 import faiss
 import json
 import traceback
-import numpy as np
 from flask import Flask, request, jsonify, send_from_directory
-from fastembed import TextEmbedding
 import requests
 
 app = Flask(__name__)
 
-# Initialize fastembed model
-model = TextEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
+
+def get_embedding(text):
+    """Get embedding from Ollama using nomic-embed-text model"""
+    response = requests.post(f"{OLLAMA_URL}/api/embeddings", json={
+        "model": "nomic-embed-text",
+        "prompt": text
+    })
+    if response.status_code != 200:
+        raise Exception(f"Failed to get embedding: {response.text}")
+    return response.json()["embedding"]
 
 # Load FAISS index and metadata
 index = faiss.read_index("data/index.faiss")
 with open("data/metadata.jsonl") as f:
     docs = [json.loads(line) for line in f]
-
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 
 @app.route("/query", methods=["POST"])
 def query():
@@ -30,13 +35,14 @@ def query():
             print("Empty query received.")
             return jsonify({"error": "Empty query"}), 400
 
-        # Encode query
-        embeddings = list(model.embed([q]))
-        qvec = np.array(embeddings)
-        print(f"Encoded query vector shape: {qvec.shape}, Expected FAISS index dimension: {index.d}")
+        # Encode query using Ollama
+        embedding = get_embedding(q)
+        # Convert to 2D array format that FAISS expects (1 query, n dimensions)
+        qvec = [[embedding[i] for i in range(len(embedding))]]
+        print(f"Encoded query vector length: {len(embedding)}, Expected FAISS index dimension: {index.d}")
 
-        if qvec.shape[1] != index.d:
-            error_msg = f"Dimension mismatch: query vector shape {qvec.shape}, index.d {index.d}"
+        if len(embedding) != index.d:
+            error_msg = f"Dimension mismatch: query vector length {len(embedding)}, index.d {index.d}"
             print(error_msg)
             return jsonify({"error": error_msg}), 500
 

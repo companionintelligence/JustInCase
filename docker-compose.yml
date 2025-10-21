@@ -12,7 +12,7 @@ services:
       retries: 3
 
   ollama:
-    image: ollama/ollama:0.1.32
+    image: ollama/ollama:0.12.6
     container_name: ollama
     pull_policy: if_not_present
     ports:
@@ -20,7 +20,7 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     environment:
-      - OLLAMA_MODELS=llama3.2:1b
+      - OLLAMA_MODELS=llama3.2:1b,nomic-embed-text
 
   survival-rag:
     build: .
