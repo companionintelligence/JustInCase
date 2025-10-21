@@ -26,7 +26,8 @@ texts, docs = [], []
 sources_count = 0
 for root, dirs, files in os.walk(sources_dir):
     for fname in files:
-        if not (fname.endswith(".pdf") or fname.endswith(".txt")):
+        # Skip hidden files and common non-document files
+        if fname.startswith('.') or fname.endswith(('.pyc', '.faiss', '.pkl', '.jsonl')):
             continue
         
         full_path = os.path.join(root, fname)
@@ -34,13 +35,23 @@ for root, dirs, files in os.walk(sources_dir):
         rel_path = os.path.relpath(full_path, sources_dir)
         
         # Handle different file types
-        if fname.endswith(".pdf"):
-            with open(full_path, "rb") as f:
-                resp = requests.put(f"{TIKA_URL}/tika", headers={"Accept": "text/plain"}, data=f)
-                raw_text = resp.text.strip()
-        else:  # .txt files
-            with open(full_path, "r", encoding="utf-8") as f:
-                raw_text = f.read().strip()
+        try:
+            if fname.endswith(".txt"):
+                # Handle plain text files directly for efficiency
+                with open(full_path, "r", encoding="utf-8") as f:
+                    raw_text = f.read().strip()
+            else:
+                # Let Tika handle all other document types
+                with open(full_path, "rb") as f:
+                    resp = requests.put(f"{TIKA_URL}/tika", headers={"Accept": "text/plain"}, data=f)
+                    if resp.status_code == 200:
+                        raw_text = resp.text.strip()
+                    else:
+                        print(f"Warning: Tika couldn't process {rel_path} (status: {resp.status_code})")
+                        continue
+        except Exception as e:
+            print(f"Error processing {rel_path}: {e}")
+            continue
 
         # Split into manageable chunks
         chunks = splitter.split_text(raw_text)
