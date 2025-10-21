@@ -143,24 +143,29 @@ def main():
     
     # Pull models only if needed
     models_needed = ["llama3.2:1b", "nomic-embed-text"]
-    models_available = True
+    missing_models = []
     
     for model in models_needed:
-        if not pull_ollama_model(model, timeout=120):
-            # Check if model exists anyway
-            if not check_model_exists(model, ollama_url):
-                print(f"ERROR: Model {model} is not available and could not be pulled.")
-                models_available = False
+        # Try to pull the model
+        pull_success = pull_ollama_model(model, timeout=120)
+        
+        # Always check if model exists (regardless of pull result)
+        if not check_model_exists(model, ollama_url):
+            print(f"ERROR: Model {model} is not available.")
+            missing_models.append(model)
+        elif not pull_success:
+            print(f"Note: Model {model} pull failed but model exists locally.")
     
-    if not models_available:
+    if missing_models:
         print("\n" + "="*60)
         print("IMPORTANT: Required models are not available!")
-        print("Please run these commands manually when you have a better connection:")
-        print("  docker exec -it ollama ollama pull llama3.2:1b")
-        print("  docker exec -it ollama ollama pull nomic-embed-text")
+        print("Missing models:", ", ".join(missing_models))
+        print("\nPlease run these commands manually when you have a better connection:")
+        for model in missing_models:
+            print(f"  docker compose exec ollama ollama pull {model}")
         print("\nOr set SKIP_MODEL_PULL=true to skip automatic pulling")
         print("="*60 + "\n")
-        raise Exception("Required models not available")
+        raise Exception(f"Required models not available: {', '.join(missing_models)}")
     
     # Run ingestion if needed
     if not os.path.exists("data/index.faiss"):
