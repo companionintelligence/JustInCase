@@ -12,7 +12,8 @@
     <header class="header">
       <div class="header-content">
         <h1 class="logo">🧭 Just In Case</h1>
-        <div style="display: flex; align-items: center; gap: 1rem;">
+        <div style="display: flex; align-items: center; gap: 1.5rem;">
+          <a href="prepare-coach.html" style="color: var(--text-secondary); text-decoration: none; font-weight: 500; font-size: 0.875rem;">Preparedness Coach</a>
           <a href="about.html" style="color: var(--text-secondary); text-decoration: none; font-weight: 500; font-size: 0.875rem;">About</a>
           <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
             <span class="sun-icon">☀️</span>
@@ -22,16 +23,8 @@
       </div>
     </header>
 
-    <!-- Tab navigation -->
-    <nav class="tabs">
-      <button class="tab active" onclick="switchTab('search')">Search</button>
-      <button class="tab" onclick="switchTab('about')">Tools</button>
-    </nav>
-
     <!-- Main content area -->
     <main class="main-content">
-      <!-- Search tab -->
-      <div id="search-tab" class="tab-content active">
         <div class="hero">
           <h2 class="hero-title">Emergency Knowledge Search</h2>
           <p class="hero-subtitle">Ask any survival or emergency question</p>
@@ -51,22 +44,6 @@
 
         <div id="results" class="results"></div>
         <div id="error" class="error"></div>
-      </div>
-
-      <!-- Tools tab -->
-      <div id="about-tab" class="tab-content">
-        <div class="about-content" style="text-align: center; padding: 3rem 0;">
-          <h2 style="margin-bottom: 2rem;">Emergency Tools</h2>
-          <div style="display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap;">
-            <a href="prepare-coach.html" class="cta-button" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 1rem 2rem; background: var(--primary); color: white; text-decoration: none; border-radius: var(--radius-md); font-weight: 500;">
-              🤖 Preparedness Coach
-            </a>
-            <a href="about.html" class="cta-button secondary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 1rem 2rem; background: var(--bg-tertiary); color: var(--text-primary); text-decoration: none; border-radius: var(--radius-md); font-weight: 500; border: 1px solid var(--border-color);">
-              📖 About This System
-            </a>
-          </div>
-        </div>
-      </div>
     </main>
   </div>
   <script src="code.js"></script>
