@@ -34,6 +34,7 @@ services:
     environment:
       - TIKA_URL=http://tika:9998
       - OLLAMA_URL=http://ollama:11434
+      - SKIP_MODEL_PULL=${SKIP_MODEL_PULL:-false}
     command: ["python3", "start.py"]
 
 volumes:

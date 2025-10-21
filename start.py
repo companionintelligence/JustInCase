@@ -33,15 +33,20 @@ def check_model_exists(model_name, ollama_url):
         print(f"Error checking models: {e}")
     return False
 
-def pull_ollama_model(model_name):
-    """Pull an Ollama model and wait for completion"""
+def pull_ollama_model(model_name, timeout=30):
+    """Pull an Ollama model with timeout for slow connections"""
     print(f"Checking {model_name} model...")
     ollama_url = os.getenv("OLLAMA_URL", "http://ollama:11434")
     
     # First check if model already exists
     if check_model_exists(model_name, ollama_url):
         print(f"Model {model_name} already exists locally")
-        return
+        return True
+    
+    # Skip pulling if SKIP_MODEL_PULL is set
+    if os.getenv("SKIP_MODEL_PULL", "").lower() == "true":
+        print(f"Skipping model pull for {model_name} (SKIP_MODEL_PULL=true)")
+        return False
     
     # Pull the model with streaming to handle slow connections better
     data = json.dumps({"name": model_name}).encode('utf-8')
@@ -51,13 +56,18 @@ def pull_ollama_model(model_name):
         headers={'Content-Type': 'application/json'}
     )
     
-    print(f"Pulling {model_name} model (this may take a while on slow connections)...")
-    print(f"Note: The model will be cached in the ollama_data volume for future use")
+    print(f"Attempting to pull {model_name} model (timeout: {timeout}s)...")
+    print(f"Note: Set SKIP_MODEL_PULL=true to skip this step")
     
+    start_time = time.time()
     try:
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=timeout) as response:
             # Read the streaming response
             while True:
+                if time.time() - start_time > timeout:
+                    print(f"Timeout reached while pulling {model_name}")
+                    return False
+                    
                 line = response.readline()
                 if not line:
                     break
@@ -67,13 +77,14 @@ def pull_ollama_model(model_name):
                         print(f"  {status['status']}")
                     if status.get('status') == 'success':
                         print(f"Model {model_name} successfully pulled!")
-                        return
+                        return True
                 except json.JSONDecodeError:
                     pass  # Skip non-JSON lines
     except Exception as e:
         print(f"Error pulling {model_name}: {e}")
-        print("You may need to manually pull the model with: docker exec -it ollama ollama pull " + model_name)
-        raise
+        return False
+    
+    return False
 
 def main():
     # Wait for services
@@ -84,17 +95,25 @@ def main():
     wait_for_service(f"{ollama_url}/api/tags", "Ollama")
     
     # Pull models only if needed
-    try:
-        pull_ollama_model("llama3.2:1b")
-        pull_ollama_model("nomic-embed-text")
-    except Exception as e:
-        print(f"Warning: Model pulling failed: {e}")
-        print("Checking if models are already available...")
-        if not (check_model_exists("llama3.2:1b", ollama_url) and 
-                check_model_exists("nomic-embed-text", ollama_url)):
-            print("ERROR: Required models are not available. Cannot continue.")
-            raise
-        print("Models are available, continuing...")
+    models_needed = ["llama3.2:1b", "nomic-embed-text"]
+    models_available = True
+    
+    for model in models_needed:
+        if not pull_ollama_model(model, timeout=30):
+            # Check if model exists anyway
+            if not check_model_exists(model, ollama_url):
+                print(f"ERROR: Model {model} is not available and could not be pulled.")
+                models_available = False
+    
+    if not models_available:
+        print("\n" + "="*60)
+        print("IMPORTANT: Required models are not available!")
+        print("Please run these commands manually when you have a better connection:")
+        print("  docker exec -it ollama ollama pull llama3.2:1b")
+        print("  docker exec -it ollama ollama pull nomic-embed-text")
+        print("\nOr set SKIP_MODEL_PULL=true to skip automatic pulling")
+        print("="*60 + "\n")
+        raise Exception("Required models not available")
     
     # Run ingestion if needed
     if not os.path.exists("data/index.faiss"):
