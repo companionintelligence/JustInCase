@@ -23,7 +23,13 @@ services:
       - OLLAMA_MODELS=llama3.2:1b,nomic-embed-text
 
   survival-rag:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      cache_from:
+        - type=local,src=/tmp/.buildx-cache
+      cache_to:
+        - type=local,dest=/tmp/.buildx-cache,mode=max
     container_name: survival-rag
     pull_policy: never
     depends_on:
