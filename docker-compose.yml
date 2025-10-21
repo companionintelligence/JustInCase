@@ -15,7 +15,7 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     environment:
-      - OLLAMA_MODELS=llama3
+      - OLLAMA_MODELS=llama3.2:1b
 
   survival-rag:
     build: .
@@ -26,7 +26,7 @@ services:
       ollama:
         condition: service_started
     volumes:
-      - ./pdfs:/app/pdfs
+      - ./sources:/app/sources
       - ./data:/app/data
     ports:
       - "8080:8080"
