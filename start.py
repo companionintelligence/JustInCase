@@ -20,20 +20,37 @@ def wait_for_service(url, service_name, max_retries=30):
     raise Exception(f"{service_name} failed to start after {max_retries} attempts")
 
 def pull_ollama_model(model_name):
-    """Pull an Ollama model"""
+    """Pull an Ollama model and wait for completion"""
     print(f"Ensuring {model_name} model is available...")
     ollama_url = os.getenv("OLLAMA_URL", "http://ollama:11434")
-    data = json.dumps({"name": model_name}).encode('utf-8')
+    
+    # First check if model already exists
+    try:
+        req = urllib.request.Request(f"{ollama_url}/api/show", 
+            data=json.dumps({"name": model_name}).encode('utf-8'),
+            headers={'Content-Type': 'application/json'})
+        with urllib.request.urlopen(req) as response:
+            if response.status == 200:
+                print(f"Model {model_name} already exists")
+                return
+    except:
+        pass  # Model doesn't exist, need to pull
+    
+    # Pull the model
+    data = json.dumps({"name": model_name, "stream": False}).encode('utf-8')
     req = urllib.request.Request(
         f"{ollama_url}/api/pull",
         data=data,
         headers={'Content-Type': 'application/json'}
     )
     try:
-        with urllib.request.urlopen(req) as response:
-            print(f"Model {model_name} pull initiated")
+        print(f"Pulling {model_name} model (this may take a while)...")
+        with urllib.request.urlopen(req, timeout=600) as response:
+            result = json.loads(response.read())
+            print(f"Model {model_name} pull completed: {result.get('status', 'done')}")
     except Exception as e:
-        print(f"Warning: Could not pull {model_name}: {e}")
+        print(f"Error pulling {model_name}: {e}")
+        raise
 
 def main():
     # Wait for services
@@ -50,7 +67,7 @@ def main():
     # Run ingestion if needed
     if not os.path.exists("data/index.faiss"):
         print("Running ingestion...")
-        subprocess.run(["python3", "ingest.py", "pdfs"], check=True)
+        subprocess.run(["python3", "ingest.py", "sources"], check=True)
     
     # Start the server
     print("Starting server...")
