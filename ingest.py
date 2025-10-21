@@ -38,13 +38,13 @@ OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 
 def get_embedding(text):
     """Get embedding from Ollama using nomic-embed-text model"""
-    response = requests.post(f"{OLLAMA_URL}/api/embeddings", json={
+    response = requests.post(f"{OLLAMA_URL}/api/embed", json={
         "model": "nomic-embed-text",
-        "prompt": text
+        "input": text
     })
     if response.status_code != 200:
         raise Exception(f"Failed to get embedding: {response.text}")
-    return response.json()["embedding"]
+    return response.json()["embeddings"][0]
 
 texts, docs = [], []
 
