@@ -1,20 +1,31 @@
 # 🛟 Just In Case: Offline Emergency Knowledge Search
 
-This project creates a self-contained, LLM-powered search engine over a curated set of survival PDFs. It is designed for **offline use**, **durability**, and **ease of deployment** — suitable even for novice users during emergency situations.
+The goal of the JIC project is to deliver a self-contained LLM-powered / AI driven conversational search engine over a curated set of emergency survival pdfs that can be used without the Internet.
+
+This includes survival guides, medical references, even agricultural know-how and engineering resources, as well as broader educational materials like offline Wikipedia, open textbooks, art and humanities. If the Internet goes dark, you should still be able to quickly find the knowledge that can help you survive and thrive during a crisis.
+
+## The Challenge
+
+What would you do if the internet went down? Or even just an extended power outage? What is your families plan for region-specific threats such as tornadoes, tsunamis, or forest fires? Many of us have some kind of plan; a flashlight in a drawer, extra food supplies, water, cash, a map of community resources, a muster-point.
+
+The world has changed, we now heavily rely on tools such as ChatGPT, Claude, Google and other online resources. Even for small questions such as "how do you wire up rechargeable batteries to a solar panel?" or "what is the probable cause of a lower right side stomach pain?". The thing most of us rely heavily on information itself, and that information is not always at our fingertips.
+
+Validating a tool like this raises many questions. Who are typical users of the dataset? What are typical scenarios? Can we build a list of typical questions a user may ask of the dataset? Can we have regression tests against the ability of the dataset to resolve the queries? Are there differences in what is needed for short, medium or extended emergencies or extended survival situations? In this ongoing project we'll try to tackle these and improve this over time.
+
+Please see the [docs](docs/index.md) for more details on typical questions, persona, categories, hardware.
+
+This is a work in progress and we welcome your participation. Please join us at https://discord.gg/7k8eqhMJWc .
 
 ![screenshot](screenshot.png?raw=true "screenshot")
 
----
-
 ## 📦 Components
 
-| Component       | Role                                             |
-|-----------------|--------------------------------------------------|
-| 🧠 `Ollama`       | LLM inference engine (e.g. `llama3`)             |
-| 📄 `Apache Tika` | PDF-to-text extractor                            |
+| Component         | Role                                            |
+|-------------------|-------------------------------------------------|
+| 🧠 `Ollama`       | LLM inference engine (e.g. `llama3`)            |
+| 📄 `Apache Tika`  | PDF-to-text extractor                           |
 | 🔍 `FAISS`        | Vector search over parsed PDF chunks            |
 | 🌐 `Flask App`    | Simple API + minimal HTML frontend              |
-| 🧪 `test.sh`      | Shell script for validating core functionality  |
 
 ---
 
@@ -26,13 +37,13 @@ Make sure your system supports Docker. See [https://docs.docker.com/get-docker/]
 
 ### 2. Add your PDFs
 
-Put any `.pdf` files you want indexed into the `pdfs/` folder.
+Put any `.pdf` files or text files you want indexed into the `sources/` folder.
 
 > You can start with the [Survival Data Corpus](https://github.com/PR0M3TH3AN/Survival-Data)
 
 ```bash
 git clone https://github.com/PR0M3TH3AN/Survival-Data.git
-find Survival-Data/HOME -type f -iname "*.pdf" -exec cp {} pdfs/ \;
+find Survival-Data/HOME -type f -iname "*.pdf" -exec cp {} sources/ \;
 ```
 
 ### 3. Start the whole system
