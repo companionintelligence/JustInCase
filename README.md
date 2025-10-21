@@ -90,3 +90,37 @@ This verifies:
 - Tika is working
 - Query endpoint returns valid results
 
+---
+
+## 🔧 Troubleshooting
+
+### Manually pulling models
+
+If the automatic model pulling fails or times out, you can manually pull the required models:
+
+```bash
+# Using docker compose (recommended)
+docker compose exec ollama ollama pull llama3.2:1b
+docker compose exec ollama ollama pull nomic-embed-text
+
+# Or skip automatic model pulling on startup
+SKIP_MODEL_PULL=true docker compose up --build
+```
+
+### Container naming
+
+Note that when using `docker compose`, container names are prefixed with your project directory name. To find the exact container name:
+
+```bash
+docker ps -a | grep ollama
+```
+
+### Model dimension mismatch
+
+If you encounter "dimension mismatch" errors, this usually means the index was built with a different embedding model. Remove the existing index and rebuild:
+
+```bash
+rm -rf data/
+docker compose restart survival-rag
+```
+
