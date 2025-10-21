@@ -1,6 +1,5 @@
 flask
 requests
-sentence-transformers
+fastembed
 faiss-cpu
 langchain-community
-hf_xet

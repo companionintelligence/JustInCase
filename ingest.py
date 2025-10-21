@@ -3,12 +3,13 @@ import os
 import sys
 import json
 import faiss
+import numpy as np
 import requests
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-# Initialize embedding model
-model = SentenceTransformer("all-MiniLM-L6-v2")
+# Initialize embedding model with fastembed (much smaller than sentence-transformers)
+model = TextEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 # Setup directories and Tika URL
 sources_dir = sys.argv[1] if len(sys.argv) > 1 else "sources"
@@ -66,7 +67,9 @@ for root, dirs, files in os.walk(sources_dir):
         sources_count += 1
 
 # Generate embeddings
-vectors = model.encode(texts, show_progress_bar=True)
+print("Generating embeddings...")
+embeddings = list(model.embed(texts))
+vectors = np.array(embeddings)
 
 # Build FAISS index
 index = faiss.IndexFlatL2(vectors.shape[1])

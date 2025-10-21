@@ -2,14 +2,15 @@ import os
 import faiss
 import json
 import traceback
+import numpy as np
 from flask import Flask, request, jsonify, send_from_directory
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 import requests
 
 app = Flask(__name__)
 
-# Initialize SentenceTransformer model
-model = SentenceTransformer("all-MiniLM-L6-v2")
+# Initialize fastembed model
+model = TextEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 # Load FAISS index and metadata
 index = faiss.read_index("data/index.faiss")
@@ -30,7 +31,8 @@ def query():
             return jsonify({"error": "Empty query"}), 400
 
         # Encode query
-        qvec = model.encode([q])
+        embeddings = list(model.embed([q]))
+        qvec = np.array(embeddings)
         print(f"Encoded query vector shape: {qvec.shape}, Expected FAISS index dimension: {index.d}")
 
         if qvec.shape[1] != index.d:

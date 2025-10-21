@@ -1,15 +1,20 @@
 services:
   tika:
-    image: apache/tika:latest
+    image: apache/tika:2.9.1
     container_name: tika
+    pull_policy: if_not_present
     ports:
       - "9998:9998"
     healthcheck:
-      test: ["CMD", "true"]
+      test: ["CMD", "curl", "-f", "http://localhost:9998/tika"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   ollama:
-    image: ollama/ollama
+    image: ollama/ollama:0.1.32
     container_name: ollama
+    pull_policy: if_not_present
     ports:
       - "11434:11434"
     volumes:
@@ -20,6 +25,7 @@ services:
   survival-rag:
     build: .
     container_name: survival-rag
+    pull_policy: never
     depends_on:
       tika:
         condition: service_healthy
