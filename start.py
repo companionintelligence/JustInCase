@@ -27,7 +27,10 @@ def check_model_exists(model_name, ollama_url):
             data = json.loads(response.read())
             models = data.get('models', [])
             for model in models:
-                if model.get('name') == model_name:
+                model_full_name = model.get('name', '')
+                # Check if the model name matches (with or without tag)
+                if model_full_name == model_name or model_full_name.startswith(model_name + ':'):
+                    print(f"Found model: {model_full_name}")
                     return True
     except Exception as e:
         print(f"Error checking models: {e}")
@@ -93,6 +96,16 @@ def main():
     
     wait_for_service(tika_url, "Tika")
     wait_for_service(f"{ollama_url}/api/tags", "Ollama")
+    
+    # List available models for debugging
+    try:
+        req = urllib.request.Request(f"{ollama_url}/api/tags")
+        with urllib.request.urlopen(req) as response:
+            data = json.loads(response.read())
+            available_models = [m.get('name', '') for m in data.get('models', [])]
+            print(f"Available Ollama models: {available_models}")
+    except Exception as e:
+        print(f"Could not list models: {e}")
     
     # Pull models only if needed
     models_needed = ["llama3.2:1b", "nomic-embed-text"]
