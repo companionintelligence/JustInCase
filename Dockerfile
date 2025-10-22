@@ -35,12 +35,21 @@ COPY --from=llama-downloader /build/llama.cpp ./llama.cpp
 # Copy source files
 COPY server.cpp CMakeLists.txt ./
 
-# Build the server with optimizations
+# Show system info for debugging
+RUN echo "=== Build Environment Info ===" && \
+    echo "CPU cores: $(nproc)" && \
+    echo "Memory: $(free -h | grep Mem | awk '{print $2}')" && \
+    echo "Architecture: $(uname -m)" && \
+    echo "=============================="
+
+# Build the server with optimizations and verbose output
 RUN cmake -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_FLAGS="-O3 -march=armv8-a" \
+    -DCMAKE_VERBOSE_MAKEFILE=ON \
     . && \
-    cmake --build build -- -j$(nproc)
+    echo "Building with $(nproc) cores..." && \
+    cmake --build build --verbose -- -j$(nproc)
 
 # Runtime image
 FROM --platform=linux/arm64 ubuntu:24.04

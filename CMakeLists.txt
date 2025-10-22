@@ -15,7 +15,12 @@ set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "llama: build examples" FORCE)
 set(LLAMA_BUILD_SERVER OFF CACHE BOOL "llama: build server example" FORCE)
 set(LLAMA_NATIVE OFF CACHE BOOL "llama: enable -march=native flag" FORCE)
 set(LLAMA_LTO OFF CACHE BOOL "llama: enable link time optimization" FORCE)
+set(LLAMA_STATIC ON CACHE BOOL "llama: build static library" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "build shared libraries" FORCE)
 set(GGML_CCACHE OFF CACHE BOOL "ggml: disable ccache warning" FORCE)
+
+# Enable parallel builds for llama.cpp
+set(CMAKE_BUILD_PARALLEL_LEVEL ${CMAKE_BUILD_PARALLEL_LEVEL})
 
 # Add llama.cpp as a subdirectory
 add_subdirectory(llama.cpp)

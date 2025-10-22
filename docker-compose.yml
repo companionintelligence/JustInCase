@@ -12,9 +12,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        BUILDKIT_PROGRESS: plain
     container_name: jic
     depends_on:
       - tika
+    deploy:
+      resources:
+        limits:
+          cpus: '0'  # No CPU limit - use all available cores
+          memory: 8G
     volumes:
       - ./sources:/app/sources
       - ./data:/app/data

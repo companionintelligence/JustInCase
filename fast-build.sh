@@ -8,9 +8,9 @@ echo "=================================="
 CORES=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 echo "💻 Detected $CORES CPU cores"
 
-# Calculate optimal parallel jobs (usually cores * 1.5 for I/O bound tasks)
-PARALLEL_JOBS=$(echo "$CORES * 1.5" | bc | cut -d. -f1)
-echo "🔧 Using $PARALLEL_JOBS parallel jobs for optimal performance"
+# Calculate optimal parallel jobs (for CPU-bound compilation, use all cores)
+PARALLEL_JOBS=$CORES
+echo "🔧 Using $PARALLEL_JOBS parallel jobs (all cores for compilation)"
 
 # Set Docker BuildKit for better performance
 export DOCKER_BUILDKIT=1
