@@ -67,8 +67,11 @@ if(EXISTS "/llama-install/lib/libllama.a")
     # When using pre-built libraries, link them in the correct order
     target_link_libraries(jic-server 
         PRIVATE 
-        /llama-install/lib/libllama.a
         -Wl,--whole-archive
+        /llama-install/lib/libllama.a
+        /llama-install/lib/libcommon.a
+        /llama-install/lib/libggml-base.a
+        /llama-install/lib/libggml-cpu.a
         /llama-install/lib/libggml.a
         -Wl,--no-whole-archive
         nlohmann_json

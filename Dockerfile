@@ -45,34 +45,15 @@ RUN cd llama.cpp && \
     cmake --build build -- -j$(nproc) && \
     # Create a package of just what we need
     mkdir -p /llama-install/lib /llama-install/include && \
-    # Find and copy ALL static libraries from the entire build tree
-    find . -name "*.a" -type f -exec cp {} /llama-install/lib/ \; && \
-    # Combine all ggml libraries into one to ensure all symbols are included
-    cd /llama-install/lib && \
-    ar -x libggml.a && \
-    for lib in libggml*.a; do \
-        if [ "$lib" != "libggml.a" ] && [ -f "$lib" ]; then \
-            ar -x "$lib"; \
-        fi; \
-    done && \
-    ar -rcs libggml-combined.a *.o && \
-    rm -f *.o && \
-    mv libggml-combined.a libggml.a && \
-    cd /build/llama.cpp && \
+    # Copy all static libraries
+    find build -name "*.a" -type f -exec cp {} /llama-install/lib/ \; && \
     # Copy headers from various locations
     cp -r include/* /llama-install/include/ 2>/dev/null || true && \
     cp -r ggml/include/* /llama-install/include/ 2>/dev/null || true && \
     cp -r common/*.h /llama-install/include/ 2>/dev/null || true && \
     cp -r src/*.h /llama-install/include/ 2>/dev/null || true && \
     # List what we copied for debugging
-    echo "=== Libraries copied ===" && ls -la /llama-install/lib/ && \
-    echo "=== Checking for ggml_backend_cpu_reg symbol ===" && \
-    for lib in /llama-install/lib/*.a; do \
-        echo "Checking $lib:" && \
-        nm "$lib" 2>/dev/null | grep "ggml_backend_cpu_reg" | head -5 || true; \
-    done && \
-    echo "=== All symbols in libggml.a ===" && \
-    nm /llama-install/lib/libggml.a 2>/dev/null | grep "backend" | head -20 || true
+    echo "=== Libraries copied ===" && ls -la /llama-install/lib/
 
 # Third stage: Build our server (this is the only part that rebuilds when server.cpp changes)
 FROM --platform=linux/arm64 ubuntu:24.04 AS app-builder
