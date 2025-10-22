@@ -152,11 +152,15 @@ public:
         for (const auto& emb : embeddings) {
             file.write((char*)emb.data(), dimension * sizeof(float));
         }
+        std::cout << "Saved " << n << " embeddings to " << path << std::endl;
     }
     
     void load(const std::string& path) {
         std::ifstream file(path, std::ios::binary);
-        if (!file) return;
+        if (!file) {
+            std::cout << "No existing index found at " << path << std::endl;
+            return;
+        }
         
         int n;
         file.read((char*)&n, sizeof(n));
@@ -170,6 +174,7 @@ public:
             file.read((char*)emb.data(), dimension * sizeof(float));
             embeddings.push_back(emb);
         }
+        std::cout << "Loaded " << n << " embeddings from " << path << std::endl;
     }
 };
 
@@ -539,6 +544,9 @@ std::string serve_static_file(const std::string& path) {
     if (!file_path.empty() && file_path[0] == '/') {
         file_path = file_path.substr(1);
     }
+    
+    // Prepend public/ directory
+    file_path = "public/" + file_path;
     
     // Security check - prevent directory traversal
     if (file_path.find("..") != std::string::npos) {

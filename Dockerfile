@@ -1,13 +1,14 @@
 FROM ubuntu:24.04 AS builder
 
 # Install build dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     build-essential \
     git \
     wget \
     libopenblas-dev \
     libcurl4-openssl-dev \
     libssl-dev \
+    --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install newer CMake
@@ -31,9 +32,10 @@ RUN cmake -B build . && \
 # Runtime image
 FROM ubuntu:24.04
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     libopenblas0 \
     libcurl4 \
+    --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

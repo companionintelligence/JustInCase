@@ -9,6 +9,13 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 # Find packages
 find_package(Threads REQUIRED)
 
+# Configure llama.cpp build options to avoid X11 dependencies
+set(LLAMA_BUILD_TESTS OFF CACHE BOOL "llama: build tests" FORCE)
+set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "llama: build examples" FORCE)
+set(LLAMA_BUILD_SERVER OFF CACHE BOOL "llama: build server example" FORCE)
+set(LLAMA_NATIVE OFF CACHE BOOL "llama: enable -march=native flag" FORCE)
+set(LLAMA_LTO OFF CACHE BOOL "llama: enable link time optimization" FORCE)
+
 # Add llama.cpp as a subdirectory
 add_subdirectory(llama.cpp)
 
