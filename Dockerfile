@@ -15,12 +15,13 @@ COPY requirements.txt .
 RUN mkdir -p /root/.cache/pip
 
 # Install llama-cpp-python
-# Try to use pre-built wheels from the official index
+# Since we're on a new Python version, we may need to build from source
+# Set build options to avoid compilation issues
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --cache-dir=/root/.cache/pip --upgrade pip wheel setuptools && \
-    pip install --cache-dir=/root/.cache/pip \
-    --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu \
-    llama-cpp-python
+    CMAKE_ARGS="-DLLAMA_BLAS=OFF -DLLAMA_ACCELERATE=OFF -DLLAMA_METAL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF" \
+    FORCE_CMAKE=1 \
+    pip install --cache-dir=/root/.cache/pip llama-cpp-python --verbose
 
 # Install other requirements
 RUN --mount=type=cache,target=/root/.cache/pip \
