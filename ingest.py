@@ -5,7 +5,7 @@ import json
 import faiss
 import requests
 import traceback
-from config import EMBEDDING_MODEL, TIKA_URL, OLLAMA_URL, CHUNK_SIZE, CHUNK_OVERLAP
+from config import EMBEDDING_MODEL, TIKA_URL, EMBED_URL, CHUNK_SIZE, CHUNK_OVERLAP
 
 # Simple text splitter function
 def split_text(text, chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP):
@@ -53,26 +53,20 @@ if not all_files:
     print(f"Creating empty index...")
 
 def get_embedding(text):
-    """Get embedding from Ollama using configured embedding model"""
-    response = requests.post(f"{OLLAMA_URL}/api/embed", json={
-        "model": EMBEDDING_MODEL,
-        "input": text
+    """Get embedding directly from llama.cpp embedding server"""
+    response = requests.post(f"{EMBED_URL}/embedding", json={
+        "content": text
     })
     if response.status_code != 200:
         raise Exception(f"Failed to get embedding: {response.text}")
     
     result = response.json()
     
-    # Debug: print the response structure
-    print(f"Embedding response type: {type(result)}")
-    if isinstance(result, dict):
-        print(f"Response keys: {result.keys()}")
-    
-    # Handle the response format
-    if isinstance(result, dict) and "embeddings" in result:
-        embedding = result["embeddings"][0]
-    elif isinstance(result, list):
-        embedding = result[0] if result else []
+    # llama.cpp returns embedding directly as a list
+    if isinstance(result, list):
+        embedding = result
+    elif isinstance(result, dict) and "embedding" in result:
+        embedding = result["embedding"]
     else:
         raise Exception(f"Unexpected embedding response format: {result}")
     

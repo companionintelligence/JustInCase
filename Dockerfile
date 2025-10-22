@@ -20,7 +20,7 @@ RUN mkdir -p /app/data /app/sources
 RUN echo "Contents of /app:" && ls -la /app/ && \
     echo "Contents of /app/sources:" && ls -la /app/sources/ || echo "Sources directory is empty or missing"
 
-# Expose ports
-EXPOSE 8080 11434
+# Expose port
+EXPOSE 8080
 
 ENTRYPOINT ["python3", "start.py"]

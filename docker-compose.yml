@@ -52,10 +52,8 @@ services:
       - ./data:/app/data
     ports:
       - "8080:8080"
-      - "11434:11434"
     environment:
       - TIKA_URL=http://tika:9998
-      - OLLAMA_URL=http://localhost:11434
       - LLM_URL=http://llama-cpp-llm:8080
       - EMBED_URL=http://llama-cpp-embed:8080
       - LLM_MODEL=${LLM_MODEL:-llama3.2}

@@ -4,26 +4,25 @@ import json
 import traceback
 from flask import Flask, request, jsonify, send_from_directory
 import requests
-from config import LLM_MODEL, EMBEDDING_MODEL, OLLAMA_URL, MAX_CONTEXT_CHUNKS, SEARCH_TOP_K
+from config import LLM_MODEL, EMBEDDING_MODEL, LLM_URL, EMBED_URL, MAX_CONTEXT_CHUNKS, SEARCH_TOP_K
 
 app = Flask(__name__)
 
 def get_embedding(text):
-    """Get embedding from Ollama using configured embedding model"""
-    response = requests.post(f"{OLLAMA_URL}/api/embed", json={
-        "model": EMBEDDING_MODEL,
-        "input": text
+    """Get embedding directly from llama.cpp embedding server"""
+    response = requests.post(f"{EMBED_URL}/embedding", json={
+        "content": text
     })
     if response.status_code != 200:
         raise Exception(f"Failed to get embedding: {response.text}")
     
     result = response.json()
     
-    # Handle the response format
-    if isinstance(result, dict) and "embeddings" in result:
-        embedding = result["embeddings"][0]
-    elif isinstance(result, list):
-        embedding = result[0] if result else []
+    # llama.cpp returns embedding directly as a list
+    if isinstance(result, list):
+        embedding = result
+    elif isinstance(result, dict) and "embedding" in result:
+        embedding = result["embedding"]
     else:
         raise Exception(f"Unexpected embedding response format: {result}")
     
@@ -74,11 +73,13 @@ def query():
         context = "\n\n".join(docs[i]["text"] for i in selected_chunks)
         print(f"Generated context (truncated): {context[:500]}...")
 
-        # Make request to Ollama (non-streaming)
-        response = requests.post(f"{OLLAMA_URL}/api/generate", json={
-            "model": LLM_MODEL,
-            "stream": False,
-            "prompt": f"Context: {context}\n\nQuestion: {q}\n\nAnswer:"
+        # Make request directly to llama.cpp
+        response = requests.post(f"{LLM_URL}/completion", json={
+            "prompt": f"Context: {context}\n\nQuestion: {q}\n\nAnswer:",
+            "n_predict": 512,
+            "temperature": 0.7,
+            "stop": ["</s>", "\n\n"],
+            "stream": False
         }, timeout=60)
 
         print(f"LLM raw response status: {response.status_code}, text (truncated): {response.text[:500]}")
@@ -86,7 +87,7 @@ def query():
         if response.status_code != 200:
             return jsonify({"error": "LLM server error", "details": response.text}), 500
 
-        reply = response.json().get("response", "No response")
+        reply = response.json().get("content", "No response")
         result = {"answer": reply, "matches": [docs[i] for i in selected_chunks]}
         print(f"Final JSON response: {json.dumps(result, indent=2)[:500]}...")
 

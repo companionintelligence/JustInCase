@@ -7,10 +7,9 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
 
 # Service URLs
 TIKA_URL = os.getenv("TIKA_URL", "http://tika:9998")
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
+LLM_URL = os.getenv("LLM_URL", "http://llama-cpp-llm:8080")
+EMBED_URL = os.getenv("EMBED_URL", "http://llama-cpp-embed:8080")
 
-# Model preparation settings
-USE_LOCAL_OLLAMA = os.getenv("USE_LOCAL_OLLAMA", "false").lower() == "true"
 
 # GGUF Model Download URLs
 # You can override these with environment variables
