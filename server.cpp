@@ -333,6 +333,9 @@ bool init_models() {
 std::vector<float> get_embedding(const std::string& text) {
     std::lock_guard<std::mutex> lock(embedding_mutex);
     
+    // Clear the KV cache for all sequences
+    llama_kv_self_seq_rm(embedding_ctx, -1, 0, -1);
+    
     // Get vocab from model
     const llama_vocab* vocab = llama_model_get_vocab(embedding_model);
     
@@ -380,6 +383,9 @@ std::vector<float> get_embedding(const std::string& text) {
 // Generate LLM response
 std::string generate_llm_response(const std::string& prompt) {
     std::lock_guard<std::mutex> lock(llm_mutex);
+    
+    // Clear the KV cache for all sequences
+    llama_kv_self_seq_rm(llm_ctx, -1, 0, -1);
     
     // Get vocab from model
     const llama_vocab* vocab = llama_model_get_vocab(llm_model);
