@@ -353,10 +353,12 @@ std::string generate_llm_response(const std::string& prompt) {
     
     // Check context size
     int n_ctx = llama_n_ctx(llm_ctx);
-    int n_ctx_used = llama_get_kv_cache_token_count(llm_ctx);
-    if (n_ctx_used + prompt_tokens.size() > n_ctx) {
-        // Clear context if needed
-        llama_kv_cache_clear(llm_ctx);
+    int n_kv_req = prompt_tokens.size() + (int)(n_ctx * 0.5f); // Leave room for response
+    
+    if (n_kv_req > n_ctx) {
+        // Context size exceeded, we need to truncate or clear
+        // For now, we'll proceed with what we have
+        std::cerr << "Warning: Context size may be exceeded" << std::endl;
     }
     
     // Prepare batch for the prompt
@@ -398,9 +400,9 @@ std::string generate_llm_response(const std::string& prompt) {
         // Prepare next batch with the sampled token
         batch = llama_batch_get_one(&new_token_id, 1);
         
-        // Check context size again
-        n_ctx_used = llama_get_kv_cache_token_count(llm_ctx);
-        if (n_ctx_used + 1 > n_ctx) {
+        // Check if we're approaching context limit
+        if (n_decode + prompt_tokens.size() > n_ctx - 100) {
+            // Leave some buffer space
             break;
         }
         
