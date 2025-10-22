@@ -109,6 +109,16 @@ else()
 endif()
 
 # Include directories
-target_include_directories(jic-server PRIVATE 
-    ${CMAKE_CURRENT_SOURCE_DIR}/llama.cpp
-)
+if(EXISTS "/llama-install/lib/libllama.a")
+    # When using pre-built libraries
+    target_include_directories(jic-server PRIVATE 
+        /llama-install/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )
+else()
+    # When building from source
+    target_include_directories(jic-server PRIVATE 
+        ${CMAKE_CURRENT_SOURCE_DIR}/llama.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )
+endif()
