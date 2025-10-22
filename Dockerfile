@@ -1,4 +1,4 @@
-FROM ubuntu:24.04 AS builder
+FROM --platform=linux/arm64 ubuntu:24.04 AS builder
 
 # Install build dependencies
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -30,7 +30,7 @@ RUN cmake -B build . && \
     cmake --build build -- -j$(nproc)
 
 # Runtime image
-FROM ubuntu:24.04
+FROM --platform=linux/arm64 ubuntu:24.04
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     libopenblas0 \
