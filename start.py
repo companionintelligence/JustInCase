@@ -76,29 +76,35 @@ def main():
     except Exception as e:
         print(f"Could not list models: {e}")
     
-    # Verify models are available - no pulling, just checking
+    # Check models - DO NOT automatically pull
     models_needed = [LLM_MODEL, EMBEDDING_MODEL]
     missing_models = []
     
     print("\n" + "="*60)
-    print("Verifying required models...")
+    print("Checking required models...")
     print("="*60)
     
     for model in models_needed:
         if check_model_exists(model, OLLAMA_URL, retry_count=5):
-            print(f"✅ Model {model} is available")
+            print(f"✅ Model {model} is already available in Docker")
         else:
-            print(f"❌ Model {model} NOT FOUND")
+            print(f"❌ Model {model} NOT FOUND in Docker volume")
             missing_models.append(model)
     
     if missing_models:
         print("\n" + "="*60)
-        print("FATAL: Required models are not available!")
+        print("IMPORTANT: Required models are missing from Docker!")
         print("Missing models:", ", ".join(missing_models))
-        print("\nModels must be pre-downloaded before building Docker.")
-        print("Run: ./download-models-local.sh")
+        print("\nOptions:")
+        print("1. If you have these models locally, copy them:")
+        print("   ./copy-local-models.sh")
+        print("\n2. Download them into Docker (slow connection warning!):")
+        print("   ./download-models.sh")
+        print("\n3. Pull specific models manually:")
+        for model in missing_models:
+            print(f"   docker compose exec ollama ollama pull {model}")
         print("="*60 + "\n")
-        raise Exception(f"Required models not available: {', '.join(missing_models)}")
+        raise Exception(f"Required models not available in Docker: {', '.join(missing_models)}")
     
     # Run ingestion if needed
     if not os.path.exists("data/index.faiss"):
