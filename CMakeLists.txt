@@ -64,22 +64,12 @@ message(STATUS "  CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 
 # Link libraries (order matters for static linking)
 if(EXISTS "/llama-install/lib/libllama.a")
-    # When using pre-built libraries, we need to link ALL of them
-    # Get all static libraries
-    file(GLOB ALL_LIBS "/llama-install/lib/*.a")
-    
-    # Print what we found
-    message(STATUS "Found libraries in /llama-install/lib:")
-    foreach(lib ${ALL_LIBS})
-        message(STATUS "  ${lib}")
-    endforeach()
-    
-    # Link everything - let the linker figure out the dependencies
-    # We use --whole-archive to ensure all symbols are included
+    # When using pre-built libraries, link them in the correct order
     target_link_libraries(jic-server 
         PRIVATE 
+        /llama-install/lib/libllama.a
         -Wl,--whole-archive
-        ${ALL_LIBS}
+        /llama-install/lib/libggml.a
         -Wl,--no-whole-archive
         nlohmann_json
         Threads::Threads
@@ -90,6 +80,9 @@ if(EXISTS "/llama-install/lib/libllama.a")
         stdc++  # C++ standard library
         pthread  # POSIX threads
     )
+    
+    # Print what libraries we're linking
+    message(STATUS "Linking with pre-built libraries from /llama-install/lib")
 else()
     # When building from source
     target_link_libraries(jic-server 

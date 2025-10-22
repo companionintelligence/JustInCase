@@ -47,9 +47,18 @@ RUN cd llama.cpp && \
     mkdir -p /llama-install/lib /llama-install/include && \
     # Find and copy ALL static libraries from the entire build tree
     find . -name "*.a" -type f -exec cp {} /llama-install/lib/ \; && \
-    # Also check for any additional ggml libraries that might be in subdirectories
-    find . -path "*/ggml/src/*.a" -type f -exec cp {} /llama-install/lib/ \; 2>/dev/null || true && \
-    find . -path "*/src/ggml*.a" -type f -exec cp {} /llama-install/lib/ \; 2>/dev/null || true && \
+    # Combine all ggml libraries into one to ensure all symbols are included
+    cd /llama-install/lib && \
+    ar -x libggml.a && \
+    for lib in libggml*.a; do \
+        if [ "$lib" != "libggml.a" ] && [ -f "$lib" ]; then \
+            ar -x "$lib"; \
+        fi; \
+    done && \
+    ar -rcs libggml-combined.a *.o && \
+    rm -f *.o && \
+    mv libggml-combined.a libggml.a && \
+    cd /build/llama.cpp && \
     # Copy headers from various locations
     cp -r include/* /llama-install/include/ 2>/dev/null || true && \
     cp -r ggml/include/* /llama-install/include/ 2>/dev/null || true && \
