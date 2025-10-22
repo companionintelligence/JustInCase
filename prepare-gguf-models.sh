@@ -45,8 +45,9 @@ if ls ./gguf_models/*llama*.gguf 1> /dev/null 2>&1; then
     LLAMA_GGUF=$(ls ./gguf_models/*llama*.gguf | head -1 | basename)
     echo "Found Llama GGUF: $LLAMA_GGUF"
     
+    # Use relative path since we'll cd into the directory
     cat > ./gguf_models/Modelfile.llama <<EOF
-FROM /gguf_models/$LLAMA_GGUF
+FROM ./$LLAMA_GGUF
 
 # Set parameters for chat
 PARAMETER temperature 0.7
@@ -68,6 +69,7 @@ TEMPLATE """{{ if .System }}<|start_header_id|>system<|end_header_id|>
 SYSTEM """You are a helpful emergency preparedness assistant. Provide clear, practical advice based on the provided context."""
 EOF
     echo "✅ Created Modelfile.llama"
+    echo "   Using relative path: ./$LLAMA_GGUF"
 else
     echo "⚠️  No Llama GGUF file found"
 fi
@@ -77,10 +79,12 @@ if ls ./gguf_models/*nomic*.gguf 1> /dev/null 2>&1; then
     NOMIC_GGUF=$(ls ./gguf_models/*nomic*.gguf | head -1 | basename)
     echo "Found Nomic GGUF: $NOMIC_GGUF"
     
+    # Use relative path since we'll cd into the directory
     cat > ./gguf_models/Modelfile.nomic <<EOF
-FROM /gguf_models/$NOMIC_GGUF
+FROM ./$NOMIC_GGUF
 EOF
     echo "✅ Created Modelfile.nomic"
+    echo "   Using relative path: ./$NOMIC_GGUF"
 else
     echo "⚠️  No Nomic GGUF file found"
 fi

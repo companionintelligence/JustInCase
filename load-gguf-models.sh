@@ -29,16 +29,23 @@ echo ""
 if [ -f "./gguf_models/Modelfile.llama" ]; then
     echo "🔄 Creating $LLM_MODEL from GGUF..."
     
-    # Create the model using the mounted volume path
-    docker exec ollama ollama create $LLM_MODEL -f /gguf_models/Modelfile.llama
+    # Try creating from within the gguf_models directory
+    docker exec ollama sh -c "cd /gguf_models && ollama create $LLM_MODEL -f Modelfile.llama"
     
     if [ $? -eq 0 ]; then
         echo "✅ Successfully created $LLM_MODEL"
     else
         echo "❌ Failed to create $LLM_MODEL"
-        echo "Debugging: Checking what's in the container..."
+        echo ""
+        echo "Debugging information:"
+        echo "1. Container's view of /gguf_models:"
         docker exec ollama ls -la /gguf_models/
+        echo ""
+        echo "2. Modelfile.llama contents:"
         docker exec ollama cat /gguf_models/Modelfile.llama
+        echo ""
+        echo "3. Checking if GGUF file exists:"
+        docker exec ollama sh -c "cd /gguf_models && ls -la *.gguf"
     fi
 else
     echo "⚠️  No Modelfile.llama found. Run ./prepare-gguf-models.sh first"
@@ -50,16 +57,23 @@ echo ""
 if [ -f "./gguf_models/Modelfile.nomic" ]; then
     echo "🔄 Creating $EMBEDDING_MODEL from GGUF..."
     
-    # Create the model using the mounted volume path
-    docker exec ollama ollama create $EMBEDDING_MODEL -f /gguf_models/Modelfile.nomic
+    # Try creating from within the gguf_models directory
+    docker exec ollama sh -c "cd /gguf_models && ollama create $EMBEDDING_MODEL -f Modelfile.nomic"
     
     if [ $? -eq 0 ]; then
         echo "✅ Successfully created $EMBEDDING_MODEL"
     else
         echo "❌ Failed to create $EMBEDDING_MODEL"
-        echo "Debugging: Checking what's in the container..."
+        echo ""
+        echo "Debugging information:"
+        echo "1. Container's view of /gguf_models:"
         docker exec ollama ls -la /gguf_models/
+        echo ""
+        echo "2. Modelfile.nomic contents:"
         docker exec ollama cat /gguf_models/Modelfile.nomic
+        echo ""
+        echo "3. Checking if GGUF file exists:"
+        docker exec ollama sh -c "cd /gguf_models && ls -la *.gguf"
     fi
 else
     echo "⚠️  No Modelfile.nomic found. Run ./prepare-gguf-models.sh first"
