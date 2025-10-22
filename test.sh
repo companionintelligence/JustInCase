@@ -12,18 +12,22 @@ else
     exit 1
 fi
 
+# Get model names from config
+LLM_MODEL=$(docker compose exec -T survival-rag python3 -c "from config import LLM_MODEL; print(LLM_MODEL)" 2>/dev/null || echo "llama3.2")
+EMBEDDING_MODEL=$(docker compose exec -T survival-rag python3 -c "from config import EMBEDDING_MODEL; print(EMBEDDING_MODEL)" 2>/dev/null || echo "nomic-embed-text")
+
 # Check Ollama models
 echo -e "\n🧠 Checking Ollama models..."
-if docker compose exec -T ollama ollama list 2>/dev/null | grep -q "llama3.2"; then
-    echo "✅ llama3.2 model is available"
+if docker compose exec -T ollama ollama list 2>/dev/null | grep -q "$LLM_MODEL"; then
+    echo "✅ $LLM_MODEL model is available"
 else
-    echo "❌ llama3.2 model not found. Run: docker compose exec ollama ollama pull llama3.2"
+    echo "❌ $LLM_MODEL model not found. Run: docker compose exec ollama ollama pull $LLM_MODEL"
 fi
 
-if docker compose exec -T ollama ollama list 2>/dev/null | grep -q "nomic-embed-text"; then
-    echo "✅ nomic-embed-text model is available"
+if docker compose exec -T ollama ollama list 2>/dev/null | grep -q "$EMBEDDING_MODEL"; then
+    echo "✅ $EMBEDDING_MODEL model is available"
 else
-    echo "❌ nomic-embed-text model not found. Run: docker compose exec ollama ollama pull nomic-embed-text"
+    echo "❌ $EMBEDDING_MODEL model not found. Run: docker compose exec ollama ollama pull $EMBEDDING_MODEL"
 fi
 
 # Check Tika

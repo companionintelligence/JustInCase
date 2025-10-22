@@ -14,7 +14,7 @@ services:
     ports:
       - "11434:11434"
     environment:
-      - OLLAMA_MODELS=llama3.2,nomic-embed-text
+      - OLLAMA_MODELS=${LLM_MODEL:-llama3.2},${EMBEDDING_MODEL:-nomic-embed-text}
 
   survival-rag:
     build:
@@ -33,6 +33,8 @@ services:
     environment:
       - TIKA_URL=http://tika:9998
       - OLLAMA_URL=http://ollama:11434
+      - LLM_MODEL=${LLM_MODEL:-llama3.2}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-nomic-embed-text}
       - SKIP_MODEL_PULL=${SKIP_MODEL_PULL:-false}
       - SKIP_MODEL_CHECK=${SKIP_MODEL_CHECK:-false}
     command: ["python3", "start.py"]

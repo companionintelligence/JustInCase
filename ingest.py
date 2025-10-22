@@ -4,9 +4,10 @@ import sys
 import json
 import faiss
 import requests
+from config import EMBEDDING_MODEL, TIKA_URL, OLLAMA_URL, CHUNK_SIZE, CHUNK_OVERLAP
 
 # Simple text splitter function
-def split_text(text, chunk_size=500, chunk_overlap=50):
+def split_text(text, chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP):
     """Split text into overlapping chunks."""
     chunks = []
     start = 0
@@ -30,16 +31,14 @@ def split_text(text, chunk_size=500, chunk_overlap=50):
     
     return chunks
 
-# Setup directories and URLs
+# Setup directories
 sources_dir = sys.argv[1] if len(sys.argv) > 1 else "sources"
 os.makedirs("data", exist_ok=True)
-TIKA_URL = os.getenv("TIKA_URL", "http://tika:9998")
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 
 def get_embedding(text):
-    """Get embedding from Ollama using nomic-embed-text model"""
+    """Get embedding from Ollama using configured embedding model"""
     response = requests.post(f"{OLLAMA_URL}/api/embed", json={
-        "model": "nomic-embed-text",
+        "model": EMBEDDING_MODEL,
         "input": text
     })
     if response.status_code != 200:

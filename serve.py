@@ -4,15 +4,14 @@ import json
 import traceback
 from flask import Flask, request, jsonify, send_from_directory
 import requests
+from config import LLM_MODEL, EMBEDDING_MODEL, OLLAMA_URL, MAX_CONTEXT_CHUNKS, SEARCH_TOP_K
 
 app = Flask(__name__)
 
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
-
 def get_embedding(text):
-    """Get embedding from Ollama using nomic-embed-text model"""
+    """Get embedding from Ollama using configured embedding model"""
     response = requests.post(f"{OLLAMA_URL}/api/embed", json={
-        "model": "nomic-embed-text",
+        "model": EMBEDDING_MODEL,
         "input": text
     })
     if response.status_code != 200:
@@ -50,13 +49,12 @@ def query():
             return jsonify({"error": error_msg}), 500
 
         # Perform FAISS search
-        D, I = index.search(qvec, k=5)
+        D, I = index.search(qvec, k=SEARCH_TOP_K)
         print(f"FAISS search results D: {D}, I: {I}")
 
         # Filter valid indices and limit context chunks
         valid_indices = [i for i in I[0] if i != -1]
-        max_chunks = 3
-        selected_chunks = valid_indices[:max_chunks]
+        selected_chunks = valid_indices[:MAX_CONTEXT_CHUNKS]
 
         if not selected_chunks:
             print("No relevant documents found.")
@@ -68,7 +66,7 @@ def query():
 
         # Make request to Ollama (non-streaming)
         response = requests.post(f"{OLLAMA_URL}/api/generate", json={
-            "model": "llama3.2",
+            "model": LLM_MODEL,
             "stream": False,
             "prompt": f"Context: {context}\n\nQuestion: {q}\n\nAnswer:"
         }, timeout=60)

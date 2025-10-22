@@ -108,6 +108,27 @@ This verifies:
 
 ---
 
+## ⚙️ Configuration
+
+### Model Selection
+
+You can customize which models to use by setting environment variables:
+
+```bash
+# Use different models
+export LLM_MODEL=llama3.2
+export EMBEDDING_MODEL=nomic-embed-text
+
+# Download your chosen models
+./download-models-local.sh
+
+# Build and run with your models
+docker compose build
+docker compose up
+```
+
+All model references are centralized in `config.py` for easy modification.
+
 ## 🔧 Troubleshooting
 
 ### Model Management
@@ -118,7 +139,8 @@ Models are pre-downloaded to your local machine and baked into the Docker image 
 - Models are stored in `./ollama_models_local` (git-ignored)
 - Models are copied into Docker images during build
 - No dynamic downloading - fails fast if models are missing
-- ~1.6GB total (1.3GB for llama3.2, 274MB for nomic-embed-text)
+- ~1.6GB total (varies by model choice)
+- Default models: llama3.2 (LLM) and nomic-embed-text (embeddings)
 
 ### First-time setup
 
@@ -202,8 +224,15 @@ If build fails with "models not found":
 4. **Try manual Docker download** if local Ollama isn't working:
    ```bash
    docker run -d --name ollama-temp -v "$(pwd)/ollama_models_local:/root/.ollama" ollama/ollama:0.12.6
+   # Using default models
    docker exec ollama-temp ollama pull llama3.2
    docker exec ollama-temp ollama pull nomic-embed-text
+   
+   # Or with custom models
+   export LLM_MODEL=llama3.2
+   export EMBEDDING_MODEL=nomic-embed-text
+   docker exec ollama-temp ollama pull $LLM_MODEL
+   docker exec ollama-temp ollama pull $EMBEDDING_MODEL
    docker stop ollama-temp && docker rm ollama-temp
    ```
 

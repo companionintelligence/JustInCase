@@ -32,8 +32,8 @@ if ! command -v ollama &> /dev/null; then
     echo ""
     echo "   Or use Docker to download:"
     echo "   docker run -d --name ollama-temp -v \"\$(pwd)/ollama_models_local:/root/.ollama\" ollama/ollama:0.12.6"
-    echo "   docker exec ollama-temp ollama pull llama3.2:1b"
-    echo "   docker exec ollama-temp ollama pull nomic-embed-text"
+    echo "   docker exec ollama-temp ollama pull $LLM_MODEL"
+    echo "   docker exec ollama-temp ollama pull $EMBEDDING_MODEL"
     echo "   docker stop ollama-temp && docker rm ollama-temp"
     exit 1
 fi
@@ -41,18 +41,22 @@ fi
 # Set OLLAMA_MODELS environment variable to use our local directory
 export OLLAMA_MODELS="$(pwd)/ollama_models_local"
 
-echo "📥 Pulling llama3.2..."
-OLLAMA_MODELS="$(pwd)/ollama_models_local" ollama pull llama3.2
+# Source the Python config to get model names
+LLM_MODEL=$(python3 -c "from config import LLM_MODEL; print(LLM_MODEL)" 2>/dev/null || echo "llama3.2")
+EMBEDDING_MODEL=$(python3 -c "from config import EMBEDDING_MODEL; print(EMBEDDING_MODEL)" 2>/dev/null || echo "nomic-embed-text")
+
+echo "📥 Pulling $LLM_MODEL..."
+OLLAMA_MODELS="$(pwd)/ollama_models_local" ollama pull "$LLM_MODEL"
 if [ $? -ne 0 ]; then
-    echo "❌ Failed to download llama3.2"
+    echo "❌ Failed to download $LLM_MODEL"
     exit 1
 fi
 
 echo ""
-echo "📥 Pulling nomic-embed-text..."
-OLLAMA_MODELS="$(pwd)/ollama_models_local" ollama pull nomic-embed-text
+echo "📥 Pulling $EMBEDDING_MODEL..."
+OLLAMA_MODELS="$(pwd)/ollama_models_local" ollama pull "$EMBEDDING_MODEL"
 if [ $? -ne 0 ]; then
-    echo "❌ Failed to download nomic-embed-text"
+    echo "❌ Failed to download $EMBEDDING_MODEL"
     exit 1
 fi
 

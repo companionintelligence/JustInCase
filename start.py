@@ -5,6 +5,7 @@ import urllib.error
 import json
 import subprocess
 import os
+from config import LLM_MODEL, EMBEDDING_MODEL, TIKA_URL, OLLAMA_URL
 
 def wait_for_service(url, service_name, max_retries=30):
     """Wait for a service to be ready"""
@@ -61,16 +62,13 @@ def check_model_exists(model_name, ollama_url, retry_count=3):
 
 def main():
     # Wait for services
-    tika_url = os.getenv("TIKA_URL", "http://tika:9998")
-    ollama_url = os.getenv("OLLAMA_URL", "http://ollama:11434")
-    
-    wait_for_service(tika_url, "Tika")
-    wait_for_service(f"{ollama_url}/api/tags", "Ollama")
+    wait_for_service(TIKA_URL, "Tika")
+    wait_for_service(f"{OLLAMA_URL}/api/tags", "Ollama")
     
     
     # List available models for debugging
     try:
-        req = urllib.request.Request(f"{ollama_url}/api/tags")
+        req = urllib.request.Request(f"{OLLAMA_URL}/api/tags")
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read())
             available_models = [m.get('name', '') for m in data.get('models', [])]
@@ -79,7 +77,7 @@ def main():
         print(f"Could not list models: {e}")
     
     # Verify models are available - no pulling, just checking
-    models_needed = ["llama3.2", "nomic-embed-text"]
+    models_needed = [LLM_MODEL, EMBEDDING_MODEL]
     missing_models = []
     
     print("\n" + "="*60)
@@ -87,7 +85,7 @@ def main():
     print("="*60)
     
     for model in models_needed:
-        if check_model_exists(model, ollama_url, retry_count=5):
+        if check_model_exists(model, OLLAMA_URL, retry_count=5):
             print(f"✅ Model {model} is available")
         else:
             print(f"❌ Model {model} NOT FOUND")

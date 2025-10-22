@@ -10,6 +10,9 @@ __pycache__
 .Python
 *.egg-info
 
+# Don't ignore config.py
+!config.py
+
 # Data files (these are mounted as volumes)
 data/
 sources/
