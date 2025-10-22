@@ -6,9 +6,13 @@ WORKDIR /app
 # Copy requirements first for better layer caching
 COPY requirements.txt .
 
+# Create pip cache directory
+RUN mkdir -p /root/.cache/pip
+
 # Use pip cache mount for faster rebuilds
+# The cache persists between builds when using BuildKit
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r requirements.txt
+    pip install --cache-dir=/root/.cache/pip -r requirements.txt
 
 # Copy application code
 COPY . .

@@ -1,10 +1,13 @@
-# FAISS index and metadata
-data/
+#  
 
-# Ollama models (large files)
-ollama_models/
-ollama_models_local/
-gguf_models/
+ollama_models*
+ollama_models_local*
+local_ollama_mount*
+ollama_local
+gguf*
+data*
+data
+data/
 
 # Aider
 .aider.*
@@ -34,3 +37,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Docker
+docker-compose.override.yml
+.pip-cache/
