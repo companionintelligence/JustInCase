@@ -57,13 +57,17 @@ message(STATUS "  CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 message(STATUS "  CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 
-# Link libraries
+# Link libraries (order matters for static linking)
 target_link_libraries(jic-server 
     PRIVATE 
-    llama 
+    llama
+    ggml
     nlohmann_json
     Threads::Threads
     curl
+    openblas
+    m  # math library
+    ${CMAKE_DL_LIBS}  # for dlopen if needed
 )
 
 # Include directories

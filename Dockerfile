@@ -42,11 +42,14 @@ RUN cd llama.cpp && \
     cmake --build build -- -j$(nproc) && \
     # Create a package of just what we need
     mkdir -p /llama-install/lib /llama-install/include && \
-    # Find and copy all static libraries
+    # Find and copy all static libraries (including ggml libraries)
     find build -name "*.a" -exec cp {} /llama-install/lib/ \; && \
+    find ggml/src -name "*.a" -exec cp {} /llama-install/lib/ \; 2>/dev/null || true && \
     # Copy headers
     cp -r include/* /llama-install/include/ && \
-    cp -r ggml/include/* /llama-install/include/ && \
+    cp -r ggml/include/* /llama-install/include/ 2>/dev/null || true && \
+    # Also copy common headers if they exist
+    cp -r common/*.h /llama-install/include/ 2>/dev/null || true && \
     # List what we copied for debugging
     echo "Libraries copied:" && ls -la /llama-install/lib/ && \
     echo "Headers copied:" && ls -la /llama-install/include/
@@ -120,7 +123,7 @@ FetchContent_MakeAvailable(json)
 # Main executable
 add_executable(jic-server server.cpp)
 
-# Link libraries
+# Link libraries (order matters for static linking)
 target_link_libraries(jic-server 
     PRIVATE 
     llama
@@ -129,7 +132,15 @@ target_link_libraries(jic-server
     Threads::Threads
     curl
     openblas
+    m
+    ${CMAKE_DL_LIBS}
 )
+
+# Add any additional ggml libraries if they exist
+file(GLOB GGML_LIBS /llama-install/lib/libggml*.a)
+foreach(lib ${GGML_LIBS})
+    target_link_libraries(jic-server PRIVATE ${lib})
+endforeach()
 
 # Include directories
 target_include_directories(jic-server PRIVATE 
