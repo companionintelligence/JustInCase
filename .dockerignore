@@ -1,55 +1,96 @@
 # Git files
 .git
 .gitignore
+.gitattributes
 
-# Python cache
+# Python cache (no longer needed for C++ version)
 __pycache__
 *.pyc
 *.pyo
 *.pyd
 .Python
 *.egg-info
-
-# Don't ignore config.py
-!config.py
+venv/
+ENV/
 
 # Data files (these are mounted as volumes)
 data/
 sources/
 pdfs/
+gguf_models/
 
 # Documentation
 docs/
 *.md
+LICENSE
+TODO.md
 
 # IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
 # OS files
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Test files
 test.sh
 *.test
 
-# Scripts
-pull-models.sh
-check-models.sh
-download-models.sh
-download-models-local.sh
-copy-local-models.sh
-prepare-models.sh
-init-ollama.sh
-check-ollama-models.sh
-verify-models.sh
+# Helper scripts (not needed in container)
+helper-scripts/
+check-prebuilt.sh
+fast-build.sh
+
+# Build artifacts
+build/
+cmake-build-*/
+*.o
+*.a
+*.so
+*.dylib
 
 # Build cache
 .buildx-cache/
+.cache/
 
 # Environment files
 .env
 .env.*
+
+# Logs
+*.log
+
+# Screenshots and media
+screenshot.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.mov
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+
+# macOS specific
+.Spotlight-V100
+.Trashes
+.VolumeIcon.icns
+.com.apple.*
+.fseventsd
+
+# Aider
+.aider*
