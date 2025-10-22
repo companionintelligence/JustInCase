@@ -9,13 +9,15 @@ echo ""
 # Create models directory
 mkdir -p ./gguf_models
 
-# Get model names from config
+# Get model names and files from config
 LLM_MODEL=$(python3 -c "from config import LLM_MODEL; print(LLM_MODEL)" 2>/dev/null || echo "llama3.2")
 EMBEDDING_MODEL=$(python3 -c "from config import EMBEDDING_MODEL; print(EMBEDDING_MODEL)" 2>/dev/null || echo "nomic-embed-text")
+LLAMA_FILE=$(python3 -c "from config import LLAMA_GGUF_FILE; print(LLAMA_GGUF_FILE)" 2>/dev/null)
+NOMIC_FILE=$(python3 -c "from config import NOMIC_GGUF_FILE; print(NOMIC_GGUF_FILE)" 2>/dev/null)
 
 echo "📋 Required models:"
-echo "  - LLM: $LLM_MODEL"
-echo "  - Embeddings: $EMBEDDING_MODEL"
+echo "  - LLM: $LLM_MODEL (expecting $LLAMA_FILE)"
+echo "  - Embeddings: $EMBEDDING_MODEL (expecting $NOMIC_FILE)"
 echo ""
 
 # Check if GGUF files exist
@@ -25,18 +27,7 @@ echo ""
 if [ ! -d "./gguf_models" ]; then
     echo "❌ No gguf_models directory found!"
     echo ""
-    echo "📥 To download GGUF files manually:"
-    echo ""
-    echo "1. For Llama 3.2 (1B or 3B):"
-    echo "   Visit: https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF"
-    echo "   Or: https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF"
-    echo "   Download a quantized version (e.g., Q4_K_M.gguf)"
-    echo ""
-    echo "2. For nomic-embed-text:"
-    echo "   Visit: https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF"
-    echo "   Download: nomic-embed-text-v1.5.Q4_K_M.gguf"
-    echo ""
-    echo "3. Place the .gguf files in ./gguf_models/"
+    echo "📥 Run ./fetch-models.sh for download instructions"
     echo ""
     exit 1
 fi

@@ -59,17 +59,11 @@ find Survival-Data/HOME -type f -iname "*.pdf" -exec cp {} sources/ \;
    # Create directory
    mkdir -p gguf_models
    
-   # Download these files from HuggingFace:
-   # 
-   # Llama 3.2 (choose one):
-   # - https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF
-   #   Download: Llama-3.2-1B-Instruct-Q4_K_M.gguf
-   # 
-   # Nomic embed:
-   # - https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF
-   #   Download: nomic-embed-text-v1.5.Q4_K_M.gguf
-   # 
-   # Place both .gguf files in ./gguf_models/
+   # Run this for download instructions and URLs:
+   ./fetch-models.sh
+   
+   # The script will show you the exact URLs and wget commands
+   # Place downloaded .gguf files in ./gguf_models/
    ```
 
 2. **Load models into Docker** (no internet required):

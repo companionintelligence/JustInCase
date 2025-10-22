@@ -7,9 +7,13 @@ echo "This system requires models to be downloaded LOCALLY before use."
 echo "Docker will NOT download models from the internet."
 echo ""
 
-# Get model names from config
+# Get model names and URLs from config
 LLM_MODEL=$(python3 -c "from config import LLM_MODEL; print(LLM_MODEL)" 2>/dev/null || echo "llama3.2")
 EMBEDDING_MODEL=$(python3 -c "from config import EMBEDDING_MODEL; print(EMBEDDING_MODEL)" 2>/dev/null || echo "nomic-embed-text")
+LLAMA_URL=$(python3 -c "from config import LLAMA_GGUF_URL; print(LLAMA_GGUF_URL)" 2>/dev/null)
+LLAMA_FILE=$(python3 -c "from config import LLAMA_GGUF_FILE; print(LLAMA_GGUF_FILE)" 2>/dev/null)
+NOMIC_URL=$(python3 -c "from config import NOMIC_GGUF_URL; print(NOMIC_GGUF_URL)" 2>/dev/null)
+NOMIC_FILE=$(python3 -c "from config import NOMIC_GGUF_FILE; print(NOMIC_GGUF_FILE)" 2>/dev/null)
 
 echo "📋 Required models:"
 echo "  - LLM: $LLM_MODEL"
@@ -18,16 +22,19 @@ echo ""
 
 echo "STEP 1: Download GGUF files manually"
 echo "===================================="
-echo "Download these files from HuggingFace:"
+echo "Download these files:"
 echo ""
-echo "For Llama 3.2 (choose one):"
-echo "  • https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF"
-echo "  • https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF"
-echo "  Download: Llama-3.2-1B-Instruct-Q4_K_M.gguf (or similar)"
+echo "1. Llama 3.2 GGUF:"
+echo "   URL: $LLAMA_URL"
+echo "   File: $LLAMA_FILE"
 echo ""
-echo "For nomic-embed-text:"
-echo "  • https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF"
-echo "  Download: nomic-embed-text-v1.5.Q4_K_M.gguf"
+echo "2. Nomic Embed GGUF:"
+echo "   URL: $NOMIC_URL"
+echo "   File: $NOMIC_FILE"
+echo ""
+echo "You can download with wget or curl:"
+echo "  wget -P gguf_models/ \"$LLAMA_URL\""
+echo "  wget -P gguf_models/ \"$NOMIC_URL\""
 echo ""
 
 echo "STEP 2: Place files in ./gguf_models/"
