@@ -393,6 +393,7 @@ std::vector<float> get_embedding(const std::string& text) {
     
     // Limit token count to prevent overflow
     if (n_prompt > 8000) {
+        std::cout << "Truncating embedding input from " << n_prompt << " to 8000 tokens" << std::endl;
         n_prompt = 8000;
     }
     
@@ -405,8 +406,12 @@ std::vector<float> get_embedding(const std::string& text) {
     }
     tokens.resize(actual_tokens);
     
+    std::cout << "Tokenized to " << actual_tokens << " tokens for embedding" << std::endl;
+    
     // Prepare batch
     llama_batch batch = llama_batch_get_one(tokens.data(), tokens.size());
+    
+    std::cout << "About to evaluate embedding batch..." << std::endl;
     
     // Evaluate
     int decode_result = llama_decode(embedding_ctx, batch);
@@ -570,6 +575,11 @@ std::string generate_llm_response(const std::string& prompt) {
 // Split text into chunks
 std::vector<std::string> split_text(const std::string& text) {
     std::vector<std::string> chunks;
+    
+    // Reserve space to avoid reallocations
+    size_t estimated_chunks = (text.length() / (CHUNK_SIZE - CHUNK_OVERLAP)) + 1;
+    chunks.reserve(estimated_chunks);
+    
     size_t start = 0;
     
     while (start < text.length()) {
@@ -585,7 +595,14 @@ std::vector<std::string> split_text(const std::string& text) {
         
         chunks.push_back(text.substr(start, end - start));
         start = end - CHUNK_OVERLAP;
+        
+        // Prevent infinite loop if overlap is too large
+        if (start <= chunks.size() * CHUNK_OVERLAP) {
+            start = chunks.size() * (CHUNK_SIZE - CHUNK_OVERLAP);
+        }
     }
+    
+    std::cout << "Created " << chunks.size() << " chunks from " << text.length() << " characters" << std::endl;
     
     return chunks;
 }
@@ -714,17 +731,53 @@ void background_ingestion() {
                         continue;
                     }
                     
+                    std::cout << "About to split text into chunks..." << std::endl;
+                    
                     // Split into chunks
                     auto chunks = split_text(text);
                     std::cout << "Split " << rel_path << " into " << chunks.size() << " chunks" << std::endl;
+                    
+                    // Log memory usage
+                    std::ifstream status_file("/proc/self/status");
+                    std::string line;
+                    while (std::getline(status_file, line)) {
+                        if (line.find("VmRSS:") == 0 || line.find("VmSize:") == 0) {
+                            std::cout << "Memory: " << line << std::endl;
+                        }
+                    }
                     
                     int chunk_count = 0;
                     for (const auto& chunk : chunks) {
                         if (chunk.length() > 100) {
                             try {
-                                std::cout << "Getting embedding for chunk " << ++chunk_count << "/" << chunks.size() << std::endl;
+                                std::cout << "Getting embedding for chunk " << ++chunk_count << "/" << chunks.size() 
+                                          << " (size: " << chunk.length() << " chars)" << std::endl;
+                                
                                 auto embedding = get_embedding(chunk);
                                 if (embedding.size() == EMBEDDING_DIM) {
+                                    // Check memory before adding
+                                    size_t new_size = new_embeddings.size() + embedding.size();
+                                    if (new_size > 10000000) { // ~40MB for float vectors
+                                        std::cout << "Flushing embeddings to index due to memory constraints" << std::endl;
+                                        
+                                        // Update index with current batch
+                                        if (!new_embeddings.empty()) {
+                                            try {
+                                                std::lock_guard<std::mutex> lock(index_mutex);
+                                                int n_vectors = new_embeddings.size() / EMBEDDING_DIM;
+                                                vector_index->add_batch(n_vectors, new_embeddings.data());
+                                                documents.insert(documents.end(), new_docs.begin(), new_docs.end());
+                                                save_index();
+                                                
+                                                // Clear for next batch
+                                                new_embeddings.clear();
+                                                new_docs.clear();
+                                            } catch (const std::exception& e) {
+                                                std::cerr << "Error flushing embeddings: " << e.what() << std::endl;
+                                            }
+                                        }
+                                    }
+                                    
                                     new_embeddings.insert(new_embeddings.end(), embedding.begin(), embedding.end());
                                     new_docs.push_back({rel_path, chunk});
                                 } else {
