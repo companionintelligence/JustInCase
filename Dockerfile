@@ -134,13 +134,21 @@ EOF
 # Build our server using pre-built llama
 RUN echo "=== Starting server build ===" && \
     echo "CPU cores available: $(nproc)" && \
+    echo "System info:" && \
+    uname -a && \
+    echo "Memory available:" && \
+    free -h && \
+    echo "=== Configuring CMake ===" && \
     cmake -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_FLAGS="-O3 -march=armv8-a" \
     -DCMAKE_VERBOSE_MAKEFILE=ON \
+    -DCMAKE_RULE_MESSAGES=ON \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
     . && \
     echo "=== CMake configuration complete, starting compilation ===" && \
-    cmake --build build --verbose -- -j$(nproc) VERBOSE=1
+    echo "Building with $(nproc) parallel jobs" && \
+    cmake --build build --verbose -- -j$(nproc) VERBOSE=1 V=1
 
 # Runtime image
 FROM --platform=linux/arm64 ubuntu:24.04

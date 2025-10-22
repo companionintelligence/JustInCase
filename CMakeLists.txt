@@ -56,6 +56,13 @@ add_executable(jic-server server.cpp)
 
 # Enable verbose output during compilation
 set(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL "Enable verbose build output" FORCE)
+set(CMAKE_RULE_MESSAGES ON CACHE BOOL "Enable rule messages" FORCE)
+
+# Print build configuration
+message(STATUS "Build configuration:")
+message(STATUS "  CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+message(STATUS "  CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+message(STATUS "  CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 
 # Link libraries
 target_link_libraries(jic-server 

@@ -14,6 +14,7 @@ services:
       dockerfile: Dockerfile
       args:
         BUILDKIT_PROGRESS: plain
+        DOCKER_BUILDKIT: 1
     container_name: jic
     depends_on:
       - tika
