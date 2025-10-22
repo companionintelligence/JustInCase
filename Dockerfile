@@ -40,8 +40,9 @@ RUN cd llama.cpp && \
         -DGGML_CCACHE=OFF \
         -DLLAMA_CURL=OFF \
         -DGGML_STATIC=ON \
+        -DGGML_CPU_BACKEND=ON \
         . && \
-    cmake --build build -- -j$(nproc) && \
+    cmake --build build --target llama --target ggml -- -j$(nproc) && \
     # Create a package of just what we need
     mkdir -p /llama-install/lib /llama-install/include && \
     # Find and copy ALL static libraries from the entire build tree
@@ -53,8 +54,13 @@ RUN cd llama.cpp && \
     cp -r src/*.h /llama-install/include/ 2>/dev/null || true && \
     # List what we copied for debugging
     echo "=== Libraries copied ===" && ls -la /llama-install/lib/ && \
-    echo "=== Checking for missing symbols ===" && \
-    nm /llama-install/lib/*.a 2>/dev/null | grep -E "ggml_backend_cpu_reg" | head -10 || echo "Symbol ggml_backend_cpu_reg not found!"
+    echo "=== Checking for ggml_backend_cpu_reg symbol ===" && \
+    for lib in /llama-install/lib/*.a; do \
+        echo "Checking $lib:" && \
+        nm "$lib" 2>/dev/null | grep "ggml_backend_cpu_reg" | head -5 || true; \
+    done && \
+    echo "=== All symbols in libggml.a ===" && \
+    nm /llama-install/lib/libggml.a 2>/dev/null | grep "backend" | head -20 || true
 
 # Third stage: Build our server (this is the only part that rebuilds when server.cpp changes)
 FROM --platform=linux/arm64 ubuntu:24.04 AS app-builder

@@ -64,31 +64,23 @@ message(STATUS "  CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 
 # Link libraries (order matters for static linking)
 if(EXISTS "/llama-install/lib/libllama.a")
-    # When using pre-built libraries, link them explicitly in dependency order
-    # Start with the most dependent libraries first
-    set(LLAMA_LIBS "")
+    # When using pre-built libraries, we need to link ALL of them
+    # Get all static libraries
+    file(GLOB ALL_LIBS "/llama-install/lib/*.a")
     
-    # First, add the main llama library
-    if(EXISTS "/llama-install/lib/libllama.a")
-        list(APPEND LLAMA_LIBS "/llama-install/lib/libllama.a")
-    endif()
+    # Print what we found
+    message(STATUS "Found libraries in /llama-install/lib:")
+    foreach(lib ${ALL_LIBS})
+        message(STATUS "  ${lib}")
+    endforeach()
     
-    # Then add all ggml libraries in the correct order
-    # The order matters: CPU backend must come before general backend
-    file(GLOB GGML_LIBS "/llama-install/lib/libggml*.a")
-    
-    # Sort to ensure consistent order
-    list(SORT GGML_LIBS)
-    
-    # Add common library if it exists
-    if(EXISTS "/llama-install/lib/libcommon.a")
-        list(APPEND LLAMA_LIBS "/llama-install/lib/libcommon.a")
-    endif()
-    
+    # Link everything - let the linker figure out the dependencies
+    # We use --whole-archive to ensure all symbols are included
     target_link_libraries(jic-server 
         PRIVATE 
-        ${LLAMA_LIBS}
-        ${GGML_LIBS}
+        -Wl,--whole-archive
+        ${ALL_LIBS}
+        -Wl,--no-whole-archive
         nlohmann_json
         Threads::Threads
         curl
@@ -98,12 +90,6 @@ if(EXISTS "/llama-install/lib/libllama.a")
         stdc++  # C++ standard library
         pthread  # POSIX threads
     )
-    
-    # Print the libraries being linked for debugging
-    message(STATUS "Linking with libraries:")
-    foreach(lib ${LLAMA_LIBS} ${GGML_LIBS})
-        message(STATUS "  ${lib}")
-    endforeach()
 else()
     # When building from source
     target_link_libraries(jic-server 
