@@ -3,6 +3,7 @@ FROM --platform=linux/arm64 ubuntu:24.04 AS builder
 # Install build dependencies
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     build-essential \
+    cmake \
     git \
     wget \
     libopenblas-dev \
@@ -10,12 +11,6 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     libssl-dev \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
-
-# Install newer CMake
-RUN wget https://github.com/Kitware/CMake/releases/download/v3.27.7/cmake-3.27.7-linux-x86_64.sh && \
-    chmod +x cmake-3.27.7-linux-x86_64.sh && \
-    ./cmake-3.27.7-linux-x86_64.sh --skip-license --prefix=/usr/local && \
-    rm cmake-3.27.7-linux-x86_64.sh
 
 WORKDIR /build
 
