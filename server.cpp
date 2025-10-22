@@ -211,6 +211,8 @@ public:
 
 // Global variables
 std::mutex index_mutex;
+std::mutex llm_mutex;  // Mutex for LLM operations
+std::mutex embedding_mutex;  // Mutex for embedding operations
 SimpleVectorIndex* vector_index = nullptr;
 std::vector<Document> documents;
 IngestionStatus ingestion_status;
@@ -299,7 +301,13 @@ bool init_models() {
     ctx_params.n_ctx = 2048;
     ctx_params.n_batch = 512;
     ctx_params.n_threads = 4;
+    ctx_params.n_threads_batch = 4;
     llm_ctx = llama_init_from_model(llm_model, ctx_params);
+    
+    if (!llm_ctx) {
+        std::cerr << "Failed to create LLM context" << std::endl;
+        return false;
+    }
     
     // Initialize embedding model
     embedding_model = llama_model_load_from_file(NOMIC_MODEL_PATH.c_str(), model_params);
@@ -310,13 +318,24 @@ bool init_models() {
     
     ctx_params.n_ctx = 8192;
     ctx_params.embeddings = true;
+    ctx_params.pooling_type = LLAMA_POOLING_TYPE_MEAN;
     embedding_ctx = llama_init_from_model(embedding_model, ctx_params);
+    
+    if (!embedding_ctx) {
+        std::cerr << "Failed to create embedding context" << std::endl;
+        return false;
+    }
     
     return true;
 }
 
 // Get embedding for text
 std::vector<float> get_embedding(const std::string& text) {
+    std::lock_guard<std::mutex> lock(embedding_mutex);
+    
+    // Reset the context state
+    llama_kv_cache_seq_rm(embedding_ctx, 0, 0, -1);
+    
     // Get vocab from model
     const llama_vocab* vocab = llama_model_get_vocab(embedding_model);
     
@@ -363,6 +382,11 @@ std::vector<float> get_embedding(const std::string& text) {
 
 // Generate LLM response
 std::string generate_llm_response(const std::string& prompt) {
+    std::lock_guard<std::mutex> lock(llm_mutex);
+    
+    // Reset the context state
+    llama_kv_cache_seq_rm(llm_ctx, 0, 0, -1);
+    
     // Get vocab from model
     const llama_vocab* vocab = llama_model_get_vocab(llm_model);
     
@@ -396,12 +420,11 @@ std::string generate_llm_response(const std::string& prompt) {
     
     // Check context size
     int n_ctx = llama_n_ctx(llm_ctx);
-    int n_kv_req = prompt_tokens.size() + (int)(n_ctx * 0.5f); // Leave room for response
     
-    if (n_kv_req > n_ctx) {
-        // Context size exceeded, we need to truncate or clear
-        // For now, we'll proceed with what we have
-        std::cerr << "Warning: Context size may be exceeded" << std::endl;
+    if (prompt_tokens.size() > n_ctx - 512) {
+        // Prompt too large, truncate it
+        prompt_tokens.resize(n_ctx - 512);
+        std::cerr << "Warning: Prompt truncated to fit context" << std::endl;
     }
     
     // Prepare batch for the prompt
@@ -444,8 +467,9 @@ std::string generate_llm_response(const std::string& prompt) {
         batch = llama_batch_get_one(&new_token_id, 1);
         
         // Check if we're approaching context limit
-        if (n_decode + prompt_tokens.size() > n_ctx - 100) {
-            // Leave some buffer space
+        if (prompt_tokens.size() + n_decode + 1 >= n_ctx) {
+            // Context full, stop generation
+            std::cerr << "Context limit reached, stopping generation" << std::endl;
             break;
         }
         
@@ -617,6 +641,8 @@ void background_ingestion() {
                     
                 } catch (const std::exception& e) {
                     std::cerr << "Error processing " << rel_path << ": " << e.what() << std::endl;
+                } catch (...) {
+                    std::cerr << "Unknown error processing " << rel_path << std::endl;
                 }
             }
             
@@ -930,9 +956,14 @@ int main() {
             continue;
         }
         
-        // Handle client in a new thread
-        std::thread client_thread(handle_client, client_socket);
-        client_thread.detach();
+        // Handle client in a new thread with error handling
+        try {
+            std::thread client_thread(handle_client, client_socket);
+            client_thread.detach();
+        } catch (const std::exception& e) {
+            std::cerr << "Error creating client thread: " << e.what() << std::endl;
+            close(client_socket);
+        }
     }
     
     // Cleanup
