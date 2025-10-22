@@ -13,9 +13,12 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      - ./ollama_models:/root/.ollama
+      - ollama_data:/root/.ollama
     environment:
       - OLLAMA_MODELS=${LLM_MODEL:-llama3.2},${EMBEDDING_MODEL:-nomic-embed-text}
+
+volumes:
+  ollama_data:
 
   survival-rag:
     build:

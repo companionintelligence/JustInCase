@@ -50,32 +50,7 @@ git clone https://github.com/PR0M3TH3AN/Survival-Data.git
 find Survival-Data/HOME -type f -iname "*.pdf" -exec cp {} sources/ \;
 ```
 
-### 3. Prepare models (required)
-
-```bash
-# Make the script executable
-chmod +x prepare-models.sh
-
-# Default: Fetch models directly (no local Ollama required)
-./prepare-models.sh
-
-# Or use your local Ollama installation (if you have one)
-USE_LOCAL_OLLAMA=true ./prepare-models.sh
-```
-
-The script will download models into `./ollama_models` for Docker to use.
-
-**Default behavior (USE_LOCAL_OLLAMA=false):**
-- Downloads models directly using a temporary Docker container
-- No local Ollama installation required
-- Models are stored in `./ollama_models`
-
-**Optional: Use local Ollama (USE_LOCAL_OLLAMA=true):**
-- Requires Ollama installed locally
-- Copies models from `~/.ollama` to `./ollama_models`
-- Pulls any missing models to your local Ollama first
-
-### 4. Start the system
+### 3. Start the system
 
 ```bash
 docker compose up --build
@@ -83,11 +58,19 @@ docker compose up --build
 
 This:
 - Launches Apache Tika
-- Launches Ollama (using pre-copied models)
+- Launches Ollama
 - Indexes your PDFs
 - Starts the Flask API + web UI on port `8080`
 
-**Note:** Docker will NEVER download models. It only uses what's in `./ollama_models`!
+**Note:** On first run, you'll need to import models:
+
+```bash
+# After docker compose up, import the models
+chmod +x import-models.sh
+./import-models.sh
+```
+
+This downloads models into the Docker volume where they persist across restarts.
 
 ---
 
@@ -144,35 +127,32 @@ All model references are centralized in `config.py` for easy modification.
 
 ### Model Management
 
-Models are stored in `./ollama_models` and mounted read-only in Docker.
+Models are stored in Docker volume `ollama_data` and persist across container restarts.
 
 **Important:** 
-- Docker NEVER downloads models from the internet
-- Models are in `./ollama_models` (git-ignored)
-- Docker mounts this directory read-only
+- Models are stored in Docker volume (not local filesystem)
+- Models persist across container restarts
 - ~1.6GB total (varies by model choice)
 - Default models: llama3.2 (LLM) and nomic-embed-text (embeddings)
 
-**Model preparation options:**
-- **Default**: Fetch directly using Docker (no local Ollama needed)
-- **Optional**: Copy from local Ollama with `USE_LOCAL_OLLAMA=true`
-
 ### Workflow:
 
-1. **Prepare models** (choose one):
-   ```bash
-   # Default: Fetch directly (recommended)
-   ./prepare-models.sh
-   
-   # Or use local Ollama if you have it
-   USE_LOCAL_OLLAMA=true ./prepare-models.sh
-   ```
-
-2. **Run Docker**:
+1. **Start the system**:
    ```bash
    docker compose up --build
    ```
-   Docker will use the models from `./ollama_models` and never attempt to download anything.
+
+2. **Import models** (first time only):
+   ```bash
+   ./import-models.sh
+   ```
+   This downloads models into the Docker volume where they persist.
+
+3. **Subsequent runs**:
+   ```bash
+   docker compose up
+   ```
+   Models are already in the volume, no re-download needed.
 
 ### If models are missing:
 
