@@ -8,7 +8,6 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
 # Service URLs
 TIKA_URL = os.getenv("TIKA_URL", "http://tika:9998")
 LLM_URL = os.getenv("LLM_URL", "http://llama-cpp-llm:8080")
-EMBED_URL = os.getenv("EMBED_URL", "http://llama-cpp-embed:8080")
 
 
 # GGUF Model Download URLs

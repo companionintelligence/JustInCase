@@ -1,5 +1,4 @@
 flask
 requests
 faiss-cpu
-numpy
 nomic
