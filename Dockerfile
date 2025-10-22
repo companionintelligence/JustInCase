@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM python:3.11-slim-bookworm
+FROM python:3.13-slim-bookworm
 
 WORKDIR /app
 
@@ -15,10 +15,12 @@ COPY requirements.txt .
 RUN mkdir -p /root/.cache/pip
 
 # Install llama-cpp-python
-# Use a specific version with pre-built wheels
+# Try to use pre-built wheels from the official index
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --cache-dir=/root/.cache/pip --upgrade pip wheel setuptools && \
-    pip install --cache-dir=/root/.cache/pip "llama-cpp-python==0.3.8"
+    pip install --cache-dir=/root/.cache/pip \
+    --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu \
+    llama-cpp-python
 
 # Install other requirements
 RUN --mount=type=cache,target=/root/.cache/pip \
