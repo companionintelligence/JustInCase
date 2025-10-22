@@ -16,7 +16,17 @@ def get_embedding(text):
     })
     if response.status_code != 200:
         raise Exception(f"Failed to get embedding: {response.text}")
-    embedding = response.json()["embeddings"][0]
+    
+    result = response.json()
+    
+    # Handle the response format
+    if isinstance(result, dict) and "embeddings" in result:
+        embedding = result["embeddings"][0]
+    elif isinstance(result, list):
+        embedding = result[0] if result else []
+    else:
+        raise Exception(f"Unexpected embedding response format: {result}")
+    
     print(f"Embedding dimension during query: {len(embedding)}")
     return embedding
 

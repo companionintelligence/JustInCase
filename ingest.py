@@ -60,7 +60,22 @@ def get_embedding(text):
     })
     if response.status_code != 200:
         raise Exception(f"Failed to get embedding: {response.text}")
-    embedding = response.json()["embeddings"][0]
+    
+    result = response.json()
+    
+    # Debug: print the response structure
+    print(f"Embedding response type: {type(result)}")
+    if isinstance(result, dict):
+        print(f"Response keys: {result.keys()}")
+    
+    # Handle the response format
+    if isinstance(result, dict) and "embeddings" in result:
+        embedding = result["embeddings"][0]
+    elif isinstance(result, list):
+        embedding = result[0] if result else []
+    else:
+        raise Exception(f"Unexpected embedding response format: {result}")
+    
     print(f"Embedding dimension during ingestion: {len(embedding)}")
     return embedding
 

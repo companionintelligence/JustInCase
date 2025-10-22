@@ -51,10 +51,19 @@ def embed():
                            json={"content": text})
         if resp.status_code == 200:
             result = resp.json()
-            embedding = result.get("embedding", [])
+            # Handle both dict and list responses from llama.cpp
+            if isinstance(result, list):
+                # If it's already a list, use it directly
+                embedding = result
+            elif isinstance(result, dict):
+                # If it's a dict, extract the embedding
+                embedding = result.get("embedding", [])
+            else:
+                raise ValueError(f"Unexpected response type: {type(result)}")
+            
             return jsonify({"embeddings": [embedding]})
         else:
-            return jsonify({"error": "Embedding server error"}), 500
+            return jsonify({"error": f"Embedding server error: {resp.text}"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
