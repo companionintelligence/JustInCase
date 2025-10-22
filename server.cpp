@@ -69,6 +69,19 @@ std::string extract_text_with_tika(const std::string& filepath) {
     // Headers
     struct curl_slist* headers = NULL;
     headers = curl_slist_append(headers, "Accept: text/plain");
+    
+    // Determine content type based on file extension
+    std::string content_type = "application/octet-stream";
+    if (string_ends_with(filepath, ".pdf")) {
+        content_type = "application/pdf";
+    } else if (string_ends_with(filepath, ".txt")) {
+        content_type = "text/plain";
+    } else if (string_ends_with(filepath, ".html") || string_ends_with(filepath, ".htm")) {
+        content_type = "text/html";
+    }
+    
+    std::string content_type_header = "Content-Type: " + content_type;
+    headers = curl_slist_append(headers, content_type_header.c_str());
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     
     // Response handling
@@ -77,6 +90,10 @@ std::string extract_text_with_tika(const std::string& filepath) {
     
     // Perform request
     CURLcode res = curl_easy_perform(curl);
+    
+    // Get HTTP response code
+    long http_code = 0;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
     
     // Cleanup
     curl_slist_free_all(headers);
@@ -87,6 +104,13 @@ std::string extract_text_with_tika(const std::string& filepath) {
         return "";
     }
     
+    if (http_code != 200) {
+        std::cerr << "Tika HTTP error: " << http_code << " for file: " << filepath << std::endl;
+        std::cerr << "Response: " << response.substr(0, 200) << "..." << std::endl;
+        return "";
+    }
+    
+    std::cout << "Successfully extracted " << response.length() << " characters from " << filepath << std::endl;
     return response;
 }
 
@@ -323,7 +347,7 @@ std::vector<float> get_embedding(const std::string& text) {
     }
     
     // Get actual embedding dimension from model
-    int n_embd = llama_n_embd(embedding_model);
+    int n_embd = llama_model_n_embd(embedding_model);
     if (n_embd != EMBEDDING_DIM) {
         std::cerr << "Warning: Model embedding dimension " << n_embd << " doesn't match expected " << EMBEDDING_DIM << std::endl;
     }
