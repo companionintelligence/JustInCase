@@ -59,11 +59,11 @@ docker compose up --build
 This:
 - Launches Apache Tika
 - Launches Ollama
-- Downloads models to `./ollama_models` (first run only, ~1.6GB)
+- Downloads models (first run only, ~1.6GB)
 - Indexes your PDFs
 - Starts the Flask API + web UI on port `8080`
 
-**Note:** Models are stored in `./ollama_models` and persist across Docker rebuilds, so you only download them once!
+**Note:** Models are stored in a Docker volume and persist across rebuilds, so you only download them once!
 
 ---
 
@@ -99,7 +99,13 @@ This verifies:
 
 ### Model Management
 
-Models are stored in a Docker volume and will be automatically downloaded on first run. The models persist across container restarts but not `docker compose down -v`.
+Models are stored in a Docker volume (`ollama_data`) and will be automatically downloaded on first run. 
+
+**Important:** Models persist across:
+- ✅ `docker compose down` and `docker compose up`
+- ✅ `docker compose up --build` (rebuilding containers)
+- ✅ Code changes and container restarts
+- ❌ Only lost with `docker compose down -v` (removes volumes)
 
 ### Manually downloading models
 
