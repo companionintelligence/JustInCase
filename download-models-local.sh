@@ -38,15 +38,15 @@ if ! command -v ollama &> /dev/null; then
     exit 1
 fi
 
-# Set OLLAMA_MODELS environment variable to use our local directory
-export OLLAMA_MODELS="$(pwd)/ollama_models_local"
-
 # Source the Python config to get model names
 LLM_MODEL=$(python3 -c "from config import LLM_MODEL; print(LLM_MODEL)" 2>/dev/null || echo "llama3.2")
 EMBEDDING_MODEL=$(python3 -c "from config import EMBEDDING_MODEL; print(EMBEDDING_MODEL)" 2>/dev/null || echo "nomic-embed-text")
 
+# Set OLLAMA_DATA to use our local directory
+export OLLAMA_DATA="$(pwd)/ollama_models_local"
+
 echo "📥 Pulling $LLM_MODEL..."
-OLLAMA_MODELS="$(pwd)/ollama_models_local" ollama pull "$LLM_MODEL"
+OLLAMA_DATA="$(pwd)/ollama_models_local" ollama pull "$LLM_MODEL"
 if [ $? -ne 0 ]; then
     echo "❌ Failed to download $LLM_MODEL"
     exit 1
@@ -54,7 +54,7 @@ fi
 
 echo ""
 echo "📥 Pulling $EMBEDDING_MODEL..."
-OLLAMA_MODELS="$(pwd)/ollama_models_local" ollama pull "$EMBEDDING_MODEL"
+OLLAMA_DATA="$(pwd)/ollama_models_local" ollama pull "$EMBEDDING_MODEL"
 if [ $? -ne 0 ]; then
     echo "❌ Failed to download $EMBEDDING_MODEL"
     exit 1
