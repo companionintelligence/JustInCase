@@ -42,9 +42,14 @@ RUN cd llama.cpp && \
     cmake --build build -- -j$(nproc) && \
     # Create a package of just what we need
     mkdir -p /llama-install/lib /llama-install/include && \
-    cp build/*.a /llama-install/lib/ && \
-    cp include/*.h /llama-install/include/ && \
-    cp -r ggml/include/* /llama-install/include/
+    # Find and copy all static libraries
+    find build -name "*.a" -exec cp {} /llama-install/lib/ \; && \
+    # Copy headers
+    cp -r include/* /llama-install/include/ && \
+    cp -r ggml/include/* /llama-install/include/ && \
+    # List what we copied for debugging
+    echo "Libraries copied:" && ls -la /llama-install/lib/ && \
+    echo "Headers copied:" && ls -la /llama-install/include/
 
 # Third stage: Build our server (this is the only part that rebuilds when server.cpp changes)
 FROM --platform=linux/arm64 ubuntu:24.04 AS app-builder
