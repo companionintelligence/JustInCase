@@ -14,12 +14,13 @@ COPY requirements.txt .
 # Create pip cache directory
 RUN mkdir -p /root/.cache/pip
 
-# Install llama-cpp-python separately with specific build options
-# This tries to use pre-built wheels when available
+# Install llama-cpp-python using pre-built wheels
+# This avoids compilation issues
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --cache-dir=/root/.cache/pip --upgrade pip wheel setuptools && \
-    CMAKE_ARGS="-DLLAMA_BLAS=OFF -DLLAMA_ACCELERATE=OFF -DLLAMA_METAL=OFF" \
-    pip install --cache-dir=/root/.cache/pip llama-cpp-python --no-cache-dir
+    pip install --cache-dir=/root/.cache/pip \
+    --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu \
+    llama-cpp-python
 
 # Install other requirements
 RUN --mount=type=cache,target=/root/.cache/pip \

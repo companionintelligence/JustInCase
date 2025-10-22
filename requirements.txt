@@ -1,4 +1,3 @@
 flask
 requests
 faiss-cpu
-# llama-cpp-python installed separately in Dockerfile
