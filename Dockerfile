@@ -21,15 +21,6 @@ WORKDIR /build
 # Clone llama.cpp with minimal depth
 RUN git clone --depth 1 https://github.com/ggerganov/llama.cpp.git
 
-# Install FAISS
-RUN wget https://github.com/facebookresearch/faiss/archive/v1.7.4.tar.gz && \
-    tar -xzf v1.7.4.tar.gz && \
-    cd faiss-1.7.4 && \
-    cmake -B build -DFAISS_ENABLE_GPU=OFF -DFAISS_ENABLE_PYTHON=OFF -DBUILD_TESTING=OFF . && \
-    cmake --build build -- -j$(nproc) && \
-    cmake --install build && \
-    cd .. && rm -rf faiss-1.7.4 v1.7.4.tar.gz
-
 # Copy source files
 COPY server.cpp CMakeLists.txt ./
 

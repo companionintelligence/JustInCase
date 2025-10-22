@@ -12,9 +12,6 @@ find_package(Threads REQUIRED)
 # Add llama.cpp as a subdirectory
 add_subdirectory(llama.cpp)
 
-# Add Faiss
-find_package(faiss REQUIRED)
-
 # Add nlohmann/json
 include(FetchContent)
 FetchContent_Declare(json
@@ -30,7 +27,6 @@ add_executable(jic-server server.cpp)
 target_link_libraries(jic-server 
     PRIVATE 
     llama 
-    faiss
     nlohmann_json::nlohmann_json
     Threads::Threads
     curl

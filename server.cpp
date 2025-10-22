@@ -17,8 +17,6 @@
 #include <curl/curl.h>
 #include "llama.h"
 #include "json.hpp"
-#include "faiss/IndexFlatL2.h"
-#include "faiss/index_io.h"
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
@@ -100,9 +98,84 @@ struct IngestionStatus {
     std::chrono::steady_clock::time_point last_update;
 };
 
+// Simple vector index implementation
+class SimpleVectorIndex {
+private:
+    std::vector<std::vector<float>> embeddings;
+    int dimension;
+    
+public:
+    SimpleVectorIndex(int dim) : dimension(dim) {}
+    
+    void add(const std::vector<float>& embedding) {
+        embeddings.push_back(embedding);
+    }
+    
+    void add_batch(int n, const float* data) {
+        for (int i = 0; i < n; i++) {
+            std::vector<float> embedding(data + i * dimension, data + (i + 1) * dimension);
+            embeddings.push_back(embedding);
+        }
+    }
+    
+    std::vector<std::pair<int, float>> search(const std::vector<float>& query, int k) {
+        std::vector<std::pair<float, int>> distances;
+        
+        for (size_t i = 0; i < embeddings.size(); i++) {
+            float dist = 0;
+            for (int j = 0; j < dimension; j++) {
+                float diff = query[j] - embeddings[i][j];
+                dist += diff * diff;
+            }
+            distances.push_back({dist, i});
+        }
+        
+        std::sort(distances.begin(), distances.end());
+        
+        std::vector<std::pair<int, float>> results;
+        for (int i = 0; i < k && i < distances.size(); i++) {
+            results.push_back({distances[i].second, distances[i].first});
+        }
+        
+        return results;
+    }
+    
+    size_t size() const { return embeddings.size(); }
+    
+    void clear() { embeddings.clear(); }
+    
+    void save(const std::string& path) {
+        std::ofstream file(path, std::ios::binary);
+        int n = embeddings.size();
+        file.write((char*)&n, sizeof(n));
+        file.write((char*)&dimension, sizeof(dimension));
+        for (const auto& emb : embeddings) {
+            file.write((char*)emb.data(), dimension * sizeof(float));
+        }
+    }
+    
+    void load(const std::string& path) {
+        std::ifstream file(path, std::ios::binary);
+        if (!file) return;
+        
+        int n;
+        file.read((char*)&n, sizeof(n));
+        file.read((char*)&dimension, sizeof(dimension));
+        
+        embeddings.clear();
+        embeddings.reserve(n);
+        
+        for (int i = 0; i < n; i++) {
+            std::vector<float> emb(dimension);
+            file.read((char*)emb.data(), dimension * sizeof(float));
+            embeddings.push_back(emb);
+        }
+    }
+};
+
 // Global variables
 std::mutex index_mutex;
-faiss::IndexFlatL2* faiss_index = nullptr;
+SimpleVectorIndex* vector_index = nullptr;
 std::vector<Document> documents;
 IngestionStatus ingestion_status;
 llama_model* llm_model = nullptr;
@@ -316,8 +389,10 @@ std::vector<std::string> split_text(const std::string& text) {
 void load_index() {
     std::lock_guard<std::mutex> lock(index_mutex);
     
-    if (fs::exists("data/index.faiss") && fs::exists("data/metadata.jsonl")) {
-        faiss_index = faiss::read_index("data/index.faiss");
+    vector_index = new SimpleVectorIndex(EMBEDDING_DIM);
+    
+    if (fs::exists("data/index.bin") && fs::exists("data/metadata.jsonl")) {
+        vector_index->load("data/index.bin");
         
         std::ifstream metadata_file("data/metadata.jsonl");
         std::string line;
@@ -329,7 +404,6 @@ void load_index() {
         
         std::cout << "Loaded " << documents.size() << " documents from index" << std::endl;
     } else {
-        faiss_index = new faiss::IndexFlatL2(EMBEDDING_DIM);
         std::cout << "Created new index" << std::endl;
     }
 }
@@ -339,7 +413,7 @@ void save_index() {
     std::lock_guard<std::mutex> lock(index_mutex);
     
     fs::create_directories("data");
-    faiss::write_index(faiss_index, "data/index.faiss");
+    vector_index->save("data/index.bin");
     
     std::ofstream metadata_file("data/metadata.jsonl");
     for (const auto& doc : documents) {
@@ -436,7 +510,7 @@ void background_ingestion() {
             if (!new_embeddings.empty()) {
                 std::lock_guard<std::mutex> lock(index_mutex);
                 int n_vectors = new_embeddings.size() / EMBEDDING_DIM;
-                faiss_index->add(n_vectors, new_embeddings.data());
+                vector_index->add_batch(n_vectors, new_embeddings.data());
                 documents.insert(documents.end(), new_docs.begin(), new_docs.end());
                 save_index();
                 
@@ -516,13 +590,12 @@ std::string handle_query(const std::string& body) {
         // Get query embedding
         auto query_embedding = get_embedding(query);
         
-        // Search in FAISS
-        std::vector<float> distances(SEARCH_TOP_K);
-        std::vector<faiss::idx_t> indices(SEARCH_TOP_K);
+        // Search in vector index
+        std::vector<std::pair<int, float>> results;
         
         {
             std::lock_guard<std::mutex> lock(index_mutex);
-            faiss_index->search(1, query_embedding.data(), SEARCH_TOP_K, distances.data(), indices.data());
+            results = vector_index->search(query_embedding, SEARCH_TOP_K);
         }
         
         // Build context from top matches
@@ -530,12 +603,13 @@ std::string handle_query(const std::string& body) {
         json matches = json::array();
         int chunks_used = 0;
         
-        for (int i = 0; i < SEARCH_TOP_K && chunks_used < MAX_CONTEXT_CHUNKS; i++) {
-            if (indices[i] >= 0 && indices[i] < documents.size()) {
-                context += documents[indices[i]].text + "\n\n";
+        for (const auto& [idx, dist] : results) {
+            if (chunks_used >= MAX_CONTEXT_CHUNKS) break;
+            if (idx >= 0 && idx < documents.size()) {
+                context += documents[idx].text + "\n\n";
                 matches.push_back({
-                    {"filename", documents[indices[i]].filename},
-                    {"text", documents[indices[i]].text}
+                    {"filename", documents[idx].filename},
+                    {"text", documents[idx].text}
                 });
                 chunks_used++;
             }
