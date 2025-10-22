@@ -4,6 +4,7 @@ data/
 # Ollama models (large files)
 ollama_models/
 ollama_models_local/
+gguf_models/
 
 # Aider
 .aider.*

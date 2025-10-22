@@ -50,12 +50,44 @@ git clone https://github.com/PR0M3TH3AN/Survival-Data.git
 find Survival-Data/HOME -type f -iname "*.pdf" -exec cp {} sources/ \;
 ```
 
-### 3. Use your existing local models (NO DOWNLOADS!)
+### 3. Prepare models (choose one method)
 
-If you already have Ollama installed locally with models:
+#### Method A: Use GGUF files (RECOMMENDED for slow connections)
+
+1. **Download GGUF files once** (on a good connection):
+   ```bash
+   # Create directory
+   mkdir -p gguf_models
+   
+   # Download Llama 3.2 GGUF (choose one):
+   # From: https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF
+   # Download: Llama-3.2-1B-Instruct-Q4_K_M.gguf
+   
+   # Download nomic-embed-text GGUF:
+   # From: https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF
+   # Download: nomic-embed-text-v1.5.Q4_K_M.gguf
+   
+   # Place both files in ./gguf_models/
+   ```
+
+2. **Prepare and load models**:
+   ```bash
+   chmod +x prepare-gguf-models.sh load-gguf-models.sh
+   
+   # Create Modelfiles
+   ./prepare-gguf-models.sh
+   
+   # Start Docker
+   docker compose up -d
+   
+   # Load models into Ollama (no internet needed!)
+   ./load-gguf-models.sh
+   ```
+
+#### Method B: Use existing local Ollama (if you have models)
 
 ```bash
-# This just creates a mount point - NO DOWNLOADS!
+# This tries to mount your local ~/.ollama
 chmod +x prepare-local-models.sh
 ./prepare-local-models.sh
 ```
@@ -129,28 +161,26 @@ All model references are centralized in `config.py` for easy modification.
 
 ### Model Management
 
-**NEW APPROACH: Use your existing local Ollama models directly!**
+**RECOMMENDED: Use GGUF files for complete offline control**
 
-**Important:** 
-- Uses YOUR existing ~/.ollama directory (no copying, no downloads!)
-- Models are mounted read-only from your local system
-- NO INTERNET CONNECTION REQUIRED
-- Works with whatever models you already have locally
-- ~1.6GB total (varies by model choice)
+**GGUF Method Benefits:**
+- Download model files ONCE on any connection
+- Store them locally forever
+- Load into Docker Ollama without internet
+- Full control over model versions
+- Works reliably across all systems
 
-### Workflow:
+**Steps:**
+1. Download GGUF files (once, anywhere)
+2. Place in `./gguf_models/`
+3. Run `./prepare-gguf-models.sh`
+4. Run `./load-gguf-models.sh`
+5. Models are loaded and persist in Docker volume
 
-1. **Setup** (one time, no downloads):
-   ```bash
-   ./prepare-local-models.sh
-   ```
-
-2. **Run the system**:
-   ```bash
-   docker compose up
-   ```
-
-3. **That's it!** Your local models are used directly.
+**Alternative: Mount local Ollama**
+- Uses existing `~/.ollama` directory
+- May have compatibility issues
+- Use `./prepare-local-models.sh`
 
 ### If you see "models not found":
 

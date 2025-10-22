@@ -13,9 +13,10 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      # Mount your LOCAL .ollama directory directly - no downloads!
-      # Remove :ro to allow Ollama to write its registry
-      - ${HOME}/.ollama:/root/.ollama
+      # Use Docker volume for Ollama's internal data
+      - ollama_data:/root/.ollama
+      # Mount GGUF models directory for loading
+      - ./gguf_models:/gguf_models:ro
     environment:
       - OLLAMA_MODELS=${LLM_MODEL:-llama3.2},${EMBEDDING_MODEL:-nomic-embed-text}
 
@@ -42,6 +43,7 @@ services:
       - SKIP_MODEL_CHECK=${SKIP_MODEL_CHECK:-false}
     command: ["python3", "start.py"]
 
-# No volumes needed - we mount local .ollama directly
+volumes:
+  ollama_data:
 
 
