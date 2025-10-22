@@ -4,6 +4,7 @@ import sys
 import json
 import faiss
 import requests
+import traceback
 from config import EMBEDDING_MODEL, TIKA_URL, OLLAMA_URL, CHUNK_SIZE, CHUNK_OVERLAP
 
 # Simple text splitter function
@@ -35,6 +36,22 @@ def split_text(text, chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP):
 sources_dir = sys.argv[1] if len(sys.argv) > 1 else "sources"
 os.makedirs("data", exist_ok=True)
 
+# Check if sources directory exists
+if not os.path.exists(sources_dir):
+    print(f"ERROR: Sources directory '{sources_dir}' does not exist!")
+    print(f"Current working directory: {os.getcwd()}")
+    print(f"Directory contents: {os.listdir('.')}")
+    sys.exit(1)
+
+# Check if sources directory has any files
+all_files = []
+for root, dirs, files in os.walk(sources_dir):
+    all_files.extend(files)
+
+if not all_files:
+    print(f"WARNING: No files found in '{sources_dir}' directory!")
+    print(f"Creating empty index...")
+
 def get_embedding(text):
     """Get embedding from Ollama using configured embedding model"""
     response = requests.post(f"{OLLAMA_URL}/api/embed", json={
@@ -51,6 +68,8 @@ texts, docs = [], []
 
 # Process sources recursively
 sources_count = 0
+print(f"Scanning '{sources_dir}' for documents...")
+
 for root, dirs, files in os.walk(sources_dir):
     for fname in files:
         # Skip hidden files and common non-document files
@@ -109,7 +128,10 @@ if embeddings:
     vectors = [[float(val) for val in emb] for emb in embeddings]
     index.add(vectors)
 else:
-    raise Exception("No embeddings generated")
+    print("WARNING: No embeddings generated. Creating empty index...")
+    # Create an empty index with the expected dimension (384 for nomic-embed-text)
+    dimension = 384  # Default dimension for nomic-embed-text
+    index = faiss.IndexFlatL2(dimension)
 
 # Save FAISS index and metadata
 faiss.write_index(index, "data/index.faiss")

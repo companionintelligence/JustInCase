@@ -13,8 +13,12 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # Copy application code
 COPY . .
 
-# Create data directory
-RUN mkdir -p /app/data
+# Create necessary directories
+RUN mkdir -p /app/data /app/sources
+
+# List contents to verify copy
+RUN echo "Contents of /app:" && ls -la /app/ && \
+    echo "Contents of /app/sources:" && ls -la /app/sources/ || echo "Sources directory is empty or missing"
 
 # Expose ports
 EXPOSE 8080 11434

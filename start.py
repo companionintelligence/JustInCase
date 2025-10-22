@@ -77,7 +77,26 @@ def main():
     # Run ingestion if needed
     if not os.path.exists("data/index.faiss"):
         print("Running ingestion...")
-        subprocess.run(["python3", "ingest.py", "sources"], check=True)
+        print(f"Current directory: {os.getcwd()}")
+        print(f"Directory contents: {os.listdir('.')}")
+        
+        # Check if sources directory exists
+        if os.path.exists("sources"):
+            print(f"Sources directory exists. Contents: {os.listdir('sources')}")
+        else:
+            print("ERROR: Sources directory not found!")
+        
+        try:
+            result = subprocess.run(["python3", "ingest.py", "sources"], 
+                                  capture_output=True, text=True, check=True)
+            print("Ingestion output:", result.stdout)
+            if result.stderr:
+                print("Ingestion errors:", result.stderr)
+        except subprocess.CalledProcessError as e:
+            print(f"Ingestion failed with exit code {e.returncode}")
+            print(f"STDOUT: {e.stdout}")
+            print(f"STDERR: {e.stderr}")
+            raise
     
     # Start the main server
     print("Starting main server...")
