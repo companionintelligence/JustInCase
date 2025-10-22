@@ -132,11 +132,15 @@ target_include_directories(jic-server PRIVATE
 EOF
 
 # Build our server using pre-built llama
-RUN cmake -B build \
+RUN echo "=== Starting server build ===" && \
+    echo "CPU cores available: $(nproc)" && \
+    cmake -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_FLAGS="-O3 -march=armv8-a" \
+    -DCMAKE_VERBOSE_MAKEFILE=ON \
     . && \
-    cmake --build build -- -j$(nproc)
+    echo "=== CMake configuration complete, starting compilation ===" && \
+    cmake --build build --verbose -- -j$(nproc) VERBOSE=1
 
 # Runtime image
 FROM --platform=linux/arm64 ubuntu:24.04

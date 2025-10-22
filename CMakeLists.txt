@@ -54,6 +54,9 @@ FetchContent_MakeAvailable(json)
 # Main executable
 add_executable(jic-server server.cpp)
 
+# Enable verbose output during compilation
+set(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL "Enable verbose build output" FORCE)
+
 # Link libraries
 target_link_libraries(jic-server 
     PRIVATE 
