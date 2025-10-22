@@ -373,6 +373,8 @@ bool init_models() {
     }
     
     ctx_params.n_ctx = 8192;
+    ctx_params.n_batch = 2048;  // Increase batch size for embeddings
+    ctx_params.n_ubatch = 2048;  // Set ubatch size to match
     ctx_params.embeddings = true;
     ctx_params.pooling_type = LLAMA_POOLING_TYPE_MEAN;
     embedding_ctx = llama_init_from_model(embedding_model, ctx_params);
@@ -396,6 +398,8 @@ std::vector<float> get_embedding(const std::string& text) {
         llama_free(embedding_ctx);
         llama_context_params ctx_params = llama_context_default_params();
         ctx_params.n_ctx = 8192;
+        ctx_params.n_batch = 2048;
+        ctx_params.n_ubatch = 2048;
         ctx_params.embeddings = true;
         ctx_params.pooling_type = LLAMA_POOLING_TYPE_MEAN;
         ctx_params.n_threads = 4;
@@ -451,6 +455,8 @@ std::vector<float> get_embedding(const std::string& text) {
         llama_free(embedding_ctx);
         llama_context_params ctx_params = llama_context_default_params();
         ctx_params.n_ctx = 8192;
+        ctx_params.n_batch = 2048;
+        ctx_params.n_ubatch = 2048;
         ctx_params.embeddings = true;
         ctx_params.pooling_type = LLAMA_POOLING_TYPE_MEAN;
         ctx_params.n_threads = 4;
