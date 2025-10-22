@@ -97,35 +97,20 @@ def main():
             else:
                 print(f"❌ Model {model} NOT FOUND")
                 missing_models.append(model)
-    
-    if missing_models:
-        print("\n" + "="*60)
-        print("IMPORTANT: Models not found in Docker!")
-        print("Missing models:", ", ".join(missing_models))
-        print("\nThis might be because:")
-        print("1. The models exist with different tags in your local Ollama")
-        print("2. The mount isn't working correctly")
-        print("\nTrying alternative model names...")
-        print("="*60 + "\n")
         
-        # Try without tags (e.g., just "llama3.2" instead of "llama3.2:latest")
-        alt_missing = []
-        for model in missing_models:
-            base_name = model.split(':')[0]
-            if not check_model_exists(base_name, OLLAMA_URL, retry_count=2):
-                alt_missing.append(model)
-            else:
-                print(f"✅ Found {base_name} (without tag)")
-        
-        if alt_missing:
-            print("\nTo check what models you have locally:")
-            print("  ollama list")
-            print("\nTo use different model names, set environment variables:")
-            print("  export LLM_MODEL=<your-actual-model-name>")
-            print("  export EMBEDDING_MODEL=<your-actual-embedding-model>")
-            print("\nOr skip model checks entirely:")
-            print("  SKIP_MODEL_CHECK=true docker compose up")
-            raise Exception(f"Required models not available: {', '.join(alt_missing)}")
+        if missing_models:
+            print("\n" + "="*60)
+            print("FATAL: Required models are not available!")
+            print("Missing models:", ", ".join(missing_models))
+            print("\nModels must be loaded from GGUF files before running Docker.")
+            print("Instructions:")
+            print("1. Download GGUF files manually")
+            print("2. Place them in ./gguf_models/")
+            print("3. Run ./prepare-gguf-models.sh")
+            print("4. Run ./load-gguf-models.sh")
+            print("\nOr skip model checks with: SKIP_MODEL_CHECK=true")
+            print("="*60 + "\n")
+            raise Exception(f"Required models not available: {', '.join(missing_models)}")
     
     # Run ingestion if needed
     if not os.path.exists("data/index.faiss"):

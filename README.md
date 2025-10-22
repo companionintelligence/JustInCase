@@ -50,47 +50,43 @@ git clone https://github.com/PR0M3TH3AN/Survival-Data.git
 find Survival-Data/HOME -type f -iname "*.pdf" -exec cp {} sources/ \;
 ```
 
-### 3. Prepare models (choose one method)
+### 3. Prepare models (REQUIRED - No automatic downloads!)
 
-#### Method A: Use GGUF files (RECOMMENDED for slow connections)
+**Important:** Docker will NEVER download models from the internet. You must prepare them locally first.
 
-1. **Download GGUF files once** (on a good connection):
+1. **Download GGUF files manually** (one time, on any connection):
    ```bash
    # Create directory
    mkdir -p gguf_models
    
-   # Download Llama 3.2 GGUF (choose one):
-   # From: https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF
-   # Download: Llama-3.2-1B-Instruct-Q4_K_M.gguf
-   
-   # Download nomic-embed-text GGUF:
-   # From: https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF
-   # Download: nomic-embed-text-v1.5.Q4_K_M.gguf
-   
-   # Place both files in ./gguf_models/
+   # Download these files from HuggingFace:
+   # 
+   # Llama 3.2 (choose one):
+   # - https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF
+   #   Download: Llama-3.2-1B-Instruct-Q4_K_M.gguf
+   # 
+   # Nomic embed:
+   # - https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF
+   #   Download: nomic-embed-text-v1.5.Q4_K_M.gguf
+   # 
+   # Place both .gguf files in ./gguf_models/
    ```
 
-2. **Prepare and load models**:
+2. **Load models into Docker** (no internet required):
    ```bash
-   chmod +x prepare-gguf-models.sh load-gguf-models.sh
+   chmod +x prepare-gguf-models.sh load-gguf-models.sh fetch-models.sh
    
-   # Create Modelfiles
+   # Create Modelfiles from your GGUF files
    ./prepare-gguf-models.sh
    
-   # Start Docker
+   # Start Docker containers
    docker compose up -d
    
-   # Load models into Ollama (no internet needed!)
+   # Load models into Ollama (uses local files only)
    ./load-gguf-models.sh
    ```
 
-#### Method B: Use existing local Ollama (if you have models)
-
-```bash
-# This tries to mount your local ~/.ollama
-chmod +x prepare-local-models.sh
-./prepare-local-models.sh
-```
+For detailed instructions, run: `./fetch-models.sh`
 
 ### 4. Start the system
 
@@ -100,11 +96,11 @@ docker compose up --build
 
 This:
 - Launches Apache Tika
-- Launches Ollama (using YOUR LOCAL models)
+- Launches Ollama (with models you loaded from GGUF files)
 - Indexes your PDFs
 - Starts the Flask API + web UI on port `8080`
 
-**Note:** This uses your existing ~/.ollama directory. No internet required!
+**Note:** No internet connection required after models are loaded!
 
 ---
 
@@ -161,26 +157,24 @@ All model references are centralized in `config.py` for easy modification.
 
 ### Model Management
 
-**RECOMMENDED: Use GGUF files for complete offline control**
+**This system uses LOCAL GGUF files only - No automatic downloads!**
 
-**GGUF Method Benefits:**
-- Download model files ONCE on any connection
-- Store them locally forever
-- Load into Docker Ollama without internet
-- Full control over model versions
-- Works reliably across all systems
+**How it works:**
+1. You download GGUF model files manually (once, on any connection)
+2. Place them in `./gguf_models/`
+3. Run `./prepare-gguf-models.sh` to create Modelfiles
+4. Run `./load-gguf-models.sh` to load into Docker Ollama
+5. Models persist in Docker volume `ollama_data`
 
-**Steps:**
-1. Download GGUF files (once, anywhere)
-2. Place in `./gguf_models/`
-3. Run `./prepare-gguf-models.sh`
-4. Run `./load-gguf-models.sh`
-5. Models are loaded and persist in Docker volume
+**Benefits:**
+- Complete control over model files
+- No surprise downloads
+- Works offline after initial setup
+- Models persist across container restarts
 
-**Alternative: Mount local Ollama**
-- Uses existing `~/.ollama` directory
-- May have compatibility issues
-- Use `./prepare-local-models.sh`
+**Required GGUF files:**
+- Llama 3.2: ~1.3GB (Q4_K_M quantization)
+- Nomic embed: ~274MB (Q4_K_M quantization)
 
 ### If you see "models not found":
 
