@@ -7,7 +7,6 @@ import time
 from pathlib import Path
 from flask import Flask, request, jsonify, send_from_directory
 import requests
-import numpy as np
 from llama_cpp import Llama
 from config import LLM_MODEL, EMBEDDING_MODEL, MAX_CONTEXT_CHUNKS, SEARCH_TOP_K, TIKA_URL, CHUNK_SIZE, CHUNK_OVERLAP, NOMIC_GGUF_FILE, LLAMA_GGUF_FILE
 import logging
@@ -240,9 +239,8 @@ def background_ingestion():
                 # Update index with all new embeddings
                 if embeddings:
                     with index_lock:
-                        # Convert to numpy array for FAISS
-                        vectors = np.array(embeddings, dtype=np.float32)
-                        index.add(vectors)
+                        # FAISS accepts list of lists directly
+                        index.add(embeddings)
                         docs.extend(new_docs)
                         
                         # Save to disk
@@ -311,8 +309,8 @@ def query():
         # Encode query
         embedding = get_embedding(q)
         
-        # Convert to numpy array for FAISS
-        qvec = np.array([embedding], dtype=np.float32)
+        # FAISS accepts list of lists directly
+        qvec = [embedding]
         
         logger.info(f"Query embedding dimension: {len(embedding)}, Index dimension: {index.d}")
 
