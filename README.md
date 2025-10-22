@@ -118,7 +118,7 @@ Models are pre-downloaded to your local machine and baked into the Docker image 
 - Models are stored in `./ollama_models_local` (git-ignored)
 - Models are copied into Docker images during build
 - No dynamic downloading - fails fast if models are missing
-- ~1.6GB total (1.3GB for llama3.2:1b, 274MB for nomic-embed-text)
+- ~1.6GB total (1.3GB for llama3.2, 274MB for nomic-embed-text)
 
 ### First-time setup
 
@@ -202,7 +202,7 @@ If build fails with "models not found":
 4. **Try manual Docker download** if local Ollama isn't working:
    ```bash
    docker run -d --name ollama-temp -v "$(pwd)/ollama_models_local:/root/.ollama" ollama/ollama:0.12.6
-   docker exec ollama-temp ollama pull llama3.2:1b
+   docker exec ollama-temp ollama pull llama3.2
    docker exec ollama-temp ollama pull nomic-embed-text
    docker stop ollama-temp && docker rm ollama-temp
    ```

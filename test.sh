@@ -14,10 +14,10 @@ fi
 
 # Check Ollama models
 echo -e "\n🧠 Checking Ollama models..."
-if docker compose exec -T ollama ollama list 2>/dev/null | grep -q "llama3.2:1b"; then
-    echo "✅ llama3.2:1b model is available"
+if docker compose exec -T ollama ollama list 2>/dev/null | grep -q "llama3.2"; then
+    echo "✅ llama3.2 model is available"
 else
-    echo "❌ llama3.2:1b model not found. Run: docker compose exec ollama ollama pull llama3.2:1b"
+    echo "❌ llama3.2 model not found. Run: docker compose exec ollama ollama pull llama3.2"
 fi
 
 if docker compose exec -T ollama ollama list 2>/dev/null | grep -q "nomic-embed-text"; then

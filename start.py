@@ -79,7 +79,7 @@ def main():
         print(f"Could not list models: {e}")
     
     # Verify models are available - no pulling, just checking
-    models_needed = ["llama3.2:1b", "nomic-embed-text"]
+    models_needed = ["llama3.2", "nomic-embed-text"]
     missing_models = []
     
     print("\n" + "="*60)

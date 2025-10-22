@@ -41,10 +41,10 @@ fi
 # Set OLLAMA_MODELS environment variable to use our local directory
 export OLLAMA_MODELS="$(pwd)/ollama_models_local"
 
-echo "📥 Pulling llama3.2:1b..."
-OLLAMA_MODELS="$(pwd)/ollama_models_local" ollama pull llama3.2:1b
+echo "📥 Pulling llama3.2..."
+OLLAMA_MODELS="$(pwd)/ollama_models_local" ollama pull llama3.2
 if [ $? -ne 0 ]; then
-    echo "❌ Failed to download llama3.2:1b"
+    echo "❌ Failed to download llama3.2"
     exit 1
 fi
 

@@ -14,7 +14,7 @@ services:
     ports:
       - "11434:11434"
     environment:
-      - OLLAMA_MODELS=llama3.2:1b,nomic-embed-text
+      - OLLAMA_MODELS=llama3.2,nomic-embed-text
 
   survival-rag:
     build:

@@ -68,7 +68,7 @@ def query():
 
         # Make request to Ollama (non-streaming)
         response = requests.post(f"{OLLAMA_URL}/api/generate", json={
-            "model": "llama3.2:1b",
+            "model": "llama3.2",
             "stream": False,
             "prompt": f"Context: {context}\n\nQuestion: {q}\n\nAnswer:"
         }, timeout=60)
