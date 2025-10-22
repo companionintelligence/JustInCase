@@ -30,7 +30,7 @@ bool string_ends_with(const std::string& str, const std::string& suffix) {
 
 // Global configuration
 const int PORT = 8080;
-const int EMBEDDING_DIM = 384;
+const int EMBEDDING_DIM = 768;  // nomic-embed-text-v1.5 uses 768 dimensions
 const int CHUNK_SIZE = 500;
 const int CHUNK_OVERLAP = 50;
 const int MAX_CONTEXT_CHUNKS = 3;
@@ -228,7 +228,8 @@ HttpRequest parse_http_request(const std::string& request) {
     request_line >> req.method >> req.path;
     
     // Parse headers
-    while (std::getline(stream, line) && line != "\r") {
+    while (std::getline(stream, line) && line != "\r" && !line.empty()) {
+        if (line == "\n") break;
         size_t colon_pos = line.find(':');
         if (colon_pos != std::string::npos) {
             std::string key = line.substr(0, colon_pos);
@@ -238,9 +239,12 @@ HttpRequest parse_http_request(const std::string& request) {
         }
     }
     
-    // Parse body
-    std::string remaining((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
-    req.body = remaining;
+    // Parse body based on Content-Length
+    if (req.headers.find("Content-Length") != req.headers.end()) {
+        int content_length = std::stoi(req.headers["Content-Length"]);
+        req.body.resize(content_length);
+        stream.read(&req.body[0], content_length);
+    }
     
     return req;
 }
@@ -313,7 +317,22 @@ std::vector<float> get_embedding(const std::string& text) {
     
     // Get embeddings
     const float* embeddings = llama_get_embeddings(embedding_ctx);
-    std::vector<float> result(embeddings, embeddings + EMBEDDING_DIM);
+    if (!embeddings) {
+        std::cerr << "Failed to get embeddings from model" << std::endl;
+        return std::vector<float>(EMBEDDING_DIM, 0.0f);
+    }
+    
+    // Get actual embedding dimension from model
+    int n_embd = llama_n_embd(embedding_model);
+    if (n_embd != EMBEDDING_DIM) {
+        std::cerr << "Warning: Model embedding dimension " << n_embd << " doesn't match expected " << EMBEDDING_DIM << std::endl;
+    }
+    
+    std::vector<float> result(embeddings, embeddings + std::min(n_embd, EMBEDDING_DIM));
+    // Pad with zeros if needed
+    if (result.size() < EMBEDDING_DIM) {
+        result.resize(EMBEDDING_DIM, 0.0f);
+    }
     
     return result;
 }
@@ -446,6 +465,9 @@ std::vector<std::string> split_text(const std::string& text) {
 void load_index() {
     std::lock_guard<std::mutex> lock(index_mutex);
     
+    if (vector_index) {
+        delete vector_index;
+    }
     vector_index = new SimpleVectorIndex(EMBEDDING_DIM);
     
     if (fs::exists("data/index.bin") && fs::exists("data/metadata.jsonl")) {
@@ -713,11 +735,48 @@ std::string handle_status() {
 
 // Handle client connection
 void handle_client(int client_socket) {
-    char buffer[4096] = {0};
-    int valread = read(client_socket, buffer, 4096);
+    std::vector<char> buffer(65536);
+    int total_read = 0;
+    int valread;
     
-    if (valread > 0) {
-        std::string request_str(buffer);
+    // Read request headers first
+    while ((valread = read(client_socket, buffer.data() + total_read, buffer.size() - total_read - 1)) > 0) {
+        total_read += valread;
+        buffer[total_read] = '\0';
+        
+        // Check if we have complete headers
+        std::string current(buffer.data(), total_read);
+        size_t header_end = current.find("\r\n\r\n");
+        if (header_end != std::string::npos) {
+            // Parse to get content length
+            HttpRequest temp_req = parse_http_request(current);
+            
+            // If POST request with body, ensure we read it all
+            if (temp_req.method == "POST" && temp_req.headers.find("Content-Length") != temp_req.headers.end()) {
+                int content_length = std::stoi(temp_req.headers["Content-Length"]);
+                int body_start = header_end + 4;
+                int body_read = total_read - body_start;
+                
+                // Read remaining body if needed
+                while (body_read < content_length) {
+                    valread = read(client_socket, buffer.data() + total_read, buffer.size() - total_read - 1);
+                    if (valread <= 0) break;
+                    total_read += valread;
+                    body_read += valread;
+                    buffer[total_read] = '\0';
+                }
+            }
+            break;
+        }
+        
+        // Resize buffer if needed
+        if (total_read >= buffer.size() - 1024) {
+            buffer.resize(buffer.size() * 2);
+        }
+    }
+    
+    if (total_read > 0) {
+        std::string request_str(buffer.data(), total_read);
         HttpRequest request = parse_http_request(request_str);
         
         std::string response;
@@ -800,7 +859,7 @@ int main() {
     
     // Allow socket reuse
     int opt = 1;
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
         std::cerr << "Setsockopt failed" << std::endl;
         return 1;
     }
@@ -840,10 +899,11 @@ int main() {
     }
     
     // Cleanup
-    llama_free(llm_ctx);
-    llama_free(embedding_ctx);
-    llama_model_free(llm_model);
-    llama_model_free(embedding_model);
+    if (llm_ctx) llama_free(llm_ctx);
+    if (embedding_ctx) llama_free(embedding_ctx);
+    if (llm_model) llama_model_free(llm_model);
+    if (embedding_model) llama_model_free(embedding_model);
+    if (vector_index) delete vector_index;
     llama_backend_free();
     curl_global_cleanup();
     
