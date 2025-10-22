@@ -353,10 +353,10 @@ std::string generate_llm_response(const std::string& prompt) {
     
     // Check context size
     int n_ctx = llama_n_ctx(llm_ctx);
-    int n_ctx_used = llama_get_kv_cache_used_cells(llm_ctx);
+    int n_ctx_used = llama_get_kv_cache_token_count(llm_ctx);
     if (n_ctx_used + prompt_tokens.size() > n_ctx) {
         // Clear context if needed
-        llama_kv_cache_seq_rm(llm_ctx, -1, -1, -1);
+        llama_kv_cache_clear(llm_ctx);
     }
     
     // Prepare batch for the prompt
@@ -399,7 +399,7 @@ std::string generate_llm_response(const std::string& prompt) {
         batch = llama_batch_get_one(&new_token_id, 1);
         
         // Check context size again
-        n_ctx_used = llama_get_kv_cache_used_cells(llm_ctx);
+        n_ctx_used = llama_get_kv_cache_token_count(llm_ctx);
         if (n_ctx_used + 1 > n_ctx) {
             break;
         }
