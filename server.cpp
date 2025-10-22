@@ -49,22 +49,47 @@ size_t tika_write_callback(void* contents, size_t size, size_t nmemb, std::strin
 std::string extract_text_with_tika(const std::string& filepath) {
     CURL* curl = curl_easy_init();
     if (!curl) {
+        std::cerr << "Failed to initialize CURL for Tika" << std::endl;
         return "";
     }
     
     std::string response;
     
+    // Check file size first
+    std::error_code ec;
+    auto file_size = fs::file_size(filepath, ec);
+    if (ec) {
+        std::cerr << "Failed to get file size: " << filepath << std::endl;
+        curl_easy_cleanup(curl);
+        return "";
+    }
+    
+    // Skip very large files
+    const size_t MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+    if (file_size > MAX_FILE_SIZE) {
+        std::cerr << "File too large for processing: " << filepath << " (" << file_size << " bytes)" << std::endl;
+        curl_easy_cleanup(curl);
+        return "";
+    }
+    
     // Read file content
     std::ifstream file(filepath, std::ios::binary);
+    if (!file) {
+        std::cerr << "Failed to open file: " << filepath << std::endl;
+        curl_easy_cleanup(curl);
+        return "";
+    }
+    
     std::stringstream buffer;
     buffer << file.rdbuf();
     std::string file_content = buffer.str();
     
-    // Set up CURL
+    // Set up CURL with timeout
     curl_easy_setopt(curl, CURLOPT_URL, TIKA_URL.c_str());
     curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, file_content.c_str());
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, file_content.size());
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L); // 30 second timeout
     
     // Headers
     struct curl_slist* headers = NULL;
@@ -344,8 +369,15 @@ std::vector<float> get_embedding(const std::string& text) {
         ctx_params.n_ctx = 8192;
         ctx_params.embeddings = true;
         ctx_params.pooling_type = LLAMA_POOLING_TYPE_MEAN;
+        ctx_params.n_threads = 4;
+        ctx_params.n_threads_batch = 4;
         embedding_ctx = llama_init_from_model(embedding_model, ctx_params);
         embedding_n_past = 0;
+        
+        if (!embedding_ctx) {
+            std::cerr << "Failed to recreate embedding context" << std::endl;
+            return std::vector<float>(EMBEDDING_DIM, 0.0f);
+        }
     }
     
     // Get vocab from model
@@ -354,12 +386,24 @@ std::vector<float> get_embedding(const std::string& text) {
     // Tokenize - first get the number of tokens
     int n_prompt = -llama_tokenize(vocab, text.c_str(), text.size(), NULL, 0, true, true);
     
+    if (n_prompt <= 0) {
+        std::cerr << "Invalid token count for embedding: " << n_prompt << std::endl;
+        return std::vector<float>(EMBEDDING_DIM, 0.0f);
+    }
+    
+    // Limit token count to prevent overflow
+    if (n_prompt > 8000) {
+        n_prompt = 8000;
+    }
+    
     // Allocate space for tokens and tokenize
     std::vector<llama_token> tokens(n_prompt);
-    if (llama_tokenize(vocab, text.c_str(), text.size(), tokens.data(), tokens.size(), true, true) < 0) {
+    int actual_tokens = llama_tokenize(vocab, text.c_str(), text.size(), tokens.data(), tokens.size(), true, true);
+    if (actual_tokens < 0) {
         std::cerr << "Failed to tokenize text for embedding" << std::endl;
         return std::vector<float>(EMBEDDING_DIM, 0.0f);
     }
+    tokens.resize(actual_tokens);
     
     // Prepare batch
     llama_batch batch = llama_batch_get_one(tokens.data(), tokens.size());
@@ -640,6 +684,8 @@ void background_ingestion() {
                         text = extract_text_with_tika(full_path);
                         if (text.empty()) {
                             std::cerr << "Failed to extract text from PDF: " << rel_path << std::endl;
+                            // Still mark as processed to avoid retrying
+                            processed_files.insert(rel_path);
                             continue;
                         }
                     } else {
@@ -651,9 +697,17 @@ void background_ingestion() {
                     
                     for (const auto& chunk : chunks) {
                         if (chunk.length() > 100) {
-                            auto embedding = get_embedding(chunk);
-                            new_embeddings.insert(new_embeddings.end(), embedding.begin(), embedding.end());
-                            new_docs.push_back({rel_path, chunk});
+                            try {
+                                auto embedding = get_embedding(chunk);
+                                if (embedding.size() == EMBEDDING_DIM) {
+                                    new_embeddings.insert(new_embeddings.end(), embedding.begin(), embedding.end());
+                                    new_docs.push_back({rel_path, chunk});
+                                } else {
+                                    std::cerr << "Invalid embedding size: " << embedding.size() << " for chunk from " << rel_path << std::endl;
+                                }
+                            } catch (const std::exception& e) {
+                                std::cerr << "Error getting embedding for chunk from " << rel_path << ": " << e.what() << std::endl;
+                            }
                         }
                     }
                     
@@ -674,11 +728,19 @@ void background_ingestion() {
             
             // Update index
             if (!new_embeddings.empty()) {
-                std::lock_guard<std::mutex> lock(index_mutex);
-                int n_vectors = new_embeddings.size() / EMBEDDING_DIM;
-                vector_index->add_batch(n_vectors, new_embeddings.data());
-                documents.insert(documents.end(), new_docs.begin(), new_docs.end());
-                save_index();
+                try {
+                    std::lock_guard<std::mutex> lock(index_mutex);
+                    int n_vectors = new_embeddings.size() / EMBEDDING_DIM;
+                    if (n_vectors * EMBEDDING_DIM != new_embeddings.size()) {
+                        std::cerr << "Warning: Embedding size mismatch. Expected " << n_vectors * EMBEDDING_DIM 
+                                  << " but got " << new_embeddings.size() << std::endl;
+                    }
+                    vector_index->add_batch(n_vectors, new_embeddings.data());
+                    documents.insert(documents.end(), new_docs.begin(), new_docs.end());
+                    save_index();
+                } catch (const std::exception& e) {
+                    std::cerr << "Error updating index: " << e.what() << std::endl;
+                }
                 
                 // Save processed files with explicit flush
                 std::ofstream pf("data/processed_files.txt");
