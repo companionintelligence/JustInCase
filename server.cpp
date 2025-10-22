@@ -32,8 +32,8 @@ bool string_ends_with(const std::string& str, const std::string& suffix) {
 // Global configuration
 const int PORT = 8080;
 const int EMBEDDING_DIM = 768;  // nomic-embed-text-v1.5 uses 768 dimensions
-const int CHUNK_SIZE = 500;
-const int CHUNK_OVERLAP = 50;
+const int CHUNK_SIZE = 1500;  // Increased from 500 to reduce number of chunks
+const int CHUNK_OVERLAP = 150;  // Proportionally increased
 const int MAX_CONTEXT_CHUNKS = 3;
 const int SEARCH_TOP_K = 5;
 const std::string LLAMA_MODEL_PATH = "./gguf_models/Llama-3.2-1B-Instruct-Q4_K_S.gguf";
@@ -420,10 +420,10 @@ std::vector<float> get_embedding(const std::string& text) {
         return std::vector<float>(EMBEDDING_DIM, 0.0f);
     }
     
-    // Limit token count to prevent overflow
-    if (n_prompt > 8000) {
-        std::cout << "Truncating embedding input from " << n_prompt << " to 8000 tokens" << std::endl;
-        n_prompt = 8000;
+    // Limit token count to prevent overflow - be more conservative
+    if (n_prompt > 2048) {
+        std::cout << "Truncating embedding input from " << n_prompt << " to 2048 tokens" << std::endl;
+        n_prompt = 2048;
     }
     
     // Allocate space for tokens and tokenize
@@ -435,12 +435,13 @@ std::vector<float> get_embedding(const std::string& text) {
     }
     tokens.resize(actual_tokens);
     
-    std::cout << "Tokenized to " << actual_tokens << " tokens for embedding" << std::endl;
+    // Don't log every single tokenization to reduce I/O overhead
+    if (embedding_n_past == 0 || embedding_n_past % 100 == 0) {
+        std::cout << "Tokenized to " << actual_tokens << " tokens for embedding" << std::endl;
+    }
     
     // Prepare batch
     llama_batch batch = llama_batch_get_one(tokens.data(), tokens.size());
-    
-    std::cout << "About to evaluate embedding batch..." << std::endl;
     
     // Evaluate
     int decode_result = llama_decode(embedding_ctx, batch);
@@ -756,6 +757,14 @@ void background_ingestion() {
                             continue;
                         }
                         std::cout << "Successfully extracted " << text.length() << " characters from PDF" << std::endl;
+                        
+                        // For very large texts, consider truncating
+                        const size_t MAX_TEXT_LENGTH = 500000;  // 500KB of text
+                        if (text.length() > MAX_TEXT_LENGTH) {
+                            std::cout << "Text too large, truncating from " << text.length() 
+                                      << " to " << MAX_TEXT_LENGTH << " characters" << std::endl;
+                            text = text.substr(0, MAX_TEXT_LENGTH);
+                        }
                     } else {
                         continue;
                     }
@@ -776,17 +785,26 @@ void background_ingestion() {
                     }
                     
                     int chunk_count = 0;
+                    int chunks_processed_in_batch = 0;
+                    const int BATCH_SIZE = 50;  // Process embeddings in batches of 50
+                    
                     for (const auto& chunk : chunks) {
                         if (chunk.length() > 100) {
                             try {
                                 std::cout << "Getting embedding for chunk " << ++chunk_count << "/" << chunks.size() 
                                           << " (size: " << chunk.length() << " chars)" << std::endl;
                                 
+                                // Add small delay to prevent overwhelming the system
+                                if (chunks_processed_in_batch > 0 && chunks_processed_in_batch % 10 == 0) {
+                                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                                }
+                                
                                 auto embedding = get_embedding(chunk);
+                                chunks_processed_in_batch++;
                                 if (embedding.size() == EMBEDDING_DIM) {
-                                    // Check memory before adding
+                                    // Check memory before adding - use smaller batches
                                     size_t new_size = new_embeddings.size() + embedding.size();
-                                    if (new_size > 2000000) { // ~8MB for float vectors - reduced threshold
+                                    if (new_size > 500000 || chunks_processed_in_batch >= BATCH_SIZE) { // ~2MB or 50 chunks
                                         std::cout << "Flushing embeddings to index due to memory constraints" << std::endl;
                                         
                                         // Update index with current batch
@@ -801,6 +819,10 @@ void background_ingestion() {
                                                 // Clear for next batch
                                                 new_embeddings.clear();
                                                 new_docs.clear();
+                                                chunks_processed_in_batch = 0;
+                                                
+                                                // Give the system a breather
+                                                std::this_thread::sleep_for(std::chrono::milliseconds(500));
                                             } catch (const std::exception& e) {
                                                 std::cerr << "Error flushing embeddings: " << e.what() << std::endl;
                                             }
