@@ -17,9 +17,6 @@ services:
     environment:
       - OLLAMA_MODELS=${LLM_MODEL:-llama3.2},${EMBEDDING_MODEL:-nomic-embed-text}
 
-volumes:
-  ollama_data:
-
   survival-rag:
     build:
       context: .
@@ -42,5 +39,8 @@ volumes:
       - SKIP_MODEL_PULL=${SKIP_MODEL_PULL:-false}
       - SKIP_MODEL_CHECK=${SKIP_MODEL_CHECK:-false}
     command: ["python3", "start.py"]
+
+volumes:
+  ollama_data:
 
 
