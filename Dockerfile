@@ -3,12 +3,18 @@ FROM ubuntu:22.04 AS builder
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
-    cmake \
     git \
     wget \
     libopenblas-dev \
     libcurl4-openssl-dev \
+    libssl-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# Install newer CMake
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.27.7/cmake-3.27.7-linux-x86_64.sh && \
+    chmod +x cmake-3.27.7-linux-x86_64.sh && \
+    ./cmake-3.27.7-linux-x86_64.sh --skip-license --prefix=/usr/local && \
+    rm cmake-3.27.7-linux-x86_64.sh
 
 WORKDIR /build
 
