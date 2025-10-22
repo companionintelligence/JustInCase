@@ -5,8 +5,8 @@ echo "===================="
 
 # Clone llama.cpp if not present
 if [ ! -d "llama.cpp" ]; then
-    echo "Cloning llama.cpp..."
-    git clone https://github.com/ggerganov/llama.cpp.git
+    echo "Cloning llama.cpp (shallow clone for speed)..."
+    git clone --depth 1 https://github.com/ggerganov/llama.cpp.git
 fi
 
 cd llama.cpp
