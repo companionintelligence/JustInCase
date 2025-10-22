@@ -6,7 +6,7 @@ import json
 import subprocess
 import os
 import threading
-from config import LLM_MODEL, EMBEDDING_MODEL, TIKA_URL, LLM_URL, LLAMA_GGUF_FILE, NOMIC_GGUF_FILE
+from config import LLM_MODEL, EMBEDDING_MODEL, TIKA_URL, LLAMA_GGUF_FILE, NOMIC_GGUF_FILE
 
 def wait_for_service(url, service_name, max_retries=30):
     """Wait for a service to be ready"""
@@ -53,9 +53,6 @@ def main():
     
     # Wait for services
     wait_for_service(TIKA_URL, "Tika")
-    
-    # Wait for llama.cpp LLM server only (embeddings are done locally with nomic)
-    wait_for_service(f"{LLM_URL}/health", "LLM server")
     
     # Create data directory if it doesn't exist
     os.makedirs("data", exist_ok=True)

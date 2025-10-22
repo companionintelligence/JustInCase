@@ -9,31 +9,31 @@ from flask import Flask, request, jsonify, send_from_directory
 import requests
 import numpy as np
 from llama_cpp import Llama
-from config import LLM_MODEL, EMBEDDING_MODEL, LLM_URL, MAX_CONTEXT_CHUNKS, SEARCH_TOP_K, TIKA_URL, CHUNK_SIZE, CHUNK_OVERLAP, NOMIC_GGUF_FILE
+from config import LLM_MODEL, EMBEDDING_MODEL, MAX_CONTEXT_CHUNKS, SEARCH_TOP_K, TIKA_URL, CHUNK_SIZE, CHUNK_OVERLAP, NOMIC_GGUF_FILE, LLAMA_GGUF_FILE
 import logging
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Initialize embedding model
+# Initialize models
 embedding_model = None
+llm_model = None
 
-def init_embedding_model():
-    """Initialize the llama.cpp embedding model"""
-    global embedding_model
-    model_path = f"./gguf_models/{NOMIC_GGUF_FILE}"
+def init_models():
+    """Initialize both the LLM and embedding models"""
+    global embedding_model, llm_model
     
-    if not os.path.exists(model_path):
-        logger.error(f"Embedding model not found at {model_path}")
-        logger.error("Please download the GGUF file and place it in ./gguf_models/")
-        raise FileNotFoundError(f"Missing embedding model: {model_path}")
+    # Initialize embedding model
+    embed_path = f"./gguf_models/{NOMIC_GGUF_FILE}"
+    if not os.path.exists(embed_path):
+        logger.error(f"Embedding model not found at {embed_path}")
+        raise FileNotFoundError(f"Missing embedding model: {embed_path}")
     
-    logger.info(f"Loading embedding model from {model_path}...")
+    logger.info(f"Loading embedding model from {embed_path}...")
     try:
-        # Initialize llama.cpp with embedding mode
         embedding_model = Llama(
-            model_path=model_path,
+            model_path=embed_path,
             embedding=True,
             n_ctx=8192,  # Context size for nomic
             n_threads=4,  # Adjust based on your CPU
@@ -43,9 +43,28 @@ def init_embedding_model():
     except Exception as e:
         logger.error(f"Failed to load embedding model: {e}")
         raise
+    
+    # Initialize LLM model
+    llm_path = f"./gguf_models/{LLAMA_GGUF_FILE}"
+    if not os.path.exists(llm_path):
+        logger.error(f"LLM model not found at {llm_path}")
+        raise FileNotFoundError(f"Missing LLM model: {llm_path}")
+    
+    logger.info(f"Loading LLM model from {llm_path}...")
+    try:
+        llm_model = Llama(
+            model_path=llm_path,
+            n_ctx=2048,  # Context size
+            n_threads=4,  # Adjust based on your CPU
+            verbose=False
+        )
+        logger.info("LLM model loaded successfully")
+    except Exception as e:
+        logger.error(f"Failed to load LLM model: {e}")
+        raise
 
-# Initialize on startup
-init_embedding_model()
+# Initialize models on startup
+init_models()
 
 app = Flask(__name__)
 
@@ -270,19 +289,17 @@ def query():
 
         # Even with no documents, let the LLM try to answer
         if len(docs) == 0:
-            # Make request directly to llama.cpp without context
-            response = requests.post(f"{LLM_URL}/completion", json={
-                "prompt": f"Question: {q}\n\nAnswer:",
-                "n_predict": 1024,
-                "temperature": 0.7,
-                "stop": ["</s>"],
-                "stream": False
-            }, timeout=60)
-
-            if response.status_code != 200:
-                return jsonify({"error": "LLM server error", "details": response.text}), 500
-
-            reply = response.json().get("content", "No response")
+            # Use local LLM model
+            prompt = f"Question: {q}\n\nAnswer:"
+            response = llm_model(
+                prompt,
+                max_tokens=1024,
+                temperature=0.7,
+                stop=["</s>", "Question:"],
+                echo=False
+            )
+            
+            reply = response['choices'][0]['text'].strip()
             result = {
                 "answer": reply, 
                 "matches": [],
@@ -321,19 +338,17 @@ def query():
         context = "\n\n".join(docs[i]["text"] for i in selected_chunks)
         logger.info(f"Generated context length: {len(context)} chars")
 
-        # Make request directly to llama.cpp
-        response = requests.post(f"{LLM_URL}/completion", json={
-            "prompt": f"Context: {context}\n\nQuestion: {q}\n\nAnswer:",
-            "n_predict": 1024,
-            "temperature": 0.7,
-            "stop": ["</s>"],
-            "stream": False
-        }, timeout=60)
-
-        if response.status_code != 200:
-            return jsonify({"error": "LLM server error", "details": response.text}), 500
-
-        reply = response.json().get("content", "No response")
+        # Use local LLM model
+        prompt = f"Context: {context}\n\nQuestion: {q}\n\nAnswer:"
+        response = llm_model(
+            prompt,
+            max_tokens=1024,
+            temperature=0.7,
+            stop=["</s>", "Question:"],
+            echo=False
+        )
+        
+        reply = response['choices'][0]['text'].strip()
         result = {
             "answer": reply, 
             "matches": [docs[i] for i in selected_chunks],

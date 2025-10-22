@@ -6,21 +6,6 @@ services:
     ports:
       - "9998:9998"
 
-  llama-cpp-llm:
-    image: ghcr.io/ggerganov/llama.cpp:server
-    container_name: llama-cpp-llm
-    pull_policy: if_not_present
-    volumes:
-      - ./gguf_models:/models:ro
-    ports:
-      - "8081:8080"
-    command: [
-      "-m", "/models/Llama-3.2-1B-Instruct-Q4_K_S.gguf",
-      "-c", "2048",
-      "--host", "0.0.0.0",
-      "--port", "8080"
-    ]
-
   survival-rag:
     build:
       context: .
@@ -29,7 +14,6 @@ services:
     pull_policy: never
     depends_on:
       - tika
-      - llama-cpp-llm
     volumes:
       - ./sources:/app/sources
       - ./data:/app/data
@@ -38,7 +22,6 @@ services:
       - "8080:8080"
     environment:
       - TIKA_URL=http://tika:9998
-      - LLM_URL=http://llama-cpp-llm:8080
       - LLM_MODEL=${LLM_MODEL:-llama3.2}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-nomic-embed-text}
     command: ["python3", "start.py"]
