@@ -73,6 +73,29 @@ def main():
             data = json.loads(response.read())
             available_models = [m.get('name', '') for m in data.get('models', [])]
             print(f"Available Ollama models: {available_models}")
+            
+        # Debug: Check what's in the mounted directory
+        print("\nDebug: Checking mounted model directory...")
+        import subprocess
+        try:
+            # Run ls command in the ollama container to see what's mounted
+            result = subprocess.run(
+                ["docker", "exec", "ollama", "ls", "-la", "/root/.ollama/"],
+                capture_output=True, text=True
+            )
+            print("Contents of /root/.ollama/:")
+            print(result.stdout)
+            
+            # Check models subdirectory
+            result = subprocess.run(
+                ["docker", "exec", "ollama", "ls", "-la", "/root/.ollama/models/"],
+                capture_output=True, text=True
+            )
+            print("\nContents of /root/.ollama/models/:")
+            print(result.stdout)
+        except Exception as debug_e:
+            print(f"Debug error: {debug_e}")
+            
     except Exception as e:
         print(f"Could not list models: {e}")
     
