@@ -15,12 +15,13 @@ COPY requirements.txt .
 RUN mkdir -p /root/.cache/pip
 
 # Install llama-cpp-python using pre-built wheels
-# This avoids compilation issues
+# Pin to a specific version that has pre-built wheels
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --cache-dir=/root/.cache/pip --upgrade pip wheel setuptools && \
     pip install --cache-dir=/root/.cache/pip \
-    --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu \
-    llama-cpp-python
+    --only-binary :all: \
+    --prefer-binary \
+    "llama-cpp-python==0.2.90"
 
 # Install other requirements
 RUN --mount=type=cache,target=/root/.cache/pip \
