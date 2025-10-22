@@ -145,7 +145,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 WORKDIR /app
 
 # Copy the built binary
-COPY --from=builder /build/build/jic-server /app/
+COPY --from=app-builder /build/build/jic-server /app/
 
 # Copy web files from public directory
 COPY public/ ./public/
