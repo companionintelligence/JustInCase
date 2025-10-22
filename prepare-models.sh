@@ -142,8 +142,20 @@ echo ""
 echo "🔍 Verifying copied models..."
 MISSING_MODELS=()
 
-# Check for LLM model
-if [ -d "./ollama_models/models/manifests/registry.ollama.ai/library/$LLM_MODEL" ]; then
+# Show what's in the models directory
+echo ""
+echo "📁 Model directory structure:"
+if [ -d "./ollama_models/models" ]; then
+    echo "  manifests:"
+    ls -la ./ollama_models/models/manifests/registry.ollama.ai/library/ 2>/dev/null | head -10
+    echo "  blobs:"
+    ls -la ./ollama_models/models/blobs/ 2>/dev/null | head -5
+fi
+
+# Check for LLM model - handle both with and without tag
+LLM_BASE=$(echo "$LLM_MODEL" | cut -d: -f1)
+if [ -d "./ollama_models/models/manifests/registry.ollama.ai/library/$LLM_MODEL" ] || \
+   [ -d "./ollama_models/models/manifests/registry.ollama.ai/library/$LLM_BASE" ]; then
     echo "✅ $LLM_MODEL copied successfully"
 else
     echo "❌ $LLM_MODEL not found after copy"
@@ -151,7 +163,9 @@ else
 fi
 
 # Check for embedding model
-if [ -d "./ollama_models/models/manifests/registry.ollama.ai/library/$EMBEDDING_MODEL" ]; then
+EMBED_BASE=$(echo "$EMBEDDING_MODEL" | cut -d: -f1)
+if [ -d "./ollama_models/models/manifests/registry.ollama.ai/library/$EMBEDDING_MODEL" ] || \
+   [ -d "./ollama_models/models/manifests/registry.ollama.ai/library/$EMBED_BASE" ]; then
     echo "✅ $EMBEDDING_MODEL copied successfully"
 else
     echo "❌ $EMBEDDING_MODEL not found after copy"
