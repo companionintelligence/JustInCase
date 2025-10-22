@@ -59,8 +59,11 @@ docker compose up --build
 This:
 - Launches Apache Tika
 - Launches Ollama
+- Downloads models to `./ollama_models` (first run only, ~1.6GB)
 - Indexes your PDFs
 - Starts the Flask API + web UI on port `8080`
+
+**Note:** Models are stored in `./ollama_models` and persist across Docker rebuilds, so you only download them once!
 
 ---
 
@@ -94,17 +97,34 @@ This verifies:
 
 ## 🔧 Troubleshooting
 
-### Manually pulling models
+### Model Management & Durable Storage
 
-If the automatic model pulling fails or times out, you can manually pull the required models:
+Models are stored in `./ollama_models` directory on your host machine, which persists across Docker rebuilds. This means:
+- ✅ Models download only once
+- ✅ No re-downloading when updating code
+- ✅ Models survive `docker compose down` and rebuilds
+- ✅ ~1.6GB total (1.3GB for llama3.2:1b, 274MB for nomic-embed-text)
+
+### Manually downloading models
+
+If automatic model pulling fails or you have a slow connection:
 
 ```bash
-# Using docker compose (recommended)
+# Option 1: Use the download script (recommended for slow connections)
+./download-models.sh
+
+# Option 2: Download with docker compose running
 docker compose exec ollama ollama pull llama3.2:1b
 docker compose exec ollama ollama pull nomic-embed-text
 
-# Environment variables to control model handling:
+# Option 3: Skip model download and add them later
+echo "SKIP_MODEL_PULL=true" > .env
+docker compose up --build
+```
 
+### Environment variables to control model handling:
+
+```bash
 # Skip automatic model pulling on startup
 SKIP_MODEL_PULL=true docker compose up --build
 
@@ -131,41 +151,43 @@ docker compose restart survival-rag
 
 ### Understanding model storage
 
-**Important:** Ollama models are stored inside the Docker container, not on your host machine directly. However, they ARE persisted in a Docker volume called `ollama_data`.
+**Important:** Models are now stored in `./ollama_models` on your host machine (not in a Docker volume). This provides better durability and visibility.
 
-- Models location in container: `/root/.ollama/models`
-- Docker volume on host: `ollama_data` (managed by Docker)
-- Volume persists even when containers are stopped/removed
+- Models location on host: `./ollama_models`
+- Models location in container: `/root/.ollama` (mounted from host)
+- Models persist across all Docker operations
 
-To verify the volume exists and check its size:
+To check your models:
 ```bash
-# List Docker volumes
-docker volume ls | grep ollama
+# List files in model directory
+ls -la ./ollama_models/
 
-# Inspect the volume
-docker volume inspect ollama_data
+# Check total size
+du -sh ./ollama_models/
 
-# Check volume size (approximate)
-docker system df -v | grep ollama_data
+# With docker compose running, list models
+docker compose exec ollama ollama list
 ```
 
-If you need to completely reset and re-download models:
+To completely reset and re-download models:
 ```bash
 # Stop containers
 docker compose down
 
-# Remove the volume (this deletes all downloaded models!)
-docker volume rm ollama_data
+# Remove the models directory (this deletes all downloaded models!)
+rm -rf ./ollama_models
 
-# Start fresh
+# Start fresh (will re-download models)
 docker compose up --build
 ```
 
 ### Troubleshooting model persistence
 
-If models seem to disappear between restarts:
+If models aren't found after download:
 
-1. **Check volume mounting**: Ensure docker-compose.yml has the volume properly defined
-2. **Don't use `docker compose down -v`**: The `-v` flag removes volumes!
-3. **Check disk space**: Ensure you have enough space for models (llama3.2:1b is ~1GB, nomic-embed-text is ~275MB)
+1. **Check the directory exists**: `ls -la ./ollama_models/`
+2. **Verify mount in docker-compose.yml**: Should have `- ./ollama_models:/root/.ollama`
+3. **Check permissions**: Ensure Docker can read the directory
+4. **Try manual verification**: `docker compose exec ollama ollama list`
+5. **Use skip flags if needed**: `SKIP_MODEL_CHECK=true docker compose up`
 

@@ -70,3 +70,6 @@ echo "✨ Done! Models are stored in ./ollama_models"
 echo "   These will be automatically used by docker compose"
 echo ""
 echo "To use: docker compose up --build"
+echo ""
+echo "Running echo \"SKIP_MODEL_PULL=true\" > .env"
+echo "SKIP_MODEL_PULL=true" > .env
