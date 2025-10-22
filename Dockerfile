@@ -37,6 +37,7 @@ RUN cd llama.cpp && \
         -DLLAMA_STATIC=ON \
         -DBUILD_SHARED_LIBS=OFF \
         -DGGML_CCACHE=OFF \
+        -DLLAMA_CURL=OFF \
         . && \
     cmake --build build -- -j$(nproc) && \
     # Create a package of just what we need
