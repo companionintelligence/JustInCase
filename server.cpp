@@ -790,8 +790,8 @@ int main() {
     // Cleanup
     llama_free(llm_ctx);
     llama_free(embedding_ctx);
-    llama_free_model(llm_model);
-    llama_free_model(embedding_model);
+    llama_model_free(llm_model);
+    llama_model_free(embedding_model);
     llama_backend_free();
     curl_global_cleanup();
     
