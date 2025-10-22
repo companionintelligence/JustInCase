@@ -14,8 +14,14 @@ COPY requirements.txt .
 # Create pip cache directory
 RUN mkdir -p /root/.cache/pip
 
-# Use pip cache mount for faster rebuilds
-# The cache persists between builds when using BuildKit
+# Install llama-cpp-python separately with specific build options
+# This tries to use pre-built wheels when available
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --cache-dir=/root/.cache/pip --upgrade pip wheel setuptools && \
+    CMAKE_ARGS="-DLLAMA_BLAS=OFF -DLLAMA_ACCELERATE=OFF -DLLAMA_METAL=OFF" \
+    pip install --cache-dir=/root/.cache/pip llama-cpp-python --no-cache-dir
+
+# Install other requirements
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --cache-dir=/root/.cache/pip -r requirements.txt
 
