@@ -235,20 +235,23 @@ docker compose exec ollama ollama list
 
 If models are missing:
 
-1. **Run prepare script** (it handles everything):
+1. **Download GGUF files manually**:
+   - Visit the HuggingFace links in the setup instructions
+   - Download the .gguf files
+   - Place in `./gguf_models/`
+
+2. **Load them into Docker**:
    ```bash
-   # This will fetch models for you
-   ./prepare-models.sh
+   ./prepare-gguf-models.sh
+   docker compose up -d
+   ./load-gguf-models.sh
    ```
 
-2. **Check for errors** - the script will tell you exactly what's missing
-
-3. **Alternative: Use local Ollama**:
+3. **Verify models are loaded**:
    ```bash
-   # If you prefer using local Ollama
-   USE_LOCAL_OLLAMA=true ./prepare-models.sh
+   docker compose exec ollama ollama list
    ```
 
-The system is designed to fail fast and clearly if models aren't available.
-No surprises, no hidden downloads.
+The system will fail fast if models aren't available.
+No automatic downloads, no surprises.
 
