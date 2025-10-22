@@ -317,6 +317,9 @@ bool init_models() {
 
 // Get embedding for text
 std::vector<float> get_embedding(const std::string& text) {
+    // Clear the context before each embedding to prevent accumulation
+    llama_kv_cache_clear(embedding_ctx);
+    
     // Get vocab from model
     const llama_vocab* vocab = llama_model_get_vocab(embedding_model);
     
@@ -363,6 +366,9 @@ std::vector<float> get_embedding(const std::string& text) {
 
 // Generate LLM response
 std::string generate_llm_response(const std::string& prompt) {
+    // Clear the context before each generation to prevent accumulation
+    llama_kv_cache_clear(llm_ctx);
+    
     // Get vocab from model
     const llama_vocab* vocab = llama_model_get_vocab(llm_model);
     
@@ -536,8 +542,15 @@ void background_ingestion() {
         std::ifstream pf("data/processed_files.txt");
         std::string line;
         while (std::getline(pf, line)) {
-            processed_files.insert(line);
+            // Trim whitespace and skip empty lines
+            line.erase(0, line.find_first_not_of(" \t\r\n"));
+            line.erase(line.find_last_not_of(" \t\r\n") + 1);
+            if (!line.empty()) {
+                processed_files.insert(line);
+            }
         }
+        pf.close();
+        std::cout << "Loaded " << processed_files.size() << " processed files from tracking" << std::endl;
     }
     
     while (true) {
@@ -600,9 +613,13 @@ void background_ingestion() {
                         }
                     }
                     
+                    processed_files.insert(rel_path);
                     ingestion_status.files_processed++;
                     ingestion_status.last_update = std::chrono::steady_clock::now();
-                    processed_files.insert(rel_path);
+                    
+                    std::cout << "Processed file " << ingestion_status.files_processed 
+                              << "/" << ingestion_status.total_files 
+                              << ": " << rel_path << std::endl;
                     
                 } catch (const std::exception& e) {
                     std::cerr << "Error processing " << rel_path << ": " << e.what() << std::endl;
@@ -617,11 +634,13 @@ void background_ingestion() {
                 documents.insert(documents.end(), new_docs.begin(), new_docs.end());
                 save_index();
                 
-                // Save processed files
+                // Save processed files with explicit flush
                 std::ofstream pf("data/processed_files.txt");
                 for (const auto& f : processed_files) {
                     pf << f << std::endl;
                 }
+                pf.flush();
+                pf.close();
             }
             
             ingestion_status.in_progress = false;
