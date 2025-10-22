@@ -220,6 +220,8 @@ llama_model* llm_model = nullptr;
 llama_model* embedding_model = nullptr;
 llama_context* llm_ctx = nullptr;
 llama_context* embedding_ctx = nullptr;
+int llm_n_past = 0;  // Track tokens in LLM context
+int embedding_n_past = 0;  // Track tokens in embedding context
 
 // HTTP response builder
 std::string build_http_response(int status_code, const std::string& content_type, const std::string& body) {
@@ -333,8 +335,18 @@ bool init_models() {
 std::vector<float> get_embedding(const std::string& text) {
     std::lock_guard<std::mutex> lock(embedding_mutex);
     
-    // Clear the KV cache for all sequences
-    llama_kv_self_seq_rm(embedding_ctx, -1, 0, -1);
+    // Reset context if it's getting full
+    int n_ctx = llama_n_ctx(embedding_ctx);
+    if (embedding_n_past > n_ctx * 0.75) {
+        // Recreate context to clear it
+        llama_free(embedding_ctx);
+        llama_context_params ctx_params = llama_context_default_params();
+        ctx_params.n_ctx = 8192;
+        ctx_params.embeddings = true;
+        ctx_params.pooling_type = LLAMA_POOLING_TYPE_MEAN;
+        embedding_ctx = llama_init_from_model(embedding_model, ctx_params);
+        embedding_n_past = 0;
+    }
     
     // Get vocab from model
     const llama_vocab* vocab = llama_model_get_vocab(embedding_model);
@@ -357,6 +369,9 @@ std::vector<float> get_embedding(const std::string& text) {
         std::cerr << "Failed to eval embedding" << std::endl;
         return std::vector<float>(EMBEDDING_DIM, 0.0f);
     }
+    
+    // Update token count
+    embedding_n_past += tokens.size();
     
     // Get embeddings
     const float* embeddings = llama_get_embeddings(embedding_ctx);
@@ -384,8 +399,19 @@ std::vector<float> get_embedding(const std::string& text) {
 std::string generate_llm_response(const std::string& prompt) {
     std::lock_guard<std::mutex> lock(llm_mutex);
     
-    // Clear the KV cache for all sequences
-    llama_kv_self_seq_rm(llm_ctx, -1, 0, -1);
+    // Reset context for each request to avoid accumulation
+    llama_free(llm_ctx);
+    llama_context_params ctx_params = llama_context_default_params();
+    ctx_params.n_ctx = 2048;
+    ctx_params.n_batch = 512;
+    ctx_params.n_threads = 4;
+    ctx_params.n_threads_batch = 4;
+    llm_ctx = llama_init_from_model(llm_model, ctx_params);
+    llm_n_past = 0;
+    
+    if (!llm_ctx) {
+        return "Error: Failed to recreate LLM context";
+    }
     
     // Get vocab from model
     const llama_vocab* vocab = llama_model_get_vocab(llm_model);
