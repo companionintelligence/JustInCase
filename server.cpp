@@ -271,15 +271,23 @@ bool init_models() {
 
 // Get embedding for text
 std::vector<float> get_embedding(const std::string& text) {
+    // Get vocab from model
+    const llama_vocab* vocab = llama_model_get_vocab(embedding_model);
+    
     // Tokenize
     std::vector<llama_token> tokens(text.length() + 1);
-    int n_tokens = llama_tokenize(embedding_model, text.c_str(), text.length(), tokens.data(), tokens.size(), true, false);
+    int n_tokens = llama_tokenize(vocab, text.c_str(), text.length(), tokens.data(), tokens.size(), true, false);
     tokens.resize(n_tokens);
     
     // Evaluate
     llama_batch batch = llama_batch_init(512, 0, 1);
     for (int i = 0; i < n_tokens; i++) {
-        llama_batch_add(batch, tokens[i], i, {0}, false);
+        batch.token[batch.n_tokens] = tokens[i];
+        batch.pos[batch.n_tokens] = i;
+        batch.n_seq_id[batch.n_tokens] = 1;
+        batch.seq_id[batch.n_tokens][0] = 0;
+        batch.logits[batch.n_tokens] = false;
+        batch.n_tokens++;
     }
     batch.logits[batch.n_tokens - 1] = true;
     
@@ -299,9 +307,12 @@ std::vector<float> get_embedding(const std::string& text) {
 
 // Generate LLM response
 std::string generate_llm_response(const std::string& prompt) {
+    // Get vocab from model
+    const llama_vocab* vocab = llama_model_get_vocab(llm_model);
+    
     // Tokenize prompt
     std::vector<llama_token> tokens(prompt.length() + 1);
-    int n_tokens = llama_tokenize(llm_model, prompt.c_str(), prompt.length(), tokens.data(), tokens.size(), true, false);
+    int n_tokens = llama_tokenize(vocab, prompt.c_str(), prompt.length(), tokens.data(), tokens.size(), true, false);
     tokens.resize(n_tokens);
     
     // Generate response
@@ -310,7 +321,12 @@ std::string generate_llm_response(const std::string& prompt) {
     
     // Process prompt
     for (int i = 0; i < n_tokens; i++) {
-        llama_batch_add(batch, tokens[i], i, {0}, false);
+        batch.token[batch.n_tokens] = tokens[i];
+        batch.pos[batch.n_tokens] = i;
+        batch.n_seq_id[batch.n_tokens] = 1;
+        batch.seq_id[batch.n_tokens][0] = 0;
+        batch.logits[batch.n_tokens] = false;
+        batch.n_tokens++;
     }
     batch.logits[batch.n_tokens - 1] = true;
     
@@ -324,36 +340,33 @@ std::string generate_llm_response(const std::string& prompt) {
     int n_decode = 0;
     const int n_max_tokens = 1024;
     
+    // Create sampler
+    llama_sampler* sampler = llama_sampler_init_greedy();
+    
     while (n_decode < n_max_tokens) {
         // Sample next token
-        auto logits = llama_get_logits_ith(llm_ctx, batch.n_tokens - 1);
-        std::vector<llama_token_data> candidates;
-        candidates.reserve(llama_n_vocab(llm_model));
-        
-        for (llama_token token_id = 0; token_id < llama_n_vocab(llm_model); token_id++) {
-            candidates.emplace_back(llama_token_data{token_id, logits[token_id], 0.0f});
-        }
-        
-        llama_token_data_array candidates_p = { candidates.data(), candidates.size(), false };
-        
-        // Sample
-        llama_token new_token_id = llama_sample_token_greedy(llm_ctx, &candidates_p);
+        llama_token new_token_id = llama_sampler_sample(sampler, llm_ctx, -1);
         
         // Check for EOS
-        if (new_token_id == llama_token_eos(llm_model)) {
+        if (llama_token_is_eog(vocab, new_token_id)) {
             break;
         }
         
         // Add token to response
         char buf[256];
-        int n = llama_token_to_piece(llm_model, new_token_id, buf, sizeof(buf));
+        int n = llama_token_to_piece(vocab, new_token_id, buf, sizeof(buf), 0, false);
         if (n > 0) {
             response.append(buf, n);
         }
         
         // Add token to batch for next iteration
         llama_batch_clear(batch);
-        llama_batch_add(batch, new_token_id, n_cur, {0}, true);
+        batch.token[0] = new_token_id;
+        batch.pos[0] = n_cur;
+        batch.n_seq_id[0] = 1;
+        batch.seq_id[0][0] = 0;
+        batch.logits[0] = true;
+        batch.n_tokens = 1;
         n_cur++;
         
         if (llama_decode(llm_ctx, batch) != 0) {
@@ -363,6 +376,8 @@ std::string generate_llm_response(const std::string& prompt) {
         n_decode++;
     }
     
+    // Cleanup
+    llama_sampler_free(sampler);
     llama_batch_free(batch);
     return response;
 }
