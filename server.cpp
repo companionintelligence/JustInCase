@@ -240,6 +240,9 @@ HttpRequest parse_http_request(const std::string& request) {
 
 // Initialize models
 bool init_models() {
+    // Load dynamic backends
+    ggml_backend_load_all();
+    
     // Initialize LLM
     llama_backend_init();
     
@@ -274,26 +277,22 @@ std::vector<float> get_embedding(const std::string& text) {
     // Get vocab from model
     const llama_vocab* vocab = llama_model_get_vocab(embedding_model);
     
-    // Tokenize
-    std::vector<llama_token> tokens(text.length() + 1);
-    int n_tokens = llama_tokenize(vocab, text.c_str(), text.length(), tokens.data(), tokens.size(), true, false);
-    tokens.resize(n_tokens);
+    // Tokenize - first get the number of tokens
+    int n_prompt = -llama_tokenize(vocab, text.c_str(), text.size(), NULL, 0, true, true);
+    
+    // Allocate space for tokens and tokenize
+    std::vector<llama_token> tokens(n_prompt);
+    if (llama_tokenize(vocab, text.c_str(), text.size(), tokens.data(), tokens.size(), true, true) < 0) {
+        std::cerr << "Failed to tokenize text for embedding" << std::endl;
+        return std::vector<float>(EMBEDDING_DIM, 0.0f);
+    }
+    
+    // Prepare batch
+    llama_batch batch = llama_batch_get_one(tokens.data(), tokens.size());
     
     // Evaluate
-    llama_batch batch = llama_batch_init(512, 0, 1);
-    for (int i = 0; i < n_tokens; i++) {
-        batch.token[batch.n_tokens] = tokens[i];
-        batch.pos[batch.n_tokens] = i;
-        batch.n_seq_id[batch.n_tokens] = 1;
-        batch.seq_id[batch.n_tokens][0] = 0;
-        batch.logits[batch.n_tokens] = false;
-        batch.n_tokens++;
-    }
-    batch.logits[batch.n_tokens - 1] = true;
-    
     if (llama_decode(embedding_ctx, batch) != 0) {
         std::cerr << "Failed to eval embedding" << std::endl;
-        llama_batch_free(batch);
         return std::vector<float>(EMBEDDING_DIM, 0.0f);
     }
     
@@ -301,7 +300,6 @@ std::vector<float> get_embedding(const std::string& text) {
     const float* embeddings = llama_get_embeddings(embedding_ctx);
     std::vector<float> result(embeddings, embeddings + EMBEDDING_DIM);
     
-    llama_batch_free(batch);
     return result;
 }
 
@@ -310,75 +308,70 @@ std::string generate_llm_response(const std::string& prompt) {
     // Get vocab from model
     const llama_vocab* vocab = llama_model_get_vocab(llm_model);
     
-    // Tokenize prompt
-    std::vector<llama_token> tokens(prompt.length() + 1);
-    int n_tokens = llama_tokenize(vocab, prompt.c_str(), prompt.length(), tokens.data(), tokens.size(), true, false);
-    tokens.resize(n_tokens);
+    // Tokenize prompt - first get the number of tokens
+    int n_prompt = -llama_tokenize(vocab, prompt.c_str(), prompt.size(), NULL, 0, true, true);
+    
+    // Allocate space for tokens and tokenize
+    std::vector<llama_token> prompt_tokens(n_prompt);
+    if (llama_tokenize(vocab, prompt.c_str(), prompt.size(), prompt_tokens.data(), prompt_tokens.size(), true, true) < 0) {
+        return "Error: Failed to tokenize prompt";
+    }
     
     // Generate response
     std::string response;
-    llama_batch batch = llama_batch_init(512, 0, 1);
     
-    // Process prompt
-    for (int i = 0; i < n_tokens; i++) {
-        batch.token[batch.n_tokens] = tokens[i];
-        batch.pos[batch.n_tokens] = i;
-        batch.n_seq_id[batch.n_tokens] = 1;
-        batch.seq_id[batch.n_tokens][0] = 0;
-        batch.logits[batch.n_tokens] = false;
-        batch.n_tokens++;
-    }
-    batch.logits[batch.n_tokens - 1] = true;
+    // Prepare batch for the prompt
+    llama_batch batch = llama_batch_get_one(prompt_tokens.data(), prompt_tokens.size());
     
+    // Evaluate the prompt
     if (llama_decode(llm_ctx, batch) != 0) {
-        llama_batch_free(batch);
         return "Error: Failed to process prompt";
     }
     
+    // Initialize sampler
+    auto sparams = llama_sampler_chain_default_params();
+    sparams.no_perf = false;
+    llama_sampler* smpl = llama_sampler_chain_init(sparams);
+    llama_sampler_chain_add(smpl, llama_sampler_init_greedy());
+    
     // Generate tokens
-    int n_cur = batch.n_tokens;
     int n_decode = 0;
     const int n_max_tokens = 1024;
+    llama_token new_token_id;
     
-    // Create sampler
-    llama_sampler* sampler = llama_sampler_init_greedy();
-    
-    while (n_decode < n_max_tokens) {
+    for (int n_pos = 0; n_pos < n_prompt + n_max_tokens; ) {
         // Sample next token
-        llama_token new_token_id = llama_sampler_sample(sampler, llm_ctx, -1);
+        new_token_id = llama_sampler_sample(smpl, llm_ctx, -1);
         
-        // Check for EOS
-        if (llama_token_is_eog(vocab, new_token_id)) {
+        // Check for end of generation
+        if (llama_vocab_is_eog(vocab, new_token_id)) {
             break;
         }
         
-        // Add token to response
+        // Convert token to text
         char buf[256];
-        int n = llama_token_to_piece(vocab, new_token_id, buf, sizeof(buf), 0, false);
-        if (n > 0) {
-            response.append(buf, n);
+        int n = llama_token_to_piece(vocab, new_token_id, buf, sizeof(buf), 0, true);
+        if (n < 0) {
+            break;
         }
+        response.append(buf, n);
         
-        // Add token to batch for next iteration
-        llama_batch_clear(batch);
-        batch.token[0] = new_token_id;
-        batch.pos[0] = n_cur;
-        batch.n_seq_id[0] = 1;
-        batch.seq_id[0][0] = 0;
-        batch.logits[0] = true;
-        batch.n_tokens = 1;
-        n_cur++;
+        // Prepare next batch with the sampled token
+        batch = llama_batch_get_one(&new_token_id, 1);
         
+        // Evaluate the new token
         if (llama_decode(llm_ctx, batch) != 0) {
             break;
         }
         
         n_decode++;
+        if (n_decode >= n_max_tokens) {
+            break;
+        }
     }
     
     // Cleanup
-    llama_sampler_free(sampler);
-    llama_batch_free(batch);
+    llama_sampler_free(smpl);
     return response;
 }
 
