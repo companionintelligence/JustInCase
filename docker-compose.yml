@@ -16,6 +16,7 @@ services:
       - ./ollama_models:/root/.ollama
     environment:
       - OLLAMA_MODELS=llama3.2:1b,nomic-embed-text
+      - OLLAMA_DEBUG=1
 
   survival-rag:
     build:

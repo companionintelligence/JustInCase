@@ -27,15 +27,24 @@ def check_model_exists(model_name, ollama_url, retry_count=3):
             with urllib.request.urlopen(req, timeout=10) as response:
                 data = json.loads(response.read())
                 models = data.get('models', [])
-                for model in models:
-                    model_full_name = model.get('name', '')
-                    # Check if the model name matches (with or without tag)
-                    if model_full_name == model_name or model_full_name.startswith(model_name + ':'):
+                model_names = [m.get('name', '') for m in models]
+                
+                # Extract base name without tag for comparison
+                base_name = model_name.split(':')[0]
+                
+                for model_full_name in model_names:
+                    # Check exact match
+                    if model_full_name == model_name:
                         print(f"✅ Found model: {model_full_name}")
                         return True
+                    # Check if base names match (e.g., llama3.2:1b matches llama3.2:latest)
+                    if model_full_name.startswith(base_name + ':'):
+                        print(f"✅ Found model: {model_full_name} (matches requested {model_name})")
+                        return True
+                
                 # If we got a response but model not found, no need to retry
                 if attempt == 0:
-                    print(f"Model {model_name} not in list: {[m.get('name', '') for m in models]}")
+                    print(f"Model {model_name} not in list: {model_names}")
                 return False
         except Exception as e:
             if attempt < retry_count - 1:
@@ -152,6 +161,10 @@ def main():
     
     wait_for_service(tika_url, "Tika")
     wait_for_service(f"{ollama_url}/api/tags", "Ollama")
+    
+    # Give Ollama a moment to fully initialize and scan for models
+    print("Waiting for Ollama to scan model directory...")
+    time.sleep(5)
     
     # List available models for debugging
     try:
