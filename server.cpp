@@ -317,8 +317,8 @@ bool init_models() {
 
 // Get embedding for text
 std::vector<float> get_embedding(const std::string& text) {
-    // Clear the context before each embedding to prevent accumulation
-    llama_kv_cache_clear(embedding_ctx);
+    // Clear the KV cache before each embedding to prevent accumulation
+    llama_kv_cache_seq_rm(embedding_ctx, -1, -1, -1);
     
     // Get vocab from model
     const llama_vocab* vocab = llama_model_get_vocab(embedding_model);
@@ -366,8 +366,8 @@ std::vector<float> get_embedding(const std::string& text) {
 
 // Generate LLM response
 std::string generate_llm_response(const std::string& prompt) {
-    // Clear the context before each generation to prevent accumulation
-    llama_kv_cache_clear(llm_ctx);
+    // Clear the KV cache before each generation to prevent accumulation
+    llama_kv_cache_seq_rm(llm_ctx, -1, -1, -1);
     
     // Get vocab from model
     const llama_vocab* vocab = llama_model_get_vocab(llm_model);
