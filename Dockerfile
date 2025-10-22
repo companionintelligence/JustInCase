@@ -85,69 +85,6 @@ RUN mkdir -p include/nlohmann && \
 # Copy ONLY our application files
 COPY server.cpp CMakeLists.txt ./
 
-# Create a simplified CMakeLists.txt for faster builds
-RUN cat > CMakeLists-fast.txt << 'EOF'
-cmake_minimum_required(VERSION 3.16)
-project(jic-server)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Find packages
-find_package(Threads REQUIRED)
-
-# Add pre-built llama library
-add_library(llama STATIC IMPORTED)
-set_target_properties(llama PROPERTIES
-    IMPORTED_LOCATION /llama-install/lib/libllama.a
-    INTERFACE_INCLUDE_DIRECTORIES /llama-install/include
-)
-
-# Add ggml library
-add_library(ggml STATIC IMPORTED)
-set_target_properties(ggml PROPERTIES
-    IMPORTED_LOCATION /llama-install/lib/libggml.a
-)
-
-# Add nlohmann/json
-include(FetchContent)
-set(FETCHCONTENT_TRY_FIND_PACKAGE_MODE NEVER)
-FetchContent_Declare(json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG v3.11.2
-    GIT_SHALLOW TRUE
-    GIT_CONFIG "http.sslVerify=false"
-)
-FetchContent_MakeAvailable(json)
-
-# Main executable
-add_executable(jic-server server.cpp)
-
-# Link libraries (order matters for static linking)
-target_link_libraries(jic-server 
-    PRIVATE 
-    llama
-    ggml
-    nlohmann_json::nlohmann_json
-    Threads::Threads
-    curl
-    openblas
-    m
-    ${CMAKE_DL_LIBS}
-)
-
-# Add any additional ggml libraries if they exist
-file(GLOB GGML_LIBS /llama-install/lib/libggml*.a)
-foreach(lib ${GGML_LIBS})
-    target_link_libraries(jic-server PRIVATE ${lib})
-endforeach()
-
-# Include directories
-target_include_directories(jic-server PRIVATE 
-    /llama-install/include
-)
-EOF
-
 # Build our server using pre-built llama
 RUN echo "=== Starting server build ===" && \
     echo "CPU cores available: $(nproc)" && \
