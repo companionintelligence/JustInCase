@@ -1,0 +1,35 @@
+FROM --platform=linux/arm64 ubuntu:24.04
+
+# Install runtime dependencies only
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    libopenblas0 \
+    libcurl4 \
+    ca-certificates \
+    wget \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Download prebuilt llama.cpp binaries for ARM64
+# Note: These URLs would need to be updated when official ARM64 builds are available
+# For now, we'll still need to build from source
+RUN echo "Prebuilt ARM64 binaries not yet available from llama.cpp releases" && \
+    echo "Would download from: https://github.com/ggml-org/llama.cpp/releases/download/bXXXX/llama-bXXXX-bin-ubuntu-arm64.zip"
+
+# Since prebuilt ARM64 binaries aren't available, fall back to building from source
+# This is a placeholder for when they become available
+
+# Copy web files from public directory
+COPY public/ ./public/
+
+# Copy the server binary (would be built separately or downloaded)
+# COPY jic-server /app/
+
+# Create directories
+RUN mkdir -p data sources gguf_models
+
+EXPOSE 8080
+
+# CMD ["./jic-server"]
+CMD ["echo", "Prebuilt version not yet implemented - ARM64 binaries needed"]

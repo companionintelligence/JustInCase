@@ -43,6 +43,16 @@ This is a work in progress and we welcome your participation. Please join us at 
 
 Make sure your system supports Docker. See [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/)
 
+### Build Options
+
+**Check for prebuilt binaries** (faster builds when available):
+```bash
+chmod +x check-prebuilt.sh
+./check-prebuilt.sh
+```
+
+Currently, prebuilt binaries are only available for x86_64. ARM64 (Apple Silicon) users will need to build from source.
+
 ### 2. Add your PDFs
 
 Put any `.pdf` files or text files you want indexed into the `sources/` folder.
