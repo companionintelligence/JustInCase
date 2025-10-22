@@ -14,6 +14,10 @@ def wait_for_service(url, service_name, max_retries=30):
             with urllib.request.urlopen(url, timeout=2) as response:
                 if response.status == 200:
                     print(f"{service_name} is ready!")
+                    # Give Ollama extra time to fully initialize
+                    if "ollama" in service_name.lower():
+                        print("Giving Ollama extra time to initialize...")
+                        time.sleep(3)
                     return True
         except (urllib.error.URLError, urllib.error.HTTPError):
             time.sleep(2)
@@ -56,32 +60,32 @@ def check_model_exists(model_name, ollama_url, retry_count=3):
 
 def pull_ollama_model(model_name, timeout=300):
     """Pull an Ollama model with timeout for slow connections"""
-    print(f"Checking {model_name} model...")
+    print(f"\n📥 Pulling {model_name} model...")
     ollama_url = os.getenv("OLLAMA_URL", "http://ollama:11434")
     
     # First check if model already exists with retries
     for retry in range(3):
         if check_model_exists(model_name, ollama_url):
-            print(f"Model {model_name} already exists locally")
+            print(f"✅ Model {model_name} already exists locally")
             return True
         if retry < 2:
-            print(f"Model check failed, retrying in 2 seconds...")
+            print(f"Model check attempt {retry + 1} failed, retrying in 2 seconds...")
             time.sleep(2)
     
     # Skip pulling if SKIP_MODEL_PULL is set
     if os.getenv("SKIP_MODEL_PULL", "").lower() == "true":
-        print(f"Skipping model pull for {model_name} (SKIP_MODEL_PULL=true)")
+        print(f"❌ Model {model_name} not found and SKIP_MODEL_PULL=true")
         return False
     
     # Pull the model with streaming to handle slow connections better
-    data = json.dumps({"name": model_name}).encode('utf-8')
+    data = json.dumps({"name": model_name, "stream": True}).encode('utf-8')
     req = urllib.request.Request(
         f"{ollama_url}/api/pull",
         data=data,
         headers={'Content-Type': 'application/json'}
     )
     
-    print(f"Attempting to pull {model_name} model (timeout: {timeout}s)...")
+    print(f"Attempting to pull {model_name} (this may take several minutes)...")
     print(f"Note: Set SKIP_MODEL_PULL=true to skip this step")
     
     start_time = time.time()
@@ -100,12 +104,10 @@ def pull_ollama_model(model_name, timeout=300):
                         return True
                     return False
                 
-                # Reset timeout if we're making progress
+                # Check for timeout without progress
                 if current_time - last_progress_time > 60:
-                    print(f"No progress for 60 seconds, checking if model exists anyway...")
-                    if check_model_exists(model_name, ollama_url):
-                        print(f"Model {model_name} found!")
-                        return True
+                    print(f"⚠️  No progress for 60 seconds...")
+                    # Don't give up yet, the download might still be working
                     
                 try:
                     line = response.readline()
@@ -124,34 +126,45 @@ def pull_ollama_model(model_name, timeout=300):
                             pct = (status['completed'] / status['total']) * 100
                             # Only print if progress changed significantly
                             if pct - last_progress_percent >= 5 or pct >= 100:
-                                print(f"  {status_msg} - {pct:.1f}%")
+                                print(f"  📊 {status_msg} - {pct:.1f}%")
                                 last_progress_percent = pct
                                 last_progress_time = current_time
-                        else:
-                            print(f"  {status_msg}")
+                        elif 'digest' in status_msg.lower() or 'pulling' in status_msg.lower():
+                            # Show important status messages
+                            print(f"  ⏳ {status_msg}")
                             last_progress_time = current_time
                     if status.get('status') == 'success':
-                        print(f"Model {model_name} successfully pulled!")
+                        print(f"✅ Model {model_name} successfully pulled!")
+                        # Give Ollama a moment to register the model
+                        time.sleep(2)
                         return True
                 except json.JSONDecodeError:
                     pass  # Skip non-JSON lines
     except urllib.error.URLError as e:
         if "timed out" in str(e):
-            print(f"Connection timeout while pulling {model_name}, checking if model exists...")
+            print(f"⚠️  Connection timeout while pulling {model_name}")
+            print("Checking if model was downloaded anyway...")
+            time.sleep(2)
             if check_model_exists(model_name, ollama_url):
-                print(f"Model {model_name} found despite timeout!")
+                print(f"✅ Model {model_name} found despite timeout!")
                 return True
-        print(f"Error pulling {model_name}: {e}")
+        print(f"❌ Error pulling {model_name}: {e}")
         return False
     except Exception as e:
-        print(f"Error pulling {model_name}: {e}")
+        print(f"❌ Error pulling {model_name}: {e}")
         return False
     
-    # Final check if model exists
-    if check_model_exists(model_name, ollama_url):
-        print(f"Model {model_name} found after pull attempt")
-        return True
+    # Final check if model exists (with extra retries)
+    print("Performing final check for model...")
+    for retry in range(5):
+        if check_model_exists(model_name, ollama_url):
+            print(f"✅ Model {model_name} confirmed available!")
+            return True
+        if retry < 4:
+            print(f"Model not found yet, waiting 2 seconds... (attempt {retry + 1}/5)")
+            time.sleep(2)
     
+    print(f"❌ Model {model_name} not found after pull attempt")
     return False
 
 def main():

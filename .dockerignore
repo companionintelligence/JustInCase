@@ -33,5 +33,14 @@ Thumbs.db
 test.sh
 *.test
 
+# Scripts
+pull-models.sh
+check-models.sh
+download-models.sh
+
 # Build cache
 .buildx-cache/
+
+# Environment files
+.env
+.env.*
