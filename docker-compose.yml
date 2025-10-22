@@ -1,10 +1,28 @@
 services:
+  # C++ version (no Python, no Tika needed for now)
+  jic-cpp:
+    build:
+      context: .
+      dockerfile: Dockerfile.cpp
+    container_name: jic-cpp
+    volumes:
+      - ./sources:/app/sources
+      - ./data:/app/data
+      - ./gguf_models:/app/gguf_models:ro
+    ports:
+      - "8080:8080"
+    profiles:
+      - cpp
+
+  # Python version (original)
   tika:
     image: apache/tika:latest
     container_name: tika
     pull_policy: if_not_present
     ports:
       - "9998:9998"
+    profiles:
+      - python
 
   survival-rag:
     build:
@@ -25,4 +43,6 @@ services:
       - LLM_MODEL=${LLM_MODEL:-llama3.2}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-nomic-embed-text}
     command: ["python3", "start.py"]
+    profiles:
+      - python
 
