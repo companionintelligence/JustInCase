@@ -18,6 +18,7 @@ FROM --platform=linux/arm64 ubuntu:24.04 AS builder
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     build-essential \
     cmake \
+    git \
     wget \
     ca-certificates \
     libopenblas-dev \
