@@ -1,48 +1,18 @@
 services:
-  # C++ version with Tika for PDF support
-  tika-cpp:
-    image: apache/tika:latest
-    container_name: tika-cpp
-    pull_policy: if_not_present
-    ports:
-      - "9998:9998"
-    profiles:
-      - cpp
-
-  jic-cpp:
-    build:
-      context: .
-      dockerfile: Dockerfile.cpp
-    container_name: jic-cpp
-    depends_on:
-      - tika-cpp
-    volumes:
-      - ./sources:/app/sources
-      - ./data:/app/data
-      - ./gguf_models:/app/gguf_models:ro
-    ports:
-      - "8080:8080"
-    environment:
-      - TIKA_URL=http://tika-cpp:9998
-    profiles:
-      - cpp
-
-  # Python version (original)
+  # Tika service for PDF support
   tika:
     image: apache/tika:latest
     container_name: tika
     pull_policy: if_not_present
     ports:
       - "9998:9998"
-    profiles:
-      - python
 
-  survival-rag:
+  # C++ server
+  jic:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: survival-rag
-    pull_policy: never
+    container_name: jic
     depends_on:
       - tika
     volumes:
@@ -53,9 +23,4 @@ services:
       - "8080:8080"
     environment:
       - TIKA_URL=http://tika:9998
-      - LLM_MODEL=${LLM_MODEL:-llama3.2}
-      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-nomic-embed-text}
-    command: ["python3", "start.py"]
-    profiles:
-      - python
 

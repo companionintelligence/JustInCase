@@ -1,19 +1,16 @@
 #!/bin/bash
-# Build and run the C++ version
+# Build the JIC C++ server
 
-echo "Building C++ server..."
+echo "Building JIC server..."
 
-# Build the C++ version
-docker compose --profile cpp build
+# Build the server
+docker compose build
 
 if [ $? -eq 0 ]; then
     echo "✅ Build successful!"
     echo ""
-    echo "To run the C++ server:"
-    echo "  docker compose --profile cpp up"
-    echo ""
-    echo "To run the Python server instead:"
-    echo "  docker compose --profile python up"
+    echo "To run the server:"
+    echo "  docker compose up"
 else
     echo "❌ Build failed"
     exit 1
