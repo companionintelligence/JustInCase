@@ -1,16 +1,29 @@
 services:
-  # C++ version (no Python, no Tika needed for now)
+  # C++ version with Tika for PDF support
+  tika-cpp:
+    image: apache/tika:latest
+    container_name: tika-cpp
+    pull_policy: if_not_present
+    ports:
+      - "9998:9998"
+    profiles:
+      - cpp
+
   jic-cpp:
     build:
       context: .
       dockerfile: Dockerfile.cpp
     container_name: jic-cpp
+    depends_on:
+      - tika-cpp
     volumes:
       - ./sources:/app/sources
       - ./data:/app/data
       - ./gguf_models:/app/gguf_models:ro
     ports:
       - "8080:8080"
+    environment:
+      - TIKA_URL=http://tika-cpp:9998
     profiles:
       - cpp
 

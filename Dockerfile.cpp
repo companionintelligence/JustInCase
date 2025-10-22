@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     git \
     wget \
     libopenblas-dev \
+    libcurl4-openssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
@@ -34,6 +35,7 @@ FROM ubuntu:22.04
 
 RUN apt-get update && apt-get install -y \
     libopenblas0 \
+    libcurl4 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

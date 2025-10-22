@@ -14,6 +14,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <signal.h>
+#include <curl/curl.h>
 #include "llama.h"
 #include "json.hpp"
 #include "faiss/IndexFlatL2.h"
@@ -31,6 +32,58 @@ const int MAX_CONTEXT_CHUNKS = 3;
 const int SEARCH_TOP_K = 5;
 const std::string LLAMA_MODEL_PATH = "./gguf_models/Llama-3.2-1B-Instruct-Q4_K_S.gguf";
 const std::string NOMIC_MODEL_PATH = "./gguf_models/nomic-embed-text-v1.5.Q4_K_M.gguf";
+const std::string TIKA_URL = "http://tika:9998/tika";
+
+// CURL callback for response data
+size_t curl_write_callback(void* contents, size_t size, size_t nmemb, std::string* userp) {
+    userp->append((char*)contents, size * nmemb);
+    return size * nmemb;
+}
+
+// Extract text from file using Tika
+std::string extract_text_with_tika(const std::string& filepath) {
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        return "";
+    }
+    
+    std::string response;
+    
+    // Read file content
+    std::ifstream file(filepath, std::ios::binary);
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string file_content = buffer.str();
+    
+    // Set up CURL
+    curl_easy_setopt(curl, CURLOPT_URL, TIKA_URL.c_str());
+    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, file_content.c_str());
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, file_content.size());
+    
+    // Headers
+    struct curl_slist* headers = NULL;
+    headers = curl_slist_append(headers, "Accept: text/plain");
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    
+    // Response handling
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+    
+    // Perform request
+    CURLcode res = curl_easy_perform(curl);
+    
+    // Cleanup
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl);
+    
+    if (res != CURLE_OK) {
+        std::cerr << "CURL error: " << curl_easy_strerror(res) << std::endl;
+        return "";
+    }
+    
+    return response;
+}
 
 // Global state
 struct Document {
@@ -348,9 +401,14 @@ void background_ingestion() {
                         std::stringstream buffer;
                         buffer << file.rdbuf();
                         text = buffer.str();
+                    } else if (full_path.ends_with(".pdf")) {
+                        // Use Tika service for PDF extraction
+                        text = extract_text_with_tika(full_path);
+                        if (text.empty()) {
+                            std::cerr << "Failed to extract text from PDF: " << rel_path << std::endl;
+                            continue;
+                        }
                     } else {
-                        // For PDFs, we'd need to integrate a PDF parser
-                        // For now, skip PDFs in the C++ version
                         continue;
                     }
                     
@@ -548,7 +606,43 @@ void handle_client(int client_socket) {
     close(client_socket);
 }
 
+// Wait for Tika service to be ready
+bool wait_for_tika(int max_retries = 30) {
+    std::cout << "Waiting for Tika service..." << std::endl;
+    
+    for (int i = 0; i < max_retries; i++) {
+        CURL* curl = curl_easy_init();
+        if (!curl) continue;
+        
+        curl_easy_setopt(curl, CURLOPT_URL, "http://tika:9998");
+        curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 2L);
+        
+        CURLcode res = curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+        
+        if (res == CURLE_OK) {
+            std::cout << "Tika service is ready!" << std::endl;
+            return true;
+        }
+        
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+    }
+    
+    std::cerr << "Tika service failed to start" << std::endl;
+    return false;
+}
+
 int main() {
+    // Initialize CURL
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    
+    // Wait for Tika
+    if (!wait_for_tika()) {
+        std::cerr << "Cannot proceed without Tika service" << std::endl;
+        return 1;
+    }
+    
     // Initialize models
     std::cout << "Initializing models..." << std::endl;
     if (!init_models()) {
@@ -617,6 +711,7 @@ int main() {
     llama_free_model(llm_model);
     llama_free_model(embedding_model);
     llama_backend_free();
+    curl_global_cleanup();
     
     return 0;
 }
