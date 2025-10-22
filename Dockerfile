@@ -1,4 +1,4 @@
-FROM ubuntu:22.04 AS builder
+FROM ubuntu:24.04 AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -29,7 +29,7 @@ RUN cmake -B build . && \
     cmake --build build -- -j$(nproc)
 
 # Runtime image
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 RUN apt-get update && apt-get install -y \
     libopenblas0 \
