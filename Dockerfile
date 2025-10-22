@@ -6,6 +6,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     cmake \
     git \
     wget \
+    ca-certificates \
     libopenblas-dev \
     libcurl4-openssl-dev \
     libssl-dev \
@@ -14,8 +15,10 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 
 WORKDIR /build
 
-# Clone llama.cpp with minimal depth
-RUN git clone --depth 1 https://github.com/ggerganov/llama.cpp.git
+# Clone llama.cpp with minimal depth (disable SSL verification for build only)
+RUN git config --global http.sslverify false && \
+    git clone --depth 1 https://github.com/ggerganov/llama.cpp.git && \
+    git config --global http.sslverify true
 
 # Copy source files
 COPY server.cpp CMakeLists.txt ./
