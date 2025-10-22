@@ -42,11 +42,14 @@ RUN cd llama.cpp && \
         -DGGML_STATIC=ON \
         -DGGML_CPU_BACKEND=ON \
         . && \
-    cmake --build build --target llama --target ggml -- -j$(nproc) && \
+    cmake --build build -- -j$(nproc) && \
     # Create a package of just what we need
     mkdir -p /llama-install/lib /llama-install/include && \
     # Find and copy ALL static libraries from the entire build tree
     find . -name "*.a" -type f -exec cp {} /llama-install/lib/ \; && \
+    # Also check for any additional ggml libraries that might be in subdirectories
+    find . -path "*/ggml/src/*.a" -type f -exec cp {} /llama-install/lib/ \; 2>/dev/null || true && \
+    find . -path "*/src/ggml*.a" -type f -exec cp {} /llama-install/lib/ \; 2>/dev/null || true && \
     # Copy headers from various locations
     cp -r include/* /llama-install/include/ 2>/dev/null || true && \
     cp -r ggml/include/* /llama-install/include/ 2>/dev/null || true && \
