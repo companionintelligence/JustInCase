@@ -18,21 +18,40 @@ EMBEDDING_MODEL=$(docker compose exec -T survival-rag python3 -c "from config im
 
 # Check llama.cpp models
 echo -e "\n🧠 Checking llama.cpp models..."
-response=$(curl -s http://localhost:11434/api/tags 2>/dev/null)
-if [ $? -eq 0 ]; then
+# First check if the wrapper is responding
+response=$(curl -s -m 5 http://localhost:11434/api/tags 2>/dev/null)
+curl_exit=$?
+
+if [ $curl_exit -eq 0 ]; then
+    echo "✅ Ollama-compatible wrapper is responding"
     if echo "$response" | grep -q "$LLM_MODEL"; then
         echo "✅ $LLM_MODEL model is available"
     else
-        echo "❌ $LLM_MODEL model not found"
+        echo "⚠️  $LLM_MODEL model not listed (this is normal for llama.cpp)"
     fi
     
     if echo "$response" | grep -q "$EMBEDDING_MODEL"; then
         echo "✅ $EMBEDDING_MODEL model is available"
     else
-        echo "❌ $EMBEDDING_MODEL model not found"
+        echo "⚠️  $EMBEDDING_MODEL model not listed (this is normal for llama.cpp)"
     fi
 else
-    echo "❌ Could not connect to llama.cpp server"
+    echo "❌ Could not connect to Ollama-compatible wrapper"
+    echo "   Checking individual llama.cpp servers..."
+    
+    # Check LLM server
+    if curl -s -m 2 http://localhost:8081/health > /dev/null 2>&1; then
+        echo "   ✅ LLM server (port 8081) is responding"
+    else
+        echo "   ❌ LLM server (port 8081) not responding"
+    fi
+    
+    # Check embedding server
+    if curl -s -m 2 http://localhost:8082/health > /dev/null 2>&1; then
+        echo "   ✅ Embedding server (port 8082) is responding"
+    else
+        echo "   ❌ Embedding server (port 8082) not responding"
+    fi
 fi
 
 # Check Tika
