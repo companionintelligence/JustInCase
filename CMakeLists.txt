@@ -15,6 +15,7 @@ set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "llama: build examples" FORCE)
 set(LLAMA_BUILD_SERVER OFF CACHE BOOL "llama: build server example" FORCE)
 set(LLAMA_NATIVE OFF CACHE BOOL "llama: enable -march=native flag" FORCE)
 set(LLAMA_LTO OFF CACHE BOOL "llama: enable link time optimization" FORCE)
+set(GGML_CCACHE OFF CACHE BOOL "ggml: disable ccache warning" FORCE)
 
 # Add llama.cpp as a subdirectory
 add_subdirectory(llama.cpp)
