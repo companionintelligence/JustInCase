@@ -23,6 +23,34 @@ function initializeChat() {
     };
     promptsContainer.appendChild(button);
   });
+  
+  // Check system status periodically
+  checkSystemStatus();
+  setInterval(checkSystemStatus, 5000);
+}
+
+function checkSystemStatus() {
+  fetch('/status')
+    .then(response => response.json())
+    .then(data => {
+      const statusDiv = document.getElementById('system-status');
+      if (!statusDiv) {
+        const div = document.createElement('div');
+        div.id = 'system-status';
+        div.style.cssText = 'position: fixed; top: 10px; right: 10px; background: #333; color: white; padding: 10px; border-radius: 5px; font-size: 12px;';
+        document.body.appendChild(div);
+      }
+      
+      const status = data.ingestion;
+      let statusText = `📚 ${data.documents_indexed} docs indexed`;
+      
+      if (status && status.in_progress) {
+        statusText += ` | ⏳ Ingesting: ${status.files_processed}/${status.total_files} files`;
+      }
+      
+      document.getElementById('system-status').textContent = statusText;
+    })
+    .catch(err => console.error('Failed to check status:', err));
 }
 
 function addBotMessage(text) {
