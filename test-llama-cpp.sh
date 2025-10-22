@@ -23,7 +23,20 @@ fi
 if [ ! -f "./llama.cpp/build/bin/llama-server" ]; then
     echo "Building llama.cpp..."
     chmod +x build-llama-cpp.sh
-    ./build-llama-cpp.sh
+    if ! ./build-llama-cpp.sh; then
+        echo "❌ Failed to build llama.cpp"
+        exit 1
+    fi
+fi
+
+# Verify the binary exists
+if [ ! -f "./llama.cpp/build/bin/llama-server" ]; then
+    echo "❌ llama-server binary not found after build!"
+    echo "Contents of llama.cpp/build/:"
+    ls -la ./llama.cpp/build/ 2>/dev/null || echo "Build directory not found"
+    echo "Contents of llama.cpp/build/bin/:"
+    ls -la ./llama.cpp/build/bin/ 2>/dev/null || echo "Bin directory not found"
+    exit 1
 fi
 
 # Test the server directly

@@ -125,7 +125,17 @@ def main():
     # Build llama.cpp if needed
     if not os.path.exists("./llama.cpp/build/bin/llama-server"):
         print("Building llama.cpp...")
-        subprocess.run(["./build-llama-cpp.sh"], check=True)
+        result = subprocess.run(["./build-llama-cpp.sh"], capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"Build failed with error:\n{result.stderr}")
+            raise Exception("Failed to build llama.cpp")
+        
+        # Double-check the binary exists
+        if not os.path.exists("./llama.cpp/build/bin/llama-server"):
+            print("ERROR: llama-server binary not found after build!")
+            print("Checking build directory...")
+            subprocess.run(["ls", "-la", "./llama.cpp/build/"])
+            raise Exception("llama-server binary not found")
     
     # Start llama.cpp servers
     print("Starting LLM server...")
