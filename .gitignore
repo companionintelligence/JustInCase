@@ -2,6 +2,7 @@
 data/
 
 # Ollama models (large files)
+ollama_models/
 ollama_models_local/
 
 # Aider

@@ -50,19 +50,22 @@ git clone https://github.com/PR0M3TH3AN/Survival-Data.git
 find Survival-Data/HOME -type f -iname "*.pdf" -exec cp {} sources/ \;
 ```
 
-### 3. Set up models (one-time, choose one option)
+### 3. Prepare models (required)
 
-#### Option A: Copy from your local Ollama (if you have models)
 ```bash
-# If you already have models in ~/.ollama/models
-chmod +x copy-local-models.sh
-./copy-local-models.sh
+# Make the script executable
+chmod +x prepare-models.sh
+
+# Copy models from your local Ollama
+./prepare-models.sh
 ```
 
-#### Option B: Download models into Docker (if you don't have them locally)
+This copies models from `~/.ollama` to `./ollama_models` for Docker to use.
+
+**Note:** You must have the required models in your local Ollama first:
 ```bash
-# This downloads into Docker volume (slow connection warning!)
-./download-models.sh
+ollama pull llama3.2
+ollama pull nomic-embed-text
 ```
 
 ### 4. Start the system
@@ -73,11 +76,11 @@ docker compose up --build
 
 This:
 - Launches Apache Tika
-- Launches Ollama (using models from Docker volume)
+- Launches Ollama (using pre-copied models)
 - Indexes your PDFs
 - Starts the Flask API + web UI on port `8080`
 
-**Note:** Models are stored in Docker volume `ollama_data` - completely separate from your local Ollama!
+**Note:** Docker will NEVER download models. It only uses what's in `./ollama_models`!
 
 ---
 
@@ -134,34 +137,38 @@ All model references are centralized in `config.py` for easy modification.
 
 ### Model Management
 
-Models are stored in Docker volume `ollama_data` - completely separate from your local Ollama installation.
+Models are copied from your local Ollama (`~/.ollama`) to `./ollama_models` and mounted read-only in Docker.
 
 **Important:** 
-- Docker models are in volume `ollama_data` (NOT ~/.ollama/models)
-- Your local Ollama models are NOT used by Docker
-- Models must be explicitly copied or downloaded into Docker
-- Models persist across container restarts but NOT `docker compose down -v`
+- Models MUST exist in your local Ollama first
+- Docker NEVER downloads models from the internet
+- Models are in `./ollama_models` (git-ignored)
+- Docker mounts this directory read-only
 - ~1.6GB total (varies by model choice)
 - Default models: llama3.2 (LLM) and nomic-embed-text (embeddings)
 
-### First-time model setup (choose one):
+### Workflow:
 
-1. **Copy from local Ollama** (if you have the models):
+1. **Install models locally** (one-time):
    ```bash
-   ./copy-local-models.sh
+   ollama pull llama3.2
+   ollama pull nomic-embed-text
    ```
 
-2. **Download into Docker** (if you don't have them locally):
+2. **Prepare models for Docker**:
    ```bash
-   ./download-models.sh
+   ./prepare-models.sh
    ```
 
-3. **Manual pull** (for specific models):
+3. **Run Docker**:
    ```bash
-   docker compose up -d ollama
-   docker compose exec ollama ollama pull llama3.2
-   docker compose exec ollama ollama pull nomic-embed-text
+   docker compose up --build
    ```
+
+### If models are missing:
+
+The system will fail fast with clear error messages if models aren't found.
+No automatic downloads, no fallbacks.
 
 ### Container naming
 
@@ -182,51 +189,40 @@ docker compose restart survival-rag
 
 ### Understanding model storage
 
-Models are stored locally in `./ollama_models_local` and copied into Docker images during build.
+Models are stored in `./ollama_models` (copied from `~/.ollama`).
 
-To check your local models:
+To check your models:
 ```bash
-# Check if models exist locally
-ls -la ./ollama_models_local/
+# Check local Ollama models
+ollama list
+
+# Check prepared models
+ls -la ./ollama_models/
 
 # Check size
-du -sh ./ollama_models_local/
+du -sh ./ollama_models/
 
-# With containers running, verify models in container
+# With containers running, verify models
 docker compose exec ollama ollama list
-```
-
-To completely reset and re-download models:
-```bash
-# Remove local models
-rm -rf ./ollama_models_local/
-
-# Re-download
-./download-models-local.sh
-
-# Rebuild Docker images
-docker compose build
 ```
 
 ### Troubleshooting
 
-If build fails with "models not found":
+If models are missing:
 
-1. **Run the download script**: `./download-models-local.sh`
-2. **Check models exist**: `ls -la ./ollama_models_local/models/`
-3. **Ensure sufficient disk space**: Need ~1.6GB free
-4. **Try manual Docker download** if local Ollama isn't working:
+1. **Install in local Ollama first**:
    ```bash
-   docker run -d --name ollama-temp -v "$(pwd)/ollama_models_local:/root/.ollama" ollama/ollama:0.12.6
-   # Using default models
-   docker exec ollama-temp ollama pull llama3.2
-   docker exec ollama-temp ollama pull nomic-embed-text
-   
-   # Or with custom models
-   export LLM_MODEL=llama3.2
-   export EMBEDDING_MODEL=nomic-embed-text
-   docker exec ollama-temp ollama pull $LLM_MODEL
-   docker exec ollama-temp ollama pull $EMBEDDING_MODEL
-   docker stop ollama-temp && docker rm ollama-temp
+   ollama pull llama3.2
+   ollama pull nomic-embed-text
    ```
+
+2. **Run prepare script**:
+   ```bash
+   ./prepare-models.sh
+   ```
+
+3. **Check for errors** - the script will tell you exactly what's missing
+
+The system is designed to fail fast and clearly if models aren't available.
+No surprises, no hidden downloads.
 

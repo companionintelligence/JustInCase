@@ -7,12 +7,13 @@ services:
       - "9998:9998"
 
   ollama:
-    build:
-      context: .
-      dockerfile: Dockerfile.ollama
+    image: ollama/ollama:0.12.6
     container_name: ollama
+    pull_policy: if_not_present
     ports:
       - "11434:11434"
+    volumes:
+      - ./ollama_models:/root/.ollama:ro
     environment:
       - OLLAMA_MODELS=${LLM_MODEL:-llama3.2},${EMBEDDING_MODEL:-nomic-embed-text}
 
@@ -39,6 +40,4 @@ services:
       - SKIP_MODEL_CHECK=${SKIP_MODEL_CHECK:-false}
     command: ["python3", "start.py"]
 
-volumes:
-  ollama_data:
 
