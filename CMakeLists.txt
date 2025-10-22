@@ -75,6 +75,7 @@ if(EXISTS "/llama-install/lib/libllama.a")
         Threads::Threads
         curl
         openblas
+        gomp  # OpenMP runtime library
         m  # math library
         dl  # for dlopen
         stdc++  # C++ standard library
