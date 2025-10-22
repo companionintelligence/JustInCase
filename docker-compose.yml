@@ -13,9 +13,11 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      - ollama_data:/root/.ollama
+      # Mount your LOCAL .ollama directory directly - no downloads!
+      - ${HOME}/.ollama:/root/.ollama:ro
     environment:
       - OLLAMA_MODELS=${LLM_MODEL:-llama3.2},${EMBEDDING_MODEL:-nomic-embed-text}
+      - OLLAMA_OFFLINE=1
 
   survival-rag:
     build:
@@ -40,7 +42,6 @@ services:
       - SKIP_MODEL_CHECK=${SKIP_MODEL_CHECK:-false}
     command: ["python3", "start.py"]
 
-volumes:
-  ollama_data:
+# No volumes needed - we mount local .ollama directly
 
 

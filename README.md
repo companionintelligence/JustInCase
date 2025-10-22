@@ -50,7 +50,17 @@ git clone https://github.com/PR0M3TH3AN/Survival-Data.git
 find Survival-Data/HOME -type f -iname "*.pdf" -exec cp {} sources/ \;
 ```
 
-### 3. Start the system
+### 3. Use your existing local models (NO DOWNLOADS!)
+
+If you already have Ollama installed locally with models:
+
+```bash
+# This just creates a mount point - NO DOWNLOADS!
+chmod +x prepare-local-models.sh
+./prepare-local-models.sh
+```
+
+### 4. Start the system
 
 ```bash
 docker compose up --build
@@ -58,19 +68,11 @@ docker compose up --build
 
 This:
 - Launches Apache Tika
-- Launches Ollama
+- Launches Ollama (using YOUR LOCAL models)
 - Indexes your PDFs
 - Starts the Flask API + web UI on port `8080`
 
-**Note:** On first run, you'll need to import models:
-
-```bash
-# After docker compose up, import the models
-chmod +x import-models.sh
-./import-models.sh
-```
-
-This downloads models into the Docker volume where they persist across restarts.
+**Note:** This uses your existing ~/.ollama directory. No internet required!
 
 ---
 
@@ -127,43 +129,42 @@ All model references are centralized in `config.py` for easy modification.
 
 ### Model Management
 
-Models are stored in Docker volume `ollama_data` which provides durable storage.
+**NEW APPROACH: Use your existing local Ollama models directly!**
 
 **Important:** 
-- Models are downloaded ONCE and stored permanently in Docker volume
-- Models SURVIVE all these operations:
-  - `docker compose down` and `docker compose up`
-  - `docker compose up --build` (rebuilding containers)
-  - Container restarts and code changes
-- Models are ONLY deleted if you run `docker compose down -v` (with -v flag)
+- Uses YOUR existing ~/.ollama directory (no copying, no downloads!)
+- Models are mounted read-only from your local system
+- NO INTERNET CONNECTION REQUIRED
+- Works with whatever models you already have locally
 - ~1.6GB total (varies by model choice)
-- Default models: llama3.2 (LLM) and nomic-embed-text (embeddings)
 
 ### Workflow:
 
-1. **First time setup** (downloads models ONCE):
+1. **Setup** (one time, no downloads):
    ```bash
-   # Start the system
-   docker compose up -d
-   
-   # Import models (this downloads them into durable Docker volume)
-   ./import-models.sh
-   
-   # Models are now permanently stored!
+   ./prepare-local-models.sh
    ```
 
-2. **All future runs** (no downloads needed):
+2. **Run the system**:
    ```bash
    docker compose up
    ```
-   Models are already in the volume, no re-download needed.
 
-3. **Even after rebuilds** (still no downloads):
-   ```bash
-   docker compose down
-   docker compose up --build
-   # Models are still there!
-   ```
+3. **That's it!** Your local models are used directly.
+
+### If you see "models not found":
+
+Check what models you actually have:
+```bash
+ollama list
+```
+
+Then set the environment variables to match:
+```bash
+export LLM_MODEL=llama3.2:latest  # or whatever you have
+export EMBEDDING_MODEL=nomic-embed-text:latest
+docker compose up
+```
 
 ### If models are missing:
 

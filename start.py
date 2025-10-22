@@ -93,12 +93,30 @@ def main():
     
     if missing_models:
         print("\n" + "="*60)
-        print("FATAL: Required models are not available!")
+        print("IMPORTANT: Models not found in Docker!")
         print("Missing models:", ", ".join(missing_models))
-        print("\nModels must be prepared before running Docker.")
-        print("Run: ./prepare-models.sh")
+        print("\nThis might be because:")
+        print("1. The models exist with different tags in your local Ollama")
+        print("2. The mount isn't working correctly")
+        print("\nTrying alternative model names...")
         print("="*60 + "\n")
-        raise Exception(f"Required models not available: {', '.join(missing_models)}")
+        
+        # Try without tags (e.g., just "llama3.2" instead of "llama3.2:latest")
+        alt_missing = []
+        for model in missing_models:
+            base_name = model.split(':')[0]
+            if not check_model_exists(base_name, OLLAMA_URL, retry_count=2):
+                alt_missing.append(model)
+            else:
+                print(f"✅ Found {base_name} (without tag)")
+        
+        if alt_missing:
+            print("\nTo check what models you have locally:")
+            print("  ollama list")
+            print("\nTo use different model names, set environment variables:")
+            print("  export LLM_MODEL=<your-actual-model-name>")
+            print("  export EMBEDDING_MODEL=<your-actual-embedding-model>")
+            raise Exception(f"Required models not available: {', '.join(alt_missing)}")
     
     # Run ingestion if needed
     if not os.path.exists("data/index.faiss"):
