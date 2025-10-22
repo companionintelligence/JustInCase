@@ -244,7 +244,7 @@ bool init_models() {
     llama_backend_init();
     
     llama_model_params model_params = llama_model_default_params();
-    llm_model = llama_load_model_from_file(LLAMA_MODEL_PATH.c_str(), model_params);
+    llm_model = llama_model_load_from_file(LLAMA_MODEL_PATH.c_str(), model_params);
     if (!llm_model) {
         std::cerr << "Failed to load LLM model" << std::endl;
         return false;
@@ -253,10 +253,10 @@ bool init_models() {
     llama_context_params ctx_params = llama_context_default_params();
     ctx_params.n_ctx = 2048;
     ctx_params.n_threads = 4;
-    llm_ctx = llama_new_context_with_model(llm_model, ctx_params);
+    llm_ctx = llama_init_from_model(llm_model, ctx_params);
     
     // Initialize embedding model
-    embedding_model = llama_load_model_from_file(NOMIC_MODEL_PATH.c_str(), model_params);
+    embedding_model = llama_model_load_from_file(NOMIC_MODEL_PATH.c_str(), model_params);
     if (!embedding_model) {
         std::cerr << "Failed to load embedding model" << std::endl;
         return false;
@@ -264,7 +264,7 @@ bool init_models() {
     
     ctx_params.n_ctx = 8192;
     ctx_params.embeddings = true;
-    embedding_ctx = llama_new_context_with_model(embedding_model, ctx_params);
+    embedding_ctx = llama_init_from_model(embedding_model, ctx_params);
     
     return true;
 }
