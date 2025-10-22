@@ -1,74 +1,52 @@
 #!/bin/bash
 
-# This script downloads Ollama models directly to your host machine
-# Run this ONCE to avoid re-downloading during development
+# Simple script to ensure models are available when Ollama starts
+# This runs INSIDE the main docker compose, not as a separate container
 
-echo "🚀 Ollama Model Downloader"
-echo "========================="
-echo "This will download models to ./ollama_models on your host machine"
-echo "These models will persist across Docker rebuilds!"
-echo ""
+echo "🚀 Model Setup"
+echo "============="
 
-# Create the models directory
-mkdir -p ollama_models
-
-# Check if models already exist
-if [ -d "ollama_models/models" ] && [ "$(ls -A ollama_models/models 2>/dev/null)" ]; then
-    echo "⚠️  Models directory already exists and contains files."
-    echo "   Contents:"
-    ls -la ollama_models/models/
-    read -p "Do you want to continue anyway? (y/N) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "Aborted."
-        exit 0
-    fi
+# Check if we should skip model operations
+if [ "$SKIP_MODEL_PULL" = "true" ]; then
+    echo "SKIP_MODEL_PULL is set, skipping model downloads"
+    exit 0
 fi
 
-# Start a temporary Ollama container with our local directory mounted
-echo ""
-echo "Starting temporary Ollama container..."
-docker run -d --name ollama-temp \
-    -v "$(pwd)/ollama_models:/root/.ollama" \
-    ollama/ollama:0.12.6
-
 # Wait for Ollama to be ready
-echo "Waiting for Ollama to start..."
-sleep 5
+echo "Waiting for Ollama to be ready..."
+for i in {1..30}; do
+    if curl -s http://ollama:11434/api/tags >/dev/null 2>&1; then
+        echo "Ollama is ready!"
+        break
+    fi
+    sleep 2
+done
 
-# Function to pull a model
-pull_model() {
+# Function to check and pull models
+ensure_model() {
     local model=$1
     echo ""
-    echo "📥 Pulling $model..."
-    docker exec ollama-temp ollama pull $model
+    echo "Checking $model..."
+    
+    # Check if model exists
+    if docker exec ollama ollama list 2>/dev/null | grep -q "$model"; then
+        echo "✅ $model already available"
+        return 0
+    fi
+    
+    echo "📥 Pulling $model (this may take a while on first run)..."
+    docker exec ollama ollama pull $model
     if [ $? -eq 0 ]; then
-        echo "✅ Successfully downloaded $model"
+        echo "✅ Successfully pulled $model"
     else
-        echo "❌ Failed to download $model"
+        echo "❌ Failed to pull $model"
         return 1
     fi
 }
 
-# Pull the required models
-pull_model "llama3.2:1b"
-pull_model "nomic-embed-text"
-
-# List downloaded models
-echo ""
-echo "📋 Downloaded models:"
-docker exec ollama-temp ollama list
-
-# Clean up
-echo ""
-echo "Cleaning up temporary container..."
-docker stop ollama-temp
-docker rm ollama-temp
+# Ensure required models are available
+ensure_model "llama3.2:1b"
+ensure_model "nomic-embed-text"
 
 echo ""
-echo "✨ Done! Models are stored in ./ollama_models"
-echo "   These will be automatically used by docker compose"
-echo ""
-echo "To use: docker compose up --build"
-echo ""
-echo "Note: The .env file will NOT be created to allow automatic model detection"
+echo "✅ Model setup complete!"

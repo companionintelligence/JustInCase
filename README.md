@@ -97,27 +97,20 @@ This verifies:
 
 ## 🔧 Troubleshooting
 
-### Model Management & Durable Storage
+### Model Management
 
-Models are stored in `./ollama_models` directory on your host machine, which persists across Docker rebuilds. This means:
-- ✅ Models download only once
-- ✅ No re-downloading when updating code
-- ✅ Models survive `docker compose down` and rebuilds
-- ✅ ~1.6GB total (1.3GB for llama3.2:1b, 274MB for nomic-embed-text)
+Models are stored in a Docker volume and will be automatically downloaded on first run. The models persist across container restarts but not `docker compose down -v`.
 
 ### Manually downloading models
 
 If automatic model pulling fails or you have a slow connection:
 
 ```bash
-# Option 1: Use the download script (recommended for slow connections)
-./download-models.sh
-
-# Option 2: Download with docker compose running
+# Download with docker compose running
 docker compose exec ollama ollama pull llama3.2:1b
 docker compose exec ollama ollama pull nomic-embed-text
 
-# Option 3: Skip model download and add them later
+# Or skip model download and add them later
 echo "SKIP_MODEL_PULL=true" > .env
 docker compose up --build
 ```
@@ -151,31 +144,21 @@ docker compose restart survival-rag
 
 ### Understanding model storage
 
-**Important:** Models are now stored in `./ollama_models` on your host machine (not in a Docker volume). This provides better durability and visibility.
-
-- Models location on host: `./ollama_models`
-- Models location in container: `/root/.ollama` (mounted from host)
-- Models persist across all Docker operations
+Models are stored in a Docker volume (`ollama_data`). This is simpler and more reliable than trying to manage model files manually.
 
 To check your models:
 ```bash
-# List files in model directory
-ls -la ./ollama_models/
-
-# Check total size
-du -sh ./ollama_models/
-
 # With docker compose running, list models
 docker compose exec ollama ollama list
+
+# Check volume size
+docker system df -v | grep ollama_data
 ```
 
 To completely reset and re-download models:
 ```bash
-# Stop containers
-docker compose down
-
-# Remove the models directory (this deletes all downloaded models!)
-rm -rf ./ollama_models
+# Stop containers and remove volume
+docker compose down -v
 
 # Start fresh (will re-download models)
 docker compose up --build
@@ -183,11 +166,10 @@ docker compose up --build
 
 ### Troubleshooting model persistence
 
-If models aren't found after download:
+If models aren't found:
 
-1. **Check the directory exists**: `ls -la ./ollama_models/`
-2. **Verify mount in docker-compose.yml**: Should have `- ./ollama_models:/root/.ollama`
-3. **Check permissions**: Ensure Docker can read the directory
-4. **Try manual verification**: `docker compose exec ollama ollama list`
-5. **Use skip flags if needed**: `SKIP_MODEL_CHECK=true docker compose up`
+1. **Check if Ollama is running**: `docker ps | grep ollama`
+2. **List models**: `docker compose exec ollama ollama list`
+3. **Pull manually if needed**: `docker compose exec ollama ollama pull llama3.2:1b`
+4. **Use skip flags if needed**: `SKIP_MODEL_CHECK=true docker compose up`
 

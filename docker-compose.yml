@@ -13,10 +13,9 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      - ./ollama_models:/root/.ollama
+      - ollama_data:/root/.ollama
     environment:
       - OLLAMA_MODELS=llama3.2:1b,nomic-embed-text
-      - OLLAMA_DEBUG=1
 
   survival-rag:
     build:
@@ -38,4 +37,7 @@ services:
       - SKIP_MODEL_PULL=${SKIP_MODEL_PULL:-false}
       - SKIP_MODEL_CHECK=${SKIP_MODEL_CHECK:-false}
     command: ["python3", "start.py"]
+
+volumes:
+  ollama_data:
 

@@ -1,6 +1,3 @@
-# Ollama models (large files, stored locally)
-ollama_models/
-
 # FAISS index and metadata
 data/
 

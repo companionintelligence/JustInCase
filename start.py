@@ -162,9 +162,6 @@ def main():
     wait_for_service(tika_url, "Tika")
     wait_for_service(f"{ollama_url}/api/tags", "Ollama")
     
-    # Give Ollama a moment to fully initialize and scan for models
-    print("Waiting for Ollama to scan model directory...")
-    time.sleep(5)
     
     # List available models for debugging
     try:
