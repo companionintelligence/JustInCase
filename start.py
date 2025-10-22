@@ -68,21 +68,49 @@ def main():
     
     # List available models for debugging
     try:
+        # First check what's actually in the container
+        print("\nDebug: Checking mounted directory in container...")
+        debug_result = subprocess.run(
+            ["docker", "exec", "ollama", "ls", "-la", "/root/.ollama/"],
+            capture_output=True, text=True
+        )
+        if debug_result.returncode == 0:
+            print("Contents of /root/.ollama/:")
+            print(debug_result.stdout)
+        else:
+            print("Could not check /root/.ollama/ directory")
+            
+        # Check models subdirectory
+        debug_result = subprocess.run(
+            ["docker", "exec", "ollama", "find", "/root/.ollama/models", "-type", "d", "-name", "*llama*", "-o", "-name", "*nomic*"],
+            capture_output=True, text=True
+        )
+        if debug_result.returncode == 0 and debug_result.stdout:
+            print("\nModel directories found:")
+            print(debug_result.stdout)
+        
         req = urllib.request.Request(f"{OLLAMA_URL}/api/tags")
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read())
             available_models = [m.get('name', '') for m in data.get('models', [])]
-            print(f"Available Ollama models: {available_models}")
+            print(f"\nAvailable Ollama models via API: {available_models}")
     except Exception as e:
         print(f"Could not list models: {e}")
     
-    # Check models - NEVER pull, only verify
-    models_needed = [LLM_MODEL, EMBEDDING_MODEL]
-    missing_models = []
-    
-    print("\n" + "="*60)
-    print("Verifying required models...")
-    print("="*60)
+    # Check if we should skip model verification
+    if os.getenv("SKIP_MODEL_CHECK", "").lower() == "true":
+        print("\n" + "="*60)
+        print("SKIP_MODEL_CHECK=true - Skipping model verification")
+        print("Assuming models are available...")
+        print("="*60)
+    else:
+        # Check models - NEVER pull, only verify
+        models_needed = [LLM_MODEL, EMBEDDING_MODEL]
+        missing_models = []
+        
+        print("\n" + "="*60)
+        print("Verifying required models...")
+        print("="*60)
     
     for model in models_needed:
         if check_model_exists(model, OLLAMA_URL, retry_count=5):
@@ -116,6 +144,8 @@ def main():
             print("\nTo use different model names, set environment variables:")
             print("  export LLM_MODEL=<your-actual-model-name>")
             print("  export EMBEDDING_MODEL=<your-actual-embedding-model>")
+            print("\nOr skip model checks entirely:")
+            print("  SKIP_MODEL_CHECK=true docker compose up")
             raise Exception(f"Required models not available: {', '.join(alt_missing)}")
     
     # Run ingestion if needed

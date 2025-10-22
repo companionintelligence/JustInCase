@@ -13,9 +13,8 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      # Mount your LOCAL .ollama directory directly - no downloads!
-      # Remove :ro to allow Ollama to write its registry
-      - ${HOME}/.ollama:/root/.ollama
+      # Use local copy of models
+      - ./ollama_local:/root/.ollama
     environment:
       - OLLAMA_MODELS=${LLM_MODEL:-llama3.2},${EMBEDDING_MODEL:-nomic-embed-text}
 
@@ -41,7 +40,3 @@ services:
       - SKIP_MODEL_PULL=${SKIP_MODEL_PULL:-false}
       - SKIP_MODEL_CHECK=${SKIP_MODEL_CHECK:-false}
     command: ["python3", "start.py"]
-
-# No volumes needed - we mount local .ollama directly
-
-
