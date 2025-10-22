@@ -22,8 +22,23 @@ set(GGML_CCACHE OFF CACHE BOOL "ggml: disable ccache warning" FORCE)
 # Enable parallel builds for llama.cpp
 set(CMAKE_BUILD_PARALLEL_LEVEL ${CMAKE_BUILD_PARALLEL_LEVEL})
 
-# Add llama.cpp as a subdirectory
-add_subdirectory(llama.cpp)
+# Check if we're using pre-built llama (for Docker cache optimization)
+if(EXISTS "/llama-install/lib/libllama.a")
+    # Use pre-built llama library
+    add_library(llama STATIC IMPORTED)
+    set_target_properties(llama PROPERTIES
+        IMPORTED_LOCATION /llama-install/lib/libllama.a
+        INTERFACE_INCLUDE_DIRECTORIES /llama-install/include
+    )
+    
+    add_library(ggml STATIC IMPORTED)
+    set_target_properties(ggml PROPERTIES
+        IMPORTED_LOCATION /llama-install/lib/libggml.a
+    )
+else()
+    # Build llama.cpp from source
+    add_subdirectory(llama.cpp)
+endif()
 
 # Add nlohmann/json
 include(FetchContent)
