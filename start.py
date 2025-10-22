@@ -17,8 +17,8 @@ def wait_for_service(url, service_name, max_retries=30):
                     print(f"{service_name} is ready!")
                     # Give Ollama extra time to fully initialize
                     if "ollama" in service_name.lower():
-                        print("Giving Ollama extra time to initialize...")
-                        time.sleep(3)
+                        print("Giving Ollama extra time to initialize and scan models...")
+                        time.sleep(10)
                     return True
         except (urllib.error.URLError, urllib.error.HTTPError):
             time.sleep(2)
@@ -68,33 +68,11 @@ def main():
     
     # List available models for debugging
     try:
-        # First, let's check what's in the Ollama container's model directory
-        print("\nDebug: Checking Ollama container filesystem...")
-        try:
-            result = subprocess.run(
-                ["docker", "exec", "ollama", "ls", "-la", "/root/.ollama/"],
-                capture_output=True, text=True, check=False
-            )
-            if result.returncode == 0:
-                print("Contents of /root/.ollama/:")
-                print(result.stdout)
-            
-            # Check if models directory exists
-            result = subprocess.run(
-                ["docker", "exec", "ollama", "find", "/root/.ollama", "-name", "*.json", "-type", "f"],
-                capture_output=True, text=True, check=False
-            )
-            if result.returncode == 0 and result.stdout:
-                print("\nJSON files found in container:")
-                print(result.stdout[:500])  # First 500 chars
-        except Exception as debug_e:
-            print(f"Debug check failed: {debug_e}")
-        
         req = urllib.request.Request(f"{OLLAMA_URL}/api/tags")
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read())
             available_models = [m.get('name', '') for m in data.get('models', [])]
-            print(f"\nAvailable Ollama models via API: {available_models}")
+            print(f"Available Ollama models: {available_models}")
     except Exception as e:
         print(f"Could not list models: {e}")
     

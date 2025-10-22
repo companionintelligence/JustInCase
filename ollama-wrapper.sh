@@ -3,23 +3,14 @@
 
 echo "Starting Ollama with model initialization..."
 
-# Start Ollama in the background
-ollama serve &
-OLLAMA_PID=$!
+# Check what's in the mounted directory
+echo "Checking mounted models directory..."
+if [ -d "/root/.ollama/models" ]; then
+    echo "Models directory exists"
+    ls -la /root/.ollama/models/
+else
+    echo "WARNING: No models directory found at /root/.ollama/models"
+fi
 
-# Wait for Ollama to be ready
-echo "Waiting for Ollama to start..."
-for i in $(seq 1 30); do
-    if ollama list >/dev/null 2>&1; then
-        echo "Ollama is ready!"
-        break
-    fi
-    sleep 1
-done
-
-# List models to trigger registration
-echo "Checking models..."
-ollama list
-
-# Keep Ollama running
-wait $OLLAMA_PID
+# Start Ollama
+exec ollama serve
