@@ -73,6 +73,12 @@ WORKDIR /build
 COPY --from=llama-builder /llama-install /llama-install
 COPY --from=llama-builder /build/llama.cpp/ggml/src /build/llama.cpp/ggml/src
 
+# Download nlohmann/json as a single header (much faster than git clone)
+RUN mkdir -p include/nlohmann && \
+    wget --no-check-certificate -O include/nlohmann/json.hpp \
+    https://github.com/nlohmann/json/releases/download/v3.11.2/json.hpp && \
+    echo "Downloaded nlohmann/json.hpp"
+
 # Copy ONLY our application files
 COPY server.cpp CMakeLists.txt ./
 

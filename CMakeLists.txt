@@ -40,16 +40,9 @@ else()
     add_subdirectory(llama.cpp)
 endif()
 
-# Add nlohmann/json
-include(FetchContent)
-set(FETCHCONTENT_TRY_FIND_PACKAGE_MODE NEVER)
-FetchContent_Declare(json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG v3.11.2
-    GIT_SHALLOW TRUE
-    GIT_CONFIG "http.sslVerify=false"
-)
-FetchContent_MakeAvailable(json)
+# Add nlohmann/json (already downloaded as single header)
+add_library(nlohmann_json INTERFACE)
+target_include_directories(nlohmann_json INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Main executable
 add_executable(jic-server server.cpp)
@@ -68,7 +61,7 @@ message(STATUS "  CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 target_link_libraries(jic-server 
     PRIVATE 
     llama 
-    nlohmann_json::nlohmann_json
+    nlohmann_json
     Threads::Threads
     curl
 )
