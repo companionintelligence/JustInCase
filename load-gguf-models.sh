@@ -28,16 +28,17 @@ echo ""
 # Load LLM model
 if [ -f "./gguf_models/Modelfile.llama" ]; then
     echo "🔄 Creating $LLM_MODEL from GGUF..."
-    # Copy files into container
-    docker cp ./gguf_models ollama:/tmp/
     
-    # Create the model
-    docker exec ollama ollama create $LLM_MODEL -f /tmp/gguf_models/Modelfile.llama
+    # Create the model using the mounted volume path
+    docker exec ollama ollama create $LLM_MODEL -f /gguf_models/Modelfile.llama
     
     if [ $? -eq 0 ]; then
         echo "✅ Successfully created $LLM_MODEL"
     else
         echo "❌ Failed to create $LLM_MODEL"
+        echo "Debugging: Checking what's in the container..."
+        docker exec ollama ls -la /gguf_models/
+        docker exec ollama cat /gguf_models/Modelfile.llama
     fi
 else
     echo "⚠️  No Modelfile.llama found. Run ./prepare-gguf-models.sh first"
@@ -48,13 +49,17 @@ echo ""
 # Load embedding model
 if [ -f "./gguf_models/Modelfile.nomic" ]; then
     echo "🔄 Creating $EMBEDDING_MODEL from GGUF..."
-    # Create the model
-    docker exec ollama ollama create $EMBEDDING_MODEL -f /tmp/gguf_models/Modelfile.nomic
+    
+    # Create the model using the mounted volume path
+    docker exec ollama ollama create $EMBEDDING_MODEL -f /gguf_models/Modelfile.nomic
     
     if [ $? -eq 0 ]; then
         echo "✅ Successfully created $EMBEDDING_MODEL"
     else
         echo "❌ Failed to create $EMBEDDING_MODEL"
+        echo "Debugging: Checking what's in the container..."
+        docker exec ollama ls -la /gguf_models/
+        docker exec ollama cat /gguf_models/Modelfile.nomic
     fi
 else
     echo "⚠️  No Modelfile.nomic found. Run ./prepare-gguf-models.sh first"

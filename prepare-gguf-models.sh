@@ -42,11 +42,11 @@ echo "📝 Creating Modelfiles..."
 
 # Create Modelfile for LLM
 if ls ./gguf_models/*llama*.gguf 1> /dev/null 2>&1; then
-    LLAMA_GGUF=$(ls ./gguf_models/*llama*.gguf | head -1)
+    LLAMA_GGUF=$(ls ./gguf_models/*llama*.gguf | head -1 | basename)
     echo "Found Llama GGUF: $LLAMA_GGUF"
     
     cat > ./gguf_models/Modelfile.llama <<EOF
-FROM $LLAMA_GGUF
+FROM /gguf_models/$LLAMA_GGUF
 
 # Set parameters for chat
 PARAMETER temperature 0.7
@@ -74,11 +74,11 @@ fi
 
 # Create Modelfile for embeddings
 if ls ./gguf_models/*nomic*.gguf 1> /dev/null 2>&1; then
-    NOMIC_GGUF=$(ls ./gguf_models/*nomic*.gguf | head -1)
+    NOMIC_GGUF=$(ls ./gguf_models/*nomic*.gguf | head -1 | basename)
     echo "Found Nomic GGUF: $NOMIC_GGUF"
     
     cat > ./gguf_models/Modelfile.nomic <<EOF
-FROM $NOMIC_GGUF
+FROM /gguf_models/$NOMIC_GGUF
 EOF
     echo "✅ Created Modelfile.nomic"
 else
