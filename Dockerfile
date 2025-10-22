@@ -42,17 +42,18 @@ RUN cd llama.cpp && \
     cmake --build build -- -j$(nproc) && \
     # Create a package of just what we need
     mkdir -p /llama-install/lib /llama-install/include && \
-    # Find and copy all static libraries (including ggml libraries)
+    # Find and copy all static libraries
     find build -name "*.a" -exec cp {} /llama-install/lib/ \; && \
-    find ggml/src -name "*.a" -exec cp {} /llama-install/lib/ \; 2>/dev/null || true && \
-    # Copy headers
-    cp -r include/* /llama-install/include/ && \
+    # Copy headers from various locations
+    cp -r include/* /llama-install/include/ 2>/dev/null || true && \
     cp -r ggml/include/* /llama-install/include/ 2>/dev/null || true && \
-    # Also copy common headers if they exist
     cp -r common/*.h /llama-install/include/ 2>/dev/null || true && \
+    cp -r src/*.h /llama-install/include/ 2>/dev/null || true && \
     # List what we copied for debugging
-    echo "Libraries copied:" && ls -la /llama-install/lib/ && \
-    echo "Headers copied:" && ls -la /llama-install/include/
+    echo "=== Libraries copied ===" && ls -la /llama-install/lib/ && \
+    echo "=== Headers copied ===" && ls -la /llama-install/include/ && \
+    echo "=== Checking for required symbols ===" && \
+    nm /llama-install/lib/*.a | grep -E "(ggml_log_internal|ggml_backend_reg_name)" | head -20 || true
 
 # Third stage: Build our server (this is the only part that rebuilds when server.cpp changes)
 FROM --platform=linux/arm64 ubuntu:24.04 AS app-builder

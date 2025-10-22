@@ -31,10 +31,15 @@ if(EXISTS "/llama-install/lib/libllama.a")
         INTERFACE_INCLUDE_DIRECTORIES /llama-install/include
     )
     
-    add_library(ggml STATIC IMPORTED)
-    set_target_properties(ggml PROPERTIES
-        IMPORTED_LOCATION /llama-install/lib/libggml.a
-    )
+    # Import all ggml libraries
+    file(GLOB GGML_LIBS "/llama-install/lib/libggml*.a")
+    foreach(lib_path ${GGML_LIBS})
+        get_filename_component(lib_name ${lib_path} NAME_WE)
+        add_library(${lib_name} STATIC IMPORTED)
+        set_target_properties(${lib_name} PROPERTIES
+            IMPORTED_LOCATION ${lib_path}
+        )
+    endforeach()
 else()
     # Build llama.cpp from source
     add_subdirectory(llama.cpp)
@@ -58,17 +63,34 @@ message(STATUS "  CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 message(STATUS "  CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 
 # Link libraries (order matters for static linking)
-target_link_libraries(jic-server 
-    PRIVATE 
-    llama
-    ggml
-    nlohmann_json
-    Threads::Threads
-    curl
-    openblas
-    m  # math library
-    ${CMAKE_DL_LIBS}  # for dlopen if needed
-)
+if(EXISTS "/llama-install/lib/libllama.a")
+    # When using pre-built libraries, link all of them
+    file(GLOB GGML_STATIC_LIBS "/llama-install/lib/libggml*.a")
+    target_link_libraries(jic-server 
+        PRIVATE 
+        llama
+        ${GGML_STATIC_LIBS}
+        nlohmann_json
+        Threads::Threads
+        curl
+        openblas
+        m  # math library
+        ${CMAKE_DL_LIBS}  # for dlopen if needed
+    )
+else()
+    # When building from source
+    target_link_libraries(jic-server 
+        PRIVATE 
+        llama
+        ggml
+        nlohmann_json
+        Threads::Threads
+        curl
+        openblas
+        m  # math library
+        ${CMAKE_DL_LIBS}  # for dlopen if needed
+    )
+endif()
 
 # Include directories
 target_include_directories(jic-server PRIVATE 
