@@ -40,12 +40,23 @@ sleep 5
 
 # Test completion
 echo "Testing completion..."
-curl -s http://localhost:8083/completion \
+response=$(curl -s http://localhost:8083/completion \
     -H "Content-Type: application/json" \
-    -d '{"prompt": "Hello, how are you?", "n_predict": 50}' | jq .
+    -d '{"prompt": "Hello, how are you?", "n_predict": 50}')
+
+if [ $? -eq 0 ]; then
+    echo "✅ Server responded successfully"
+    if command -v jq &> /dev/null; then
+        echo "$response" | jq .
+    else
+        echo "$response"
+    fi
+else
+    echo "❌ Server failed to respond"
+fi
 
 # Cleanup
-kill $SERVER_PID
+kill $SERVER_PID 2>/dev/null
 
 echo ""
 echo "✅ llama.cpp test complete!"

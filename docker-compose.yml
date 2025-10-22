@@ -6,20 +6,6 @@ services:
     ports:
       - "9998:9998"
 
-  ollama:
-    image: ollama/ollama:0.12.6
-    container_name: ollama
-    pull_policy: if_not_present
-    ports:
-      - "11434:11434"
-    volumes:
-      # Use Docker volume for Ollama's internal data
-      - ollama_data:/root/.ollama
-      # Mount GGUF models directory for loading
-      - ./gguf_models:/gguf_models:ro
-    environment:
-      - OLLAMA_MODELS=${LLM_MODEL:-llama3.2},${EMBEDDING_MODEL:-nomic-embed-text}
-
   survival-rag:
     build:
       context: .
@@ -28,22 +14,17 @@ services:
     pull_policy: never
     depends_on:
       - tika
-      - ollama
     volumes:
       - ./sources:/app/sources
       - ./data:/app/data
+      - ./gguf_models:/app/gguf_models:ro
     ports:
       - "8080:8080"
+      - "11434:11434"
     environment:
       - TIKA_URL=http://tika:9998
-      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_URL=http://localhost:11434
       - LLM_MODEL=${LLM_MODEL:-llama3.2}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-nomic-embed-text}
-      - SKIP_MODEL_PULL=${SKIP_MODEL_PULL:-false}
-      - SKIP_MODEL_CHECK=${SKIP_MODEL_CHECK:-false}
     command: ["python3", "start.py"]
-
-volumes:
-  ollama_data:
-
 

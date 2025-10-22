@@ -16,18 +16,23 @@ fi
 LLM_MODEL=$(docker compose exec -T survival-rag python3 -c "from config import LLM_MODEL; print(LLM_MODEL)" 2>/dev/null || echo "llama3.2")
 EMBEDDING_MODEL=$(docker compose exec -T survival-rag python3 -c "from config import EMBEDDING_MODEL; print(EMBEDDING_MODEL)" 2>/dev/null || echo "nomic-embed-text")
 
-# Check Ollama models
-echo -e "\n🧠 Checking Ollama models..."
-if docker compose exec -T ollama ollama list 2>/dev/null | grep -q "$LLM_MODEL"; then
-    echo "✅ $LLM_MODEL model is available"
+# Check llama.cpp models
+echo -e "\n🧠 Checking llama.cpp models..."
+response=$(curl -s http://localhost:11434/api/tags 2>/dev/null)
+if [ $? -eq 0 ]; then
+    if echo "$response" | grep -q "$LLM_MODEL"; then
+        echo "✅ $LLM_MODEL model is available"
+    else
+        echo "❌ $LLM_MODEL model not found"
+    fi
+    
+    if echo "$response" | grep -q "$EMBEDDING_MODEL"; then
+        echo "✅ $EMBEDDING_MODEL model is available"
+    else
+        echo "❌ $EMBEDDING_MODEL model not found"
+    fi
 else
-    echo "❌ $LLM_MODEL model not found. Run: docker compose exec ollama ollama pull $LLM_MODEL"
-fi
-
-if docker compose exec -T ollama ollama list 2>/dev/null | grep -q "$EMBEDDING_MODEL"; then
-    echo "✅ $EMBEDDING_MODEL model is available"
-else
-    echo "❌ $EMBEDDING_MODEL model not found. Run: docker compose exec ollama ollama pull $EMBEDDING_MODEL"
+    echo "❌ Could not connect to llama.cpp server"
 fi
 
 # Check Tika

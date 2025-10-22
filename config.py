@@ -7,7 +7,7 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
 
 # Service URLs
 TIKA_URL = os.getenv("TIKA_URL", "http://tika:9998")
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 
 # Model preparation settings
 USE_LOCAL_OLLAMA = os.getenv("USE_LOCAL_OLLAMA", "false").lower() == "true"
