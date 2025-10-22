@@ -29,8 +29,17 @@ echo ""
 echo "💾 Total size:"
 du -sh ./ollama_models
 
+echo ""
+echo "📝 Permissions:"
+ls -la ./ollama_models/
+
 if docker ps | grep -q ollama; then
     echo ""
     echo "🐳 Models visible in running container:"
     docker exec ollama ollama list
+    
+    echo ""
+    echo "🔍 Checking container's view of models:"
+    docker exec ollama ls -la /root/.ollama/ 2>/dev/null || echo "Cannot access container"
+    docker exec ollama ls -la /root/.ollama/models/ 2>/dev/null || echo "No models directory in container"
 fi

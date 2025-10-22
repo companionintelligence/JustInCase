@@ -14,8 +14,10 @@ services:
       - "11434:11434"
     volumes:
       - ./ollama_models:/root/.ollama
+      - ./ollama-wrapper.sh:/ollama-wrapper.sh:ro
     environment:
       - OLLAMA_MODELS=${LLM_MODEL:-llama3.2},${EMBEDDING_MODEL:-nomic-embed-text}
+    entrypoint: ["/bin/sh", "/ollama-wrapper.sh"]
 
   survival-rag:
     build:

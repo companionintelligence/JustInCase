@@ -183,5 +183,11 @@ echo ""
 echo "✅ All required models are available!"
 echo "📁 Models prepared in: ./ollama_models"
 echo "📊 Total size: $(du -sh ./ollama_models 2>/dev/null | cut -f1 || echo 'Unknown')"
+
+# Ensure proper permissions for Docker
+echo ""
+echo "🔧 Setting permissions for Docker access..."
+chmod -R 755 ./ollama_models 2>/dev/null || true
+
 echo ""
 echo "You can now run: docker compose up --build"
