@@ -56,17 +56,14 @@ find Survival-Data/HOME -type f -iname "*.pdf" -exec cp {} sources/ \;
 # Make the script executable
 chmod +x prepare-models.sh
 
-# Copy models from your local Ollama
+# This script will:
+# 1. Check if models exist in your local Ollama
+# 2. Pull any missing models locally (NOT in Docker)
+# 3. Copy all models to ./ollama_models for Docker to use
 ./prepare-models.sh
 ```
 
-This copies models from `~/.ollama` to `./ollama_models` for Docker to use.
-
-**Note:** You must have the required models in your local Ollama first:
-```bash
-ollama pull llama3.2
-ollama pull nomic-embed-text
-```
+**Note:** This requires Ollama to be installed locally. The script will automatically pull any missing models.
 
 ### 4. Start the system
 
@@ -149,21 +146,20 @@ Models are copied from your local Ollama (`~/.ollama`) to `./ollama_models` and 
 
 ### Workflow:
 
-1. **Install models locally** (one-time):
-   ```bash
-   ollama pull llama3.2
-   ollama pull nomic-embed-text
-   ```
-
-2. **Prepare models for Docker**:
+1. **Prepare models** (handles everything):
    ```bash
    ./prepare-models.sh
    ```
+   This will:
+   - Check your local Ollama for required models
+   - Pull any missing models locally
+   - Copy all models to `./ollama_models`
 
-3. **Run Docker**:
+2. **Run Docker**:
    ```bash
    docker compose up --build
    ```
+   Docker will use the models from `./ollama_models` and never attempt to download anything.
 
 ### If models are missing:
 

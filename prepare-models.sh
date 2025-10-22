@@ -14,51 +14,89 @@ echo "  - LLM: $LLM_MODEL"
 echo "  - Embeddings: $EMBEDDING_MODEL"
 echo ""
 
+# Check if local Ollama is installed
+if ! command -v ollama &> /dev/null; then
+    echo "❌ Ollama is not installed locally!"
+    echo "   Please install Ollama first: https://ollama.ai/download"
+    exit 1
+fi
+
 # Check if local Ollama directory exists
 if [ ! -d "$HOME/.ollama" ]; then
-    echo "❌ No local Ollama installation found at ~/.ollama"
-    echo "   Please install Ollama and pull the required models first:"
-    echo "   ollama pull $LLM_MODEL"
-    echo "   ollama pull $EMBEDDING_MODEL"
-    exit 1
+    echo "⚠️  No local Ollama directory found at ~/.ollama"
+    echo "   Creating it now..."
+    mkdir -p "$HOME/.ollama"
+fi
+
+# Check and pull missing models locally
+echo "🔍 Checking local models..."
+NEED_PULL=false
+
+# Check for LLM model
+if ollama list 2>/dev/null | grep -q "^$LLM_MODEL"; then
+    echo "✅ $LLM_MODEL already available locally"
+else
+    echo "📥 $LLM_MODEL not found locally, pulling..."
+    NEED_PULL=true
+    ollama pull "$LLM_MODEL"
+    if [ $? -ne 0 ]; then
+        echo "❌ Failed to pull $LLM_MODEL"
+        exit 1
+    fi
+fi
+
+# Check for embedding model
+if ollama list 2>/dev/null | grep -q "^$EMBEDDING_MODEL"; then
+    echo "✅ $EMBEDDING_MODEL already available locally"
+else
+    echo "📥 $EMBEDDING_MODEL not found locally, pulling..."
+    NEED_PULL=true
+    ollama pull "$EMBEDDING_MODEL"
+    if [ $? -ne 0 ]; then
+        echo "❌ Failed to pull $EMBEDDING_MODEL"
+        exit 1
+    fi
+fi
+
+if [ "$NEED_PULL" = true ]; then
+    echo ""
+    echo "⏳ Waiting for models to be fully registered..."
+    sleep 3
 fi
 
 # Create target directory
 mkdir -p ollama_models
 
 # Copy the entire .ollama structure
+echo ""
 echo "📦 Copying models from ~/.ollama to ./ollama_models..."
 cp -r ~/.ollama/* ./ollama_models/ 2>/dev/null || true
 
-# Verify models exist
+# Verify models were copied
 echo ""
-echo "🔍 Verifying models..."
+echo "🔍 Verifying copied models..."
 MISSING_MODELS=()
 
 # Check for LLM model
 if [ -d "./ollama_models/models/manifests/registry.ollama.ai/library/$LLM_MODEL" ]; then
-    echo "✅ Found $LLM_MODEL"
+    echo "✅ $LLM_MODEL copied successfully"
 else
-    echo "❌ Missing $LLM_MODEL"
+    echo "❌ $LLM_MODEL not found after copy"
     MISSING_MODELS+=("$LLM_MODEL")
 fi
 
 # Check for embedding model
 if [ -d "./ollama_models/models/manifests/registry.ollama.ai/library/$EMBEDDING_MODEL" ]; then
-    echo "✅ Found $EMBEDDING_MODEL"
+    echo "✅ $EMBEDDING_MODEL copied successfully"
 else
-    echo "❌ Missing $EMBEDDING_MODEL"
+    echo "❌ $EMBEDDING_MODEL not found after copy"
     MISSING_MODELS+=("$EMBEDDING_MODEL")
 fi
 
 if [ ${#MISSING_MODELS[@]} -gt 0 ]; then
     echo ""
-    echo "❌ Missing models: ${MISSING_MODELS[*]}"
-    echo ""
-    echo "Please pull these models locally first:"
-    for model in "${MISSING_MODELS[@]}"; do
-        echo "  ollama pull $model"
-    done
+    echo "❌ Failed to copy models: ${MISSING_MODELS[*]}"
+    echo "   This might be a permission issue or the models weren't fully downloaded."
     exit 1
 fi
 
