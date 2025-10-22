@@ -43,8 +43,8 @@ WORKDIR /app
 # Copy the built binary
 COPY --from=builder /build/build/jic-server /app/
 
-# Copy web files
-COPY index.html style.css code.js chat.js ./
+# Copy web files from public directory
+COPY public/ ./public/
 
 # Create directories
 RUN mkdir -p data sources gguf_models
