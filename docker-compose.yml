@@ -7,13 +7,12 @@ services:
       - "9998:9998"
 
   ollama:
-    image: ollama/ollama:0.12.6
+    build:
+      context: .
+      dockerfile: Dockerfile.ollama
     container_name: ollama
-    pull_policy: if_not_present
     ports:
       - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
     environment:
       - OLLAMA_MODELS=llama3.2:1b,nomic-embed-text
 

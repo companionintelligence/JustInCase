@@ -50,20 +50,33 @@ git clone https://github.com/PR0M3TH3AN/Survival-Data.git
 find Survival-Data/HOME -type f -iname "*.pdf" -exec cp {} sources/ \;
 ```
 
-### 3. Start the whole system
+### 3. Download models (one-time setup)
 
 ```bash
-docker compose up --build
+# Make the script executable
+chmod +x download-models-local.sh
+
+# Download models to your local machine
+./download-models-local.sh
+```
+
+This downloads models to `./ollama_models_local` (~1.6GB). These are included in the Docker build.
+
+### 4. Build and start the system
+
+```bash
+docker compose build
+docker compose up
 ```
 
 This:
+- Builds containers with pre-loaded models
 - Launches Apache Tika
-- Launches Ollama
-- Downloads models (first run only, ~1.6GB)
+- Launches Ollama (with models already included)
 - Indexes your PDFs
 - Starts the Flask API + web UI on port `8080`
 
-**Note:** Models are stored in a Docker volume and persist across rebuilds, so you only download them once!
+**Note:** Models are baked into the Docker image. No internet connection needed after build!
 
 ---
 
@@ -99,36 +112,39 @@ This verifies:
 
 ### Model Management
 
-Models are stored in a Docker volume (`ollama_data`) and will be automatically downloaded on first run. 
+Models are pre-downloaded to your local machine and baked into the Docker image during build.
 
-**Important:** Models persist across:
-- ✅ `docker compose down` and `docker compose up`
-- ✅ `docker compose up --build` (rebuilding containers)
-- ✅ Code changes and container restarts
-- ❌ Only lost with `docker compose down -v` (removes volumes)
+**Important:** 
+- Models are stored in `./ollama_models_local` (git-ignored)
+- Models are copied into Docker images during build
+- No dynamic downloading - fails fast if models are missing
+- ~1.6GB total (1.3GB for llama3.2:1b, 274MB for nomic-embed-text)
 
-### Manually downloading models
-
-If automatic model pulling fails or you have a slow connection:
+### First-time setup
 
 ```bash
-# Download with docker compose running
-docker compose exec ollama ollama pull llama3.2:1b
-docker compose exec ollama ollama pull nomic-embed-text
+# Download models locally (one time only)
+./download-models-local.sh
 
-# Or skip model download and add them later
-echo "SKIP_MODEL_PULL=true" > .env
-docker compose up --build
+# Build Docker images with models included
+docker compose build
 ```
 
-### Environment variables to control model handling:
+### Rebuilding without re-downloading
+
+Once models are in `./ollama_models_local`, they're reused for all builds:
 
 ```bash
-# Skip automatic model pulling on startup
-SKIP_MODEL_PULL=true docker compose up --build
+# Models are already local, just rebuild
+docker compose build
+docker compose up
+```
 
-# Skip all model checks (use if you're sure models are present)
-SKIP_MODEL_CHECK=true docker compose up --build
+### If models are missing
+
+The Docker build will fail with a clear error if models aren't found:
+```
+ERROR: Ollama models not found! Run ./download-models-local.sh first
 ```
 
 ### Container naming
@@ -150,32 +166,44 @@ docker compose restart survival-rag
 
 ### Understanding model storage
 
-Models are stored in a Docker volume (`ollama_data`). This is simpler and more reliable than trying to manage model files manually.
+Models are stored locally in `./ollama_models_local` and copied into Docker images during build.
 
-To check your models:
+To check your local models:
 ```bash
-# With docker compose running, list models
-docker compose exec ollama ollama list
+# Check if models exist locally
+ls -la ./ollama_models_local/
 
-# Check volume size
-docker system df -v | grep ollama_data
+# Check size
+du -sh ./ollama_models_local/
+
+# With containers running, verify models in container
+docker compose exec ollama ollama list
 ```
 
 To completely reset and re-download models:
 ```bash
-# Stop containers and remove volume
-docker compose down -v
+# Remove local models
+rm -rf ./ollama_models_local/
 
-# Start fresh (will re-download models)
-docker compose up --build
+# Re-download
+./download-models-local.sh
+
+# Rebuild Docker images
+docker compose build
 ```
 
-### Troubleshooting model persistence
+### Troubleshooting
 
-If models aren't found:
+If build fails with "models not found":
 
-1. **Check if Ollama is running**: `docker ps | grep ollama`
-2. **List models**: `docker compose exec ollama ollama list`
-3. **Pull manually if needed**: `docker compose exec ollama ollama pull llama3.2:1b`
-4. **Use skip flags if needed**: `SKIP_MODEL_CHECK=true docker compose up`
+1. **Run the download script**: `./download-models-local.sh`
+2. **Check models exist**: `ls -la ./ollama_models_local/models/`
+3. **Ensure sufficient disk space**: Need ~1.6GB free
+4. **Try manual Docker download** if local Ollama isn't working:
+   ```bash
+   docker run -d --name ollama-temp -v "$(pwd)/ollama_models_local:/root/.ollama" ollama/ollama:0.12.6
+   docker exec ollama-temp ollama pull llama3.2:1b
+   docker exec ollama-temp ollama pull nomic-embed-text
+   docker stop ollama-temp && docker rm ollama-temp
+   ```
 

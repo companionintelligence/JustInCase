@@ -1,0 +1,11 @@
+# Ollama container with pre-loaded models
+FROM ollama/ollama:0.12.6
+
+# Copy pre-downloaded models
+COPY ollama_models_local /root/.ollama
+
+# Verify models during build
+RUN if [ ! -d "/root/.ollama/models" ] || [ -z "$(ls -A /root/.ollama/models 2>/dev/null)" ]; then \
+        echo "ERROR: Ollama models not found! Run ./download-models-local.sh first"; \
+        exit 1; \
+    fi

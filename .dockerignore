@@ -33,10 +33,11 @@ Thumbs.db
 test.sh
 *.test
 
-# Scripts
+# Scripts (but NOT the local models!)
 pull-models.sh
 check-models.sh
 download-models.sh
+download-models-local.sh
 
 # Build cache
 .buildx-cache/

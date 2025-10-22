@@ -1,6 +1,9 @@
 # FAISS index and metadata
 data/
 
+# Ollama models (large files)
+ollama_models_local/
+
 # Aider
 .aider.*
 .aider*
