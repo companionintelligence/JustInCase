@@ -409,8 +409,19 @@ std::vector<float> get_embedding(const std::string& text) {
     llama_batch batch = llama_batch_get_one(tokens.data(), tokens.size());
     
     // Evaluate
-    if (llama_decode(embedding_ctx, batch) != 0) {
-        std::cerr << "Failed to eval embedding" << std::endl;
+    int decode_result = llama_decode(embedding_ctx, batch);
+    if (decode_result != 0) {
+        std::cerr << "Failed to eval embedding, error code: " << decode_result << std::endl;
+        // Try to recover by recreating context
+        llama_free(embedding_ctx);
+        llama_context_params ctx_params = llama_context_default_params();
+        ctx_params.n_ctx = 8192;
+        ctx_params.embeddings = true;
+        ctx_params.pooling_type = LLAMA_POOLING_TYPE_MEAN;
+        ctx_params.n_threads = 4;
+        ctx_params.n_threads_batch = 4;
+        embedding_ctx = llama_init_from_model(embedding_model, ctx_params);
+        embedding_n_past = 0;
         return std::vector<float>(EMBEDDING_DIM, 0.0f);
     }
     
@@ -420,7 +431,7 @@ std::vector<float> get_embedding(const std::string& text) {
     // Get embeddings
     const float* embeddings = llama_get_embeddings(embedding_ctx);
     if (!embeddings) {
-        std::cerr << "Failed to get embeddings from model" << std::endl;
+        std::cerr << "Failed to get embeddings from model - nullptr returned" << std::endl;
         return std::vector<float>(EMBEDDING_DIM, 0.0f);
     }
     
@@ -623,41 +634,49 @@ void save_index() {
 
 // Background ingestion thread
 void background_ingestion() {
-    std::set<std::string> processed_files;
+    std::cout << "Background ingestion thread started" << std::endl;
     
-    // Load processed files list
-    if (fs::exists("data/processed_files.txt")) {
-        std::ifstream pf("data/processed_files.txt");
-        std::string line;
-        while (std::getline(pf, line)) {
-            // Trim whitespace and skip empty lines
-            line.erase(0, line.find_first_not_of(" \t\r\n"));
-            line.erase(line.find_last_not_of(" \t\r\n") + 1);
-            if (!line.empty()) {
-                processed_files.insert(line);
-            }
-        }
-        pf.close();
-        std::cout << "Loaded " << processed_files.size() << " processed files from tracking" << std::endl;
-    }
-    
-    while (true) {
-        std::vector<std::pair<std::string, std::string>> files_to_process;
+    try {
+        std::set<std::string> processed_files;
         
-        // Find new files
-        if (fs::exists("sources")) {
-            for (const auto& entry : fs::recursive_directory_iterator("sources")) {
-                if (entry.is_regular_file()) {
-                    std::string ext = entry.path().extension();
-                    if (ext == ".txt" || ext == ".pdf") {
-                        std::string rel_path = fs::relative(entry.path(), "sources").string();
-                        if (processed_files.find(rel_path) == processed_files.end()) {
-                            files_to_process.push_back({entry.path().string(), rel_path});
-                        }
-                    }
+        // Load processed files list
+        if (fs::exists("data/processed_files.txt")) {
+            std::ifstream pf("data/processed_files.txt");
+            std::string line;
+            while (std::getline(pf, line)) {
+                // Trim whitespace and skip empty lines
+                line.erase(0, line.find_first_not_of(" \t\r\n"));
+                line.erase(line.find_last_not_of(" \t\r\n") + 1);
+                if (!line.empty()) {
+                    processed_files.insert(line);
                 }
             }
+            pf.close();
+            std::cout << "Loaded " << processed_files.size() << " processed files from tracking" << std::endl;
         }
+        
+        while (true) {
+            try {
+                std::vector<std::pair<std::string, std::string>> files_to_process;
+                
+                // Find new files
+                if (fs::exists("sources")) {
+                    try {
+                        for (const auto& entry : fs::recursive_directory_iterator("sources")) {
+                            if (entry.is_regular_file()) {
+                                std::string ext = entry.path().extension();
+                                if (ext == ".txt" || ext == ".pdf") {
+                                    std::string rel_path = fs::relative(entry.path(), "sources").string();
+                                    if (processed_files.find(rel_path) == processed_files.end()) {
+                                        files_to_process.push_back({entry.path().string(), rel_path});
+                                    }
+                                }
+                            }
+                        }
+                    } catch (const std::exception& e) {
+                        std::cerr << "Error scanning sources directory: " << e.what() << std::endl;
+                    }
+                }
         
         if (!files_to_process.empty()) {
             ingestion_status.in_progress = true;
@@ -681,23 +700,29 @@ void background_ingestion() {
                         text = buffer.str();
                     } else if (string_ends_with(full_path, ".pdf")) {
                         // Use Tika service for PDF extraction
+                        std::cout << "Extracting text from PDF: " << rel_path << std::endl;
                         text = extract_text_with_tika(full_path);
                         if (text.empty()) {
                             std::cerr << "Failed to extract text from PDF: " << rel_path << std::endl;
                             // Still mark as processed to avoid retrying
                             processed_files.insert(rel_path);
+                            ingestion_status.files_processed++;
                             continue;
                         }
+                        std::cout << "Successfully extracted " << text.length() << " characters from PDF" << std::endl;
                     } else {
                         continue;
                     }
                     
                     // Split into chunks
                     auto chunks = split_text(text);
+                    std::cout << "Split " << rel_path << " into " << chunks.size() << " chunks" << std::endl;
                     
+                    int chunk_count = 0;
                     for (const auto& chunk : chunks) {
                         if (chunk.length() > 100) {
                             try {
+                                std::cout << "Getting embedding for chunk " << ++chunk_count << "/" << chunks.size() << std::endl;
                                 auto embedding = get_embedding(chunk);
                                 if (embedding.size() == EMBEDDING_DIM) {
                                     new_embeddings.insert(new_embeddings.end(), embedding.begin(), embedding.end());
@@ -707,6 +732,8 @@ void background_ingestion() {
                                 }
                             } catch (const std::exception& e) {
                                 std::cerr << "Error getting embedding for chunk from " << rel_path << ": " << e.what() << std::endl;
+                            } catch (...) {
+                                std::cerr << "Unknown error getting embedding for chunk from " << rel_path << std::endl;
                             }
                         }
                     }
@@ -721,8 +748,12 @@ void background_ingestion() {
                     
                 } catch (const std::exception& e) {
                     std::cerr << "Error processing " << rel_path << ": " << e.what() << std::endl;
+                    processed_files.insert(rel_path);
+                    ingestion_status.files_processed++;
                 } catch (...) {
                     std::cerr << "Unknown error processing " << rel_path << std::endl;
+                    processed_files.insert(rel_path);
+                    ingestion_status.files_processed++;
                 }
             }
             
@@ -751,10 +782,27 @@ void background_ingestion() {
                 pf.close();
             }
             
+                ingestion_status.in_progress = false;
+                std::cout << "Ingestion batch complete. Processed " << ingestion_status.files_processed << " files." << std::endl;
+            }
+            
+            std::this_thread::sleep_for(std::chrono::seconds(30));
+            
+        } catch (const std::exception& e) {
+            std::cerr << "Error in ingestion loop: " << e.what() << std::endl;
             ingestion_status.in_progress = false;
+            std::this_thread::sleep_for(std::chrono::seconds(60));
+        } catch (...) {
+            std::cerr << "Unknown error in ingestion loop" << std::endl;
+            ingestion_status.in_progress = false;
+            std::this_thread::sleep_for(std::chrono::seconds(60));
         }
-        
-        std::this_thread::sleep_for(std::chrono::seconds(30));
+    }
+    
+    } catch (const std::exception& e) {
+        std::cerr << "Fatal error in background ingestion thread: " << e.what() << std::endl;
+    } catch (...) {
+        std::cerr << "Fatal unknown error in background ingestion thread" << std::endl;
     }
 }
 
