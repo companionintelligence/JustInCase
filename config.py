@@ -9,6 +9,9 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
 TIKA_URL = os.getenv("TIKA_URL", "http://tika:9998")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 
+# Model preparation settings
+USE_LOCAL_OLLAMA = os.getenv("USE_LOCAL_OLLAMA", "false").lower() == "true"
+
 # Other settings
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50

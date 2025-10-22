@@ -56,14 +56,24 @@ find Survival-Data/HOME -type f -iname "*.pdf" -exec cp {} sources/ \;
 # Make the script executable
 chmod +x prepare-models.sh
 
-# This script will:
-# 1. Check if models exist in your local Ollama
-# 2. Pull any missing models locally (NOT in Docker)
-# 3. Copy all models to ./ollama_models for Docker to use
+# Default: Fetch models directly (no local Ollama required)
 ./prepare-models.sh
+
+# Or use your local Ollama installation (if you have one)
+USE_LOCAL_OLLAMA=true ./prepare-models.sh
 ```
 
-**Note:** This requires Ollama to be installed locally. The script will automatically pull any missing models.
+The script will download models into `./ollama_models` for Docker to use.
+
+**Default behavior (USE_LOCAL_OLLAMA=false):**
+- Downloads models directly using a temporary Docker container
+- No local Ollama installation required
+- Models are stored in `./ollama_models`
+
+**Optional: Use local Ollama (USE_LOCAL_OLLAMA=true):**
+- Requires Ollama installed locally
+- Copies models from `~/.ollama` to `./ollama_models`
+- Pulls any missing models to your local Ollama first
 
 ### 4. Start the system
 
@@ -134,26 +144,29 @@ All model references are centralized in `config.py` for easy modification.
 
 ### Model Management
 
-Models are copied from your local Ollama (`~/.ollama`) to `./ollama_models` and mounted read-only in Docker.
+Models are stored in `./ollama_models` and mounted read-only in Docker.
 
 **Important:** 
-- Models MUST exist in your local Ollama first
 - Docker NEVER downloads models from the internet
 - Models are in `./ollama_models` (git-ignored)
 - Docker mounts this directory read-only
 - ~1.6GB total (varies by model choice)
 - Default models: llama3.2 (LLM) and nomic-embed-text (embeddings)
 
+**Model preparation options:**
+- **Default**: Fetch directly using Docker (no local Ollama needed)
+- **Optional**: Copy from local Ollama with `USE_LOCAL_OLLAMA=true`
+
 ### Workflow:
 
-1. **Prepare models** (handles everything):
+1. **Prepare models** (choose one):
    ```bash
+   # Default: Fetch directly (recommended)
    ./prepare-models.sh
+   
+   # Or use local Ollama if you have it
+   USE_LOCAL_OLLAMA=true ./prepare-models.sh
    ```
-   This will:
-   - Check your local Ollama for required models
-   - Pull any missing models locally
-   - Copy all models to `./ollama_models`
 
 2. **Run Docker**:
    ```bash
@@ -206,18 +219,19 @@ docker compose exec ollama ollama list
 
 If models are missing:
 
-1. **Install in local Ollama first**:
+1. **Run prepare script** (it handles everything):
    ```bash
-   ollama pull llama3.2
-   ollama pull nomic-embed-text
-   ```
-
-2. **Run prepare script**:
-   ```bash
+   # This will fetch models for you
    ./prepare-models.sh
    ```
 
-3. **Check for errors** - the script will tell you exactly what's missing
+2. **Check for errors** - the script will tell you exactly what's missing
+
+3. **Alternative: Use local Ollama**:
+   ```bash
+   # If you prefer using local Ollama
+   USE_LOCAL_OLLAMA=true ./prepare-models.sh
+   ```
 
 The system is designed to fail fast and clearly if models aren't available.
 No surprises, no hidden downloads.

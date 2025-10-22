@@ -1,96 +1,140 @@
 #!/bin/bash
 
-echo "🚀 Prepare Local Models for Docker"
-echo "=================================="
-echo "This script copies models from ~/.ollama to ./ollama_models"
+echo "🚀 Prepare Models for Docker"
+echo "============================"
 echo ""
 
-# Get model names from config
+# Get configuration
 LLM_MODEL=$(python3 -c "from config import LLM_MODEL; print(LLM_MODEL)" 2>/dev/null || echo "llama3.2")
 EMBEDDING_MODEL=$(python3 -c "from config import EMBEDDING_MODEL; print(EMBEDDING_MODEL)" 2>/dev/null || echo "nomic-embed-text")
+USE_LOCAL_OLLAMA=$(python3 -c "from config import USE_LOCAL_OLLAMA; print(USE_LOCAL_OLLAMA)" 2>/dev/null || echo "false")
 
 echo "📋 Required models:"
 echo "  - LLM: $LLM_MODEL"
 echo "  - Embeddings: $EMBEDDING_MODEL"
 echo ""
 
-# Check if local Ollama is installed
-if ! command -v ollama &> /dev/null; then
-    echo "❌ Ollama is not installed locally!"
-    echo "   Please install Ollama first: https://ollama.ai/download"
-    exit 1
-fi
-
-# Check if local Ollama directory exists
-if [ ! -d "$HOME/.ollama" ]; then
-    echo "⚠️  No local Ollama directory found at ~/.ollama"
-    echo "   Creating it now..."
-    mkdir -p "$HOME/.ollama"
-fi
-
-# Check and pull missing models locally
-echo "🔍 Checking local models..."
-NEED_PULL=false
-
-# Check for LLM model
-if ollama list 2>/dev/null | grep -q "^$LLM_MODEL"; then
-    echo "✅ $LLM_MODEL already available locally"
-else
-    echo "📥 $LLM_MODEL not found locally, pulling..."
-    NEED_PULL=true
-    ollama pull "$LLM_MODEL"
-    if [ $? -ne 0 ]; then
-        echo "❌ Failed to pull $LLM_MODEL"
-        exit 1
-    fi
-fi
-
-# Check for embedding model
-if ollama list 2>/dev/null | grep -q "^$EMBEDDING_MODEL"; then
-    echo "✅ $EMBEDDING_MODEL already available locally"
-else
-    echo "📥 $EMBEDDING_MODEL not found locally, pulling..."
-    NEED_PULL=true
-    ollama pull "$EMBEDDING_MODEL"
-    if [ $? -ne 0 ]; then
-        echo "❌ Failed to pull $EMBEDDING_MODEL"
-        exit 1
-    fi
-fi
-
-if [ "$NEED_PULL" = true ]; then
-    echo ""
-    echo "⏳ Waiting for models to be fully registered..."
-    sleep 3
-fi
-
-# Show size of source models
-echo ""
-echo "📊 Source model sizes:"
-if [ -d "$HOME/.ollama/models" ]; then
-    du -sh "$HOME/.ollama/models" 2>/dev/null || echo "Unable to determine size"
-fi
-
 # Create target directory
 mkdir -p ollama_models
 
-# Copy only the essential model files
-echo ""
-echo "📦 Copying models from ~/.ollama to ./ollama_models..."
-mkdir -p ./ollama_models
-
-# Copy only the models directory structure with progress
-if [ -d "$HOME/.ollama/models" ]; then
-    echo "  Copying model files (this may take a moment)..."
-    # Use rsync if available for progress, otherwise fall back to cp
-    if command -v rsync &> /dev/null; then
-        rsync -av --progress "$HOME/.ollama/models" ./ollama_models/
+# Check if we should use local Ollama
+if [ "$USE_LOCAL_OLLAMA" = "True" ] || [ "$USE_LOCAL_OLLAMA" = "true" ]; then
+    echo "🏠 Using local Ollama installation (USE_LOCAL_OLLAMA=true)"
+    
+    # Check if local Ollama is installed
+    if ! command -v ollama &> /dev/null; then
+        echo "❌ Ollama is not installed locally!"
+        echo "   Please install Ollama first: https://ollama.ai/download"
+        echo "   Or set USE_LOCAL_OLLAMA=false to fetch models directly"
+        exit 1
+    fi
+    
+    # Check if local Ollama directory exists
+    if [ ! -d "$HOME/.ollama" ]; then
+        echo "⚠️  No local Ollama directory found at ~/.ollama"
+        echo "   Will pull models locally first..."
+        mkdir -p "$HOME/.ollama"
+    fi
+    
+    # Check and pull missing models locally
+    echo "🔍 Checking local models..."
+    NEED_PULL=false
+    
+    # Check for LLM model
+    if ollama list 2>/dev/null | grep -q "^$LLM_MODEL"; then
+        echo "✅ $LLM_MODEL already available locally"
     else
-        cp -r "$HOME/.ollama/models" ./ollama_models/
+        echo "📥 $LLM_MODEL not found locally, pulling..."
+        NEED_PULL=true
+        ollama pull "$LLM_MODEL"
+        if [ $? -ne 0 ]; then
+            echo "❌ Failed to pull $LLM_MODEL"
+            exit 1
+        fi
+    fi
+    
+    # Check for embedding model
+    if ollama list 2>/dev/null | grep -q "^$EMBEDDING_MODEL"; then
+        echo "✅ $EMBEDDING_MODEL already available locally"
+    else
+        echo "📥 $EMBEDDING_MODEL not found locally, pulling..."
+        NEED_PULL=true
+        ollama pull "$EMBEDDING_MODEL"
+        if [ $? -ne 0 ]; then
+            echo "❌ Failed to pull $EMBEDDING_MODEL"
+            exit 1
+        fi
+    fi
+    
+    if [ "$NEED_PULL" = true ]; then
+        echo ""
+        echo "⏳ Waiting for models to be fully registered..."
+        sleep 3
+    fi
+    
+    # Copy from local Ollama
+    echo ""
+    echo "📦 Copying models from ~/.ollama to ./ollama_models..."
+    if [ -d "$HOME/.ollama/models" ]; then
+        echo "  Copying model files (this may take a moment)..."
+        if command -v rsync &> /dev/null; then
+            rsync -av --progress "$HOME/.ollama/models" ./ollama_models/
+        else
+            cp -r "$HOME/.ollama/models" ./ollama_models/
+        fi
+    else
+        echo "❌ No models directory found in ~/.ollama"
+        exit 1
     fi
 else
-    echo "❌ No models directory found in ~/.ollama"
-    exit 1
+    echo "🐳 Fetching models directly (USE_LOCAL_OLLAMA=false)"
+    echo "   This will download models into ./ollama_models"
+    echo ""
+    
+    # Use Docker to fetch models
+    echo "Starting temporary Ollama container..."
+    docker run -d --name ollama-temp \
+        -v "$(pwd)/ollama_models:/root/.ollama" \
+        ollama/ollama:0.12.6
+    
+    # Wait for Ollama to start
+    echo "Waiting for Ollama to start..."
+    for i in {1..30}; do
+        if docker exec ollama-temp ollama list >/dev/null 2>&1; then
+            break
+        fi
+        sleep 2
+    done
+    
+    # Check existing models
+    echo ""
+    echo "📋 Checking existing models..."
+    docker exec ollama-temp ollama list
+    
+    # Pull LLM model
+    echo ""
+    echo "📥 Pulling $LLM_MODEL..."
+    docker exec ollama-temp ollama pull "$LLM_MODEL"
+    if [ $? -ne 0 ]; then
+        echo "❌ Failed to pull $LLM_MODEL"
+        docker stop ollama-temp && docker rm ollama-temp
+        exit 1
+    fi
+    
+    # Pull embedding model
+    echo ""
+    echo "📥 Pulling $EMBEDDING_MODEL..."
+    docker exec ollama-temp ollama pull "$EMBEDDING_MODEL"
+    if [ $? -ne 0 ]; then
+        echo "❌ Failed to pull $EMBEDDING_MODEL"
+        docker stop ollama-temp && docker rm ollama-temp
+        exit 1
+    fi
+    
+    # Clean up
+    echo ""
+    echo "🧹 Cleaning up temporary container..."
+    docker stop ollama-temp && docker rm ollama-temp
 fi
 
 # Verify models were copied
