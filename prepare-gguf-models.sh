@@ -41,8 +41,8 @@ echo ""
 echo "📝 Creating Modelfiles..."
 
 # Create Modelfile for LLM
-if ls ./gguf_models/*llama*.gguf 1> /dev/null 2>&1; then
-    LLAMA_GGUF=$(ls ./gguf_models/*llama*.gguf | head -1 | basename)
+if ls ./gguf_models/*[Ll]lama*.gguf 1> /dev/null 2>&1; then
+    LLAMA_GGUF=$(ls ./gguf_models/*[Ll]lama*.gguf | head -1 | xargs basename)
     echo "Found Llama GGUF: $LLAMA_GGUF"
     
     # Use relative path since we'll cd into the directory
@@ -76,7 +76,7 @@ fi
 
 # Create Modelfile for embeddings
 if ls ./gguf_models/*nomic*.gguf 1> /dev/null 2>&1; then
-    NOMIC_GGUF=$(ls ./gguf_models/*nomic*.gguf | head -1 | basename)
+    NOMIC_GGUF=$(ls ./gguf_models/*nomic*.gguf | head -1 | xargs basename)
     echo "Found Nomic GGUF: $NOMIC_GGUF"
     
     # Use relative path since we'll cd into the directory
