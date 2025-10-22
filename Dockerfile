@@ -14,14 +14,11 @@ COPY requirements.txt .
 # Create pip cache directory
 RUN mkdir -p /root/.cache/pip
 
-# Install llama-cpp-python using pre-built wheels
-# Pin to a specific version that has pre-built wheels
+# Install llama-cpp-python
+# Use the latest version with available wheels
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --cache-dir=/root/.cache/pip --upgrade pip wheel setuptools && \
-    pip install --cache-dir=/root/.cache/pip \
-    --only-binary :all: \
-    --prefer-binary \
-    "llama-cpp-python==0.2.90"
+    pip install --cache-dir=/root/.cache/pip llama-cpp-python
 
 # Install other requirements
 RUN --mount=type=cache,target=/root/.cache/pip \
