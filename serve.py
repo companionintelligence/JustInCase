@@ -9,7 +9,11 @@ from flask import Flask, request, jsonify, send_from_directory
 import requests
 from config import LLM_MODEL, EMBEDDING_MODEL, LLM_URL, MAX_CONTEXT_CHUNKS, SEARCH_TOP_K, TIKA_URL, CHUNK_SIZE, CHUNK_OVERLAP
 import logging
+import os
 from nomic import embed
+
+# Set nomic to use local inference
+os.environ['NOMIC_API_KEY'] = ''  # Empty key forces local mode
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -29,14 +33,13 @@ ingestion_status = {
 index_lock = threading.Lock()
 
 def get_embedding(text):
-    """Get embedding using nomic in local mode"""
+    """Get embedding using nomic"""
     try:
-        # Use nomic's embed function with local_mode=True
+        # Use nomic's embed function
         output = embed.text(
             texts=[text],
             model='nomic-embed-text-v1.5',
-            task_type='search_document',
-            local_mode=True
+            task_type='search_document'
         )
         embedding = output['embeddings'][0]
         logger.debug(f"Embedding dimension: {len(embedding)}")
@@ -101,8 +104,7 @@ def get_embeddings_batch(texts):
         output = embed.text(
             texts=texts,
             model='nomic-embed-text-v1.5',
-            task_type='search_document',
-            local_mode=True
+            task_type='search_document'
         )
         return output['embeddings']
     except Exception as e:
@@ -246,9 +248,9 @@ def query():
             # Make request directly to llama.cpp without context
             response = requests.post(f"{LLM_URL}/completion", json={
                 "prompt": f"Question: {q}\n\nAnswer:",
-                "n_predict": 512,
+                "n_predict": 1024,
                 "temperature": 0.7,
-                "stop": ["</s>", "\n\n"],
+                "stop": ["</s>"],
                 "stream": False
             }, timeout=60)
 
@@ -297,9 +299,9 @@ def query():
         # Make request directly to llama.cpp
         response = requests.post(f"{LLM_URL}/completion", json={
             "prompt": f"Context: {context}\n\nQuestion: {q}\n\nAnswer:",
-            "n_predict": 512,
+            "n_predict": 1024,
             "temperature": 0.7,
-            "stop": ["</s>", "\n\n"],
+            "stop": ["</s>"],
             "stream": False
         }, timeout=60)
 
