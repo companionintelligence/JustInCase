@@ -31,6 +31,7 @@ COPY --from=llama-downloader /build/llama.cpp ./llama.cpp
 RUN cd llama.cpp && \
     cmake -B build \
         -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
         -DLLAMA_BUILD_TESTS=OFF \
         -DLLAMA_BUILD_EXAMPLES=OFF \
         -DLLAMA_BUILD_SERVER=OFF \
@@ -38,12 +39,16 @@ RUN cd llama.cpp && \
         -DBUILD_SHARED_LIBS=OFF \
         -DGGML_CCACHE=OFF \
         -DLLAMA_CURL=OFF \
+        -DGGML_STATIC=ON \
         . && \
     cmake --build build -- -j$(nproc) && \
     # Create a package of just what we need
     mkdir -p /llama-install/lib /llama-install/include && \
-    # Find and copy all static libraries
+    # Find and copy all static libraries (including nested ones)
     find build -name "*.a" -exec cp {} /llama-install/lib/ \; && \
+    find ggml -name "*.a" -exec cp {} /llama-install/lib/ \; 2>/dev/null || true && \
+    find src -name "*.a" -exec cp {} /llama-install/lib/ \; 2>/dev/null || true && \
+    find common -name "*.a" -exec cp {} /llama-install/lib/ \; 2>/dev/null || true && \
     # Copy headers from various locations
     cp -r include/* /llama-install/include/ 2>/dev/null || true && \
     cp -r ggml/include/* /llama-install/include/ 2>/dev/null || true && \
@@ -52,8 +57,8 @@ RUN cd llama.cpp && \
     # List what we copied for debugging
     echo "=== Libraries copied ===" && ls -la /llama-install/lib/ && \
     echo "=== Headers copied ===" && ls -la /llama-install/include/ && \
-    echo "=== Checking for required symbols ===" && \
-    nm /llama-install/lib/*.a | grep -E "(ggml_log_internal|ggml_backend_reg_name)" | head -20 || true
+    echo "=== Checking for gguf symbols ===" && \
+    nm /llama-install/lib/*.a 2>/dev/null | grep -E "gguf_find_key|gguf_get_arr_data|ggml_abort" | head -20 || true
 
 # Third stage: Build our server (this is the only part that rebuilds when server.cpp changes)
 FROM --platform=linux/arm64 ubuntu:24.04 AS app-builder

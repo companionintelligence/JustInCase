@@ -64,18 +64,34 @@ message(STATUS "  CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 
 # Link libraries (order matters for static linking)
 if(EXISTS "/llama-install/lib/libllama.a")
-    # When using pre-built libraries, link all of them
-    file(GLOB GGML_STATIC_LIBS "/llama-install/lib/libggml*.a")
+    # When using pre-built libraries, we need to link them in the correct order
+    # The order is important: more specific libs first, then dependencies
+    file(GLOB ALL_STATIC_LIBS "/llama-install/lib/*.a")
+    
+    # Sort libraries to ensure correct linking order
+    set(ORDERED_LIBS "")
+    foreach(lib ${ALL_STATIC_LIBS})
+        if(lib MATCHES "libllama\\.a$")
+            list(APPEND ORDERED_LIBS ${lib})
+        endif()
+    endforeach()
+    foreach(lib ${ALL_STATIC_LIBS})
+        if(lib MATCHES "libggml.*\\.a$" AND NOT lib MATCHES "libllama\\.a$")
+            list(APPEND ORDERED_LIBS ${lib})
+        endif()
+    endforeach()
+    
     target_link_libraries(jic-server 
         PRIVATE 
-        llama
-        ${GGML_STATIC_LIBS}
+        ${ORDERED_LIBS}
         nlohmann_json
         Threads::Threads
         curl
         openblas
         m  # math library
         ${CMAKE_DL_LIBS}  # for dlopen if needed
+        stdc++  # C++ standard library
+        pthread  # POSIX threads
     )
 else()
     # When building from source
