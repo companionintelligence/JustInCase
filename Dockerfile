@@ -111,6 +111,7 @@ FROM --platform=linux/arm64 ubuntu:24.04
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     libopenblas0 \
     libcurl4 \
+    libgomp1 \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
