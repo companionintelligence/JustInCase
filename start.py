@@ -54,9 +54,8 @@ def main():
     # Wait for services
     wait_for_service(TIKA_URL, "Tika")
     
-    # Wait for llama.cpp containers
+    # Wait for llama.cpp LLM server only (embeddings are done locally with nomic)
     wait_for_service(f"{LLM_URL}/health", "LLM server")
-    wait_for_service(f"{EMBED_URL}/health", "Embedding server")
     
     # Create data directory if it doesn't exist
     os.makedirs("data", exist_ok=True)

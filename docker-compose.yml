@@ -21,22 +21,6 @@ services:
       "--port", "8080"
     ]
 
-  llama-cpp-embed:
-    image: ghcr.io/ggerganov/llama.cpp:server
-    container_name: llama-cpp-embed
-    pull_policy: if_not_present
-    volumes:
-      - ./gguf_models:/models:ro
-    ports:
-      - "8082:8080"
-    command: [
-      "-m", "/models/nomic-embed-text-v1.5.Q4_K_M.gguf",
-      "--embedding",
-      "--pooling", "mean",
-      "--host", "0.0.0.0",
-      "--port", "8080"
-    ]
-
   survival-rag:
     build:
       context: .
@@ -46,7 +30,6 @@ services:
     depends_on:
       - tika
       - llama-cpp-llm
-      - llama-cpp-embed
     volumes:
       - ./sources:/app/sources
       - ./data:/app/data
@@ -55,7 +38,6 @@ services:
     environment:
       - TIKA_URL=http://tika:9998
       - LLM_URL=http://llama-cpp-llm:8080
-      - EMBED_URL=http://llama-cpp-embed:8080
       - LLM_MODEL=${LLM_MODEL:-llama3.2}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-nomic-embed-text}
     command: ["python3", "start.py"]

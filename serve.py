@@ -7,8 +7,10 @@ import time
 from pathlib import Path
 from flask import Flask, request, jsonify, send_from_directory
 import requests
-from config import LLM_MODEL, EMBEDDING_MODEL, LLM_URL, EMBED_URL, MAX_CONTEXT_CHUNKS, SEARCH_TOP_K, TIKA_URL, CHUNK_SIZE, CHUNK_OVERLAP
+from config import LLM_MODEL, EMBEDDING_MODEL, LLM_URL, MAX_CONTEXT_CHUNKS, SEARCH_TOP_K, TIKA_URL, CHUNK_SIZE, CHUNK_OVERLAP
 import logging
+import nomic
+from nomic import embed
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -27,26 +29,24 @@ ingestion_status = {
 }
 index_lock = threading.Lock()
 
+# Initialize nomic on startup
+nomic.login(token=os.getenv('NOMIC_API_KEY', 'anonymous'))  # Use anonymous mode if no key
+
 def get_embedding(text):
-    """Get embedding directly from llama.cpp embedding server"""
-    response = requests.post(f"{EMBED_URL}/embedding", json={
-        "content": text
-    })
-    if response.status_code != 200:
-        raise Exception(f"Failed to get embedding: {response.text}")
-    
-    result = response.json()
-    
-    # llama.cpp returns embedding directly as a list
-    if isinstance(result, list):
-        embedding = result
-    elif isinstance(result, dict) and "embedding" in result:
-        embedding = result["embedding"]
-    else:
-        raise Exception(f"Unexpected embedding response format: {result}")
-    
-    print(f"Embedding dimension during query: {len(embedding)}")
-    return embedding
+    """Get embedding using nomic Python package directly"""
+    try:
+        # Use nomic's embed function
+        output = embed.text(
+            texts=[text],
+            model='nomic-embed-text-v1.5',
+            task_type='search_document'
+        )
+        embedding = output['embeddings'][0]
+        logger.debug(f"Embedding dimension: {len(embedding)}")
+        return embedding
+    except Exception as e:
+        logger.error(f"Error getting embedding: {e}")
+        raise
 
 # Global variables for index and docs
 index = None
@@ -98,6 +98,20 @@ def split_text(text, chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP):
     
     return chunks
 
+def get_embeddings_batch(texts):
+    """Get embeddings for multiple texts at once"""
+    try:
+        output = embed.text(
+            texts=texts,
+            model='nomic-embed-text-v1.5',
+            task_type='search_document'
+        )
+        return output['embeddings']
+    except Exception as e:
+        logger.error(f"Error getting batch embeddings: {e}")
+        # Fall back to individual embeddings
+        return [get_embedding(text) for text in texts]
+
 def background_ingestion():
     """Background task to ingest documents"""
     global index, docs, ingestion_status
@@ -106,6 +120,12 @@ def background_ingestion():
     
     # Wait a bit for services to be ready
     time.sleep(5)
+    
+    # Track processed files to avoid re-processing
+    processed_files = set()
+    if os.path.exists("data/processed_files.txt"):
+        with open("data/processed_files.txt", "r") as f:
+            processed_files = set(line.strip() for line in f)
     
     while True:
         try:
@@ -116,15 +136,16 @@ def background_ingestion():
                     if not fname.startswith('.') and fname.endswith(('.pdf', '.txt')):
                         full_path = os.path.join(root, fname)
                         rel_path = os.path.relpath(full_path, sources_dir)
-                        all_files.append((full_path, rel_path))
+                        if rel_path not in processed_files:
+                            all_files.append((full_path, rel_path))
             
-            if all_files and not ingestion_status["in_progress"]:
+            if all_files:
                 ingestion_status["in_progress"] = True
                 ingestion_status["total_files"] = len(all_files)
                 ingestion_status["files_processed"] = 0
                 ingestion_status["start_time"] = time.time()
                 
-                logger.info(f"Starting ingestion of {len(all_files)} files")
+                logger.info(f"Starting ingestion of {len(all_files)} new files")
                 
                 embeddings = []
                 new_docs = []
@@ -151,18 +172,24 @@ def background_ingestion():
                         
                         # Split into chunks
                         chunks = split_text(raw_text)
+                        chunk_count = 0
                         
-                        for chunk in chunks:
+                        for i, chunk in enumerate(chunks):
                             chunk = chunk.strip()
                             if len(chunk) > 100:  # Skip small chunks
                                 # Get embedding
                                 embedding = get_embedding(chunk)
                                 embeddings.append(embedding)
                                 new_docs.append({"filename": rel_path, "text": chunk})
+                                chunk_count += 1
+                                
+                                # Update progress more frequently
+                                if i % 5 == 0:  # Every 5 chunks
+                                    ingestion_status["last_update"] = time.time()
                         
                         ingestion_status["files_processed"] += 1
                         ingestion_status["last_update"] = time.time()
-                        logger.info(f"Processed {rel_path}: {len(chunks)} chunks")
+                        logger.info(f"Processed {rel_path}: {chunk_count} chunks added from {len(chunks)} total")
                         
                     except Exception as e:
                         logger.error(f"Error processing {rel_path}: {e}")
@@ -180,6 +207,12 @@ def background_ingestion():
                         with open("data/metadata.jsonl", "w") as f:
                             for doc in docs:
                                 f.write(json.dumps(doc) + "\n")
+                        
+                        # Update processed files list
+                        processed_files.update(rel_path for _, rel_path in all_files[:ingestion_status["files_processed"]])
+                        with open("data/processed_files.txt", "w") as f:
+                            for pf in processed_files:
+                                f.write(pf + "\n")
                     
                     logger.info(f"Added {len(embeddings)} new embeddings. Total: {len(docs)}")
                 
@@ -211,13 +244,28 @@ def query():
             logger.warning("Empty query received.")
             return jsonify({"error": "Empty query"}), 400
 
-        # Check if we have any documents
+        # Even with no documents, let the LLM try to answer
         if len(docs) == 0:
-            return jsonify({
-                "answer": "The knowledge base is still being built. Please try again in a moment.",
+            # Make request directly to llama.cpp without context
+            response = requests.post(f"{LLM_URL}/completion", json={
+                "prompt": f"Question: {q}\n\nAnswer:",
+                "n_predict": 512,
+                "temperature": 0.7,
+                "stop": ["</s>", "\n\n"],
+                "stream": False
+            }, timeout=60)
+
+            if response.status_code != 200:
+                return jsonify({"error": "LLM server error", "details": response.text}), 500
+
+            reply = response.json().get("content", "No response")
+            result = {
+                "answer": reply, 
                 "matches": [],
                 "status": ingestion_status
-            }), 200
+            }
+
+            return jsonify(result)
 
         # Encode query
         embedding = get_embedding(q)
