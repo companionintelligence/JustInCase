@@ -9,19 +9,8 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 # Find packages
 find_package(Threads REQUIRED)
 
-# Build llama.cpp as a library
-add_library(llama STATIC
-    llama.cpp/llama.cpp
-    llama.cpp/ggml.c
-    llama.cpp/ggml-alloc.c
-    llama.cpp/ggml-backend.c
-    llama.cpp/ggml-quants.c
-    llama.cpp/unicode.cpp
-    llama.cpp/unicode-data.cpp
-)
-
-target_include_directories(llama PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/llama.cpp)
-target_compile_features(llama PUBLIC cxx_std_11)
+# Add llama.cpp as a subdirectory
+add_subdirectory(llama.cpp)
 
 # Add Faiss
 find_package(faiss REQUIRED)
