@@ -3,6 +3,8 @@
 # Test script for JIC server
 
 echo "Testing JIC server..."
+echo "Note: Make sure the server is running with 'docker compose up'"
+echo ""
 
 # Test 1: Check if server is running
 echo -n "1. Checking server status... "

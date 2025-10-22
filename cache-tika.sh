@@ -8,6 +8,7 @@ docker build -f Dockerfile.tika -t jic-tika:cached .
 if [ $? -eq 0 ]; then
     echo "Tika image cached successfully as 'jic-tika:cached'"
     echo "The image will now be used locally without pulling from Docker Hub"
+    echo "You can now run: docker compose up"
 else
     echo "Failed to cache Tika image"
     exit 1
