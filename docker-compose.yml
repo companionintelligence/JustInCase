@@ -14,10 +14,8 @@ services:
       - "11434:11434"
     volumes:
       - ./ollama_models:/root/.ollama
-      - ./init-ollama.sh:/init-ollama.sh:ro
     environment:
       - OLLAMA_MODELS=${LLM_MODEL:-llama3.2},${EMBEDDING_MODEL:-nomic-embed-text}
-    entrypoint: ["/bin/sh", "-c", "/init-ollama.sh && ollama serve"]
 
   survival-rag:
     build:

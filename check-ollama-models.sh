@@ -10,11 +10,15 @@ if [ ! -d "./ollama_models" ]; then
 fi
 
 echo "📁 Directory structure:"
-find ./ollama_models -type d -name "llama*" -o -name "nomic*" | sort
+echo "All directories:"
+find ./ollama_models -type d | head -20
+echo ""
+echo "Directories with model names:"
+find ./ollama_models -type d -name "*llama*" -o -name "*nomic*" | sort
 
 echo ""
 echo "📄 Manifest files:"
-find ./ollama_models -name "*.json" -path "*/manifests/*" | grep -E "(llama|nomic)" | sort
+find ./ollama_models -name "*" -path "*/manifests/*" -type f | sort
 
 echo ""
 echo "🗄️ Blob files:"

@@ -43,6 +43,9 @@ download-models.sh
 download-models-local.sh
 copy-local-models.sh
 prepare-models.sh
+init-ollama.sh
+check-ollama-models.sh
+verify-models.sh
 
 # Ollama models (mounted as volume, not copied)
 ollama_models/
