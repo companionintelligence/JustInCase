@@ -47,10 +47,6 @@ init-ollama.sh
 check-ollama-models.sh
 verify-models.sh
 
-# Ollama models (mounted as volume, not copied)
-ollama_models/
-ollama_models_local/
-
 # Build cache
 .buildx-cache/
 

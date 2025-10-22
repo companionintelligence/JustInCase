@@ -112,20 +112,6 @@ curl -X POST http://localhost:8080/query \
 
 ---
 
-## 🧪 Diagnostics
-
-Run basic functionality checks:
-
-```bash
-bash test.sh
-```
-
-This verifies:
-- Tika is working
-- Query endpoint returns valid results
-
----
-
 ## ⚙️ Configuration
 
 ### Model Selection
@@ -138,7 +124,7 @@ export LLM_MODEL=llama3.2
 export EMBEDDING_MODEL=nomic-embed-text
 
 # Download your chosen models
-./download-models-local.sh
+./load-gguf-models.sh
 
 # Build and run with your models
 docker compose build
@@ -183,69 +169,4 @@ export LLM_MODEL=llama3.2:latest  # or whatever you have
 export EMBEDDING_MODEL=nomic-embed-text:latest
 docker compose up
 ```
-
-### If models are missing:
-
-The system will fail fast with clear error messages if models aren't found.
-No automatic downloads, no fallbacks.
-
-### Container naming
-
-Note that when using `docker compose`, container names are prefixed with your project directory name. To find the exact container name:
-
-```bash
-docker ps -a | grep ollama
-```
-
-### Model dimension mismatch
-
-If you encounter "dimension mismatch" errors, this usually means the index was built with a different embedding model. Remove the existing index and rebuild:
-
-```bash
-rm -rf data/
-docker compose restart survival-rag
-```
-
-### Understanding model storage
-
-Models are stored in `./ollama_models` (copied from `~/.ollama`).
-
-To check your models:
-```bash
-# Check local Ollama models
-ollama list
-
-# Check prepared models
-ls -la ./ollama_models/
-
-# Check size
-du -sh ./ollama_models/
-
-# With containers running, verify models
-docker compose exec ollama ollama list
-```
-
-### Troubleshooting
-
-If models are missing:
-
-1. **Download GGUF files manually**:
-   - Visit the HuggingFace links in the setup instructions
-   - Download the .gguf files
-   - Place in `./gguf_models/`
-
-2. **Load them into Docker**:
-   ```bash
-   ./prepare-gguf-models.sh
-   docker compose up -d
-   ./load-gguf-models.sh
-   ```
-
-3. **Verify models are loaded**:
-   ```bash
-   docker compose exec ollama ollama list
-   ```
-
-The system will fail fast if models aren't available.
-No automatic downloads, no surprises.
 

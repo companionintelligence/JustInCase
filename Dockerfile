@@ -1,43 +1,54 @@
-# syntax=docker/dockerfile:1
-FROM python:3.14.0-slim-bookworm
+FROM ubuntu:22.04 AS builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    wget \
+    libopenblas-dev \
+    libcurl4-openssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# Clone llama.cpp
+RUN git clone https://github.com/ggerganov/llama.cpp.git
+
+# Install FAISS
+RUN wget https://github.com/facebookresearch/faiss/archive/v1.7.4.tar.gz && \
+    tar -xzf v1.7.4.tar.gz && \
+    cd faiss-1.7.4 && \
+    cmake -B build -DFAISS_ENABLE_GPU=OFF -DFAISS_ENABLE_PYTHON=OFF -DBUILD_TESTING=OFF . && \
+    cmake --build build -- -j$(nproc) && \
+    cmake --install build
+
+# Copy source files
+COPY server.cpp CMakeLists.txt ./
+
+# Build the server
+RUN cmake -B build . && \
+    cmake --build build -- -j$(nproc)
+
+# Runtime image
+FROM ubuntu:22.04
+
+RUN apt-get update && apt-get install -y \
+    libopenblas0 \
+    libcurl4 \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Install system dependencies for llama-cpp-python
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+# Copy the built binary
+COPY --from=builder /build/build/jic-server /app/
 
-# Copy requirements first for better layer caching
-COPY requirements.txt .
+# Copy web files
+COPY index.html style.css code.js chat.js ./
 
-# Create pip cache directory
-RUN mkdir -p /root/.cache/pip
+# Create directories
+RUN mkdir -p data sources gguf_models
 
-# Install llama-cpp-python
-# Since we're on a new Python version, we may need to build from source
-# Set build options to avoid compilation issues
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --cache-dir=/root/.cache/pip --upgrade pip wheel setuptools && \
-    CMAKE_ARGS="-DLLAMA_BLAS=OFF -DLLAMA_ACCELERATE=OFF -DLLAMA_METAL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF" \
-    FORCE_CMAKE=1 \
-    pip install --cache-dir=/root/.cache/pip llama-cpp-python --verbose
-
-# Install other requirements
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --cache-dir=/root/.cache/pip -r requirements.txt
-
-# Copy application code
-COPY . .
-
-# Create necessary directories
-RUN mkdir -p /app/data /app/sources
-
-# List contents to verify copy
-RUN echo "Contents of /app:" && ls -la /app/ && \
-    echo "Contents of /app/sources:" && ls -la /app/sources/ || echo "Sources directory is empty or missing"
-
-# Expose port
 EXPOSE 8080
 
-ENTRYPOINT ["python3", "start.py"]
+CMD ["./jic-server"]
