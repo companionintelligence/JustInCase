@@ -1,3 +1,34 @@
-data
+# Ollama models (large files, stored locally)
+ollama_models/
+
+# FAISS index and metadata
+data/
+
+# Aider
 .aider.*
 .aider*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Environment
+.env
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
