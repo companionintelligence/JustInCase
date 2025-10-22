@@ -7,13 +7,10 @@ import time
 from pathlib import Path
 from flask import Flask, request, jsonify, send_from_directory
 import requests
+import numpy as np
 from config import LLM_MODEL, EMBEDDING_MODEL, LLM_URL, MAX_CONTEXT_CHUNKS, SEARCH_TOP_K, TIKA_URL, CHUNK_SIZE, CHUNK_OVERLAP
 import logging
-import os
 from nomic import embed
-
-# Set nomic to use local inference
-os.environ['NOMIC_API_KEY'] = ''  # Empty key forces local mode
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -33,13 +30,14 @@ ingestion_status = {
 index_lock = threading.Lock()
 
 def get_embedding(text):
-    """Get embedding using nomic"""
+    """Get embedding using nomic with local inference"""
     try:
-        # Use nomic's embed function
+        # Use nomic's embed function with local inference
         output = embed.text(
             texts=[text],
             model='nomic-embed-text-v1.5',
-            task_type='search_document'
+            task_type='search_document',
+            inference_mode='local'
         )
         embedding = output['embeddings'][0]
         logger.debug(f"Embedding dimension: {len(embedding)}")
@@ -104,7 +102,8 @@ def get_embeddings_batch(texts):
         output = embed.text(
             texts=texts,
             model='nomic-embed-text-v1.5',
-            task_type='search_document'
+            task_type='search_document',
+            inference_mode='local'
         )
         return output['embeddings']
     except Exception as e:
@@ -197,8 +196,9 @@ def background_ingestion():
                 # Update index with all new embeddings
                 if embeddings:
                     with index_lock:
-                        # FAISS accepts list of lists directly
-                        index.add(embeddings)
+                        # Convert to numpy array for FAISS
+                        vectors = np.array(embeddings, dtype=np.float32)
+                        index.add(vectors)
                         docs.extend(new_docs)
                         
                         # Save to disk
@@ -269,8 +269,8 @@ def query():
         # Encode query
         embedding = get_embedding(q)
         
-        # Convert to list of lists for FAISS (no numpy needed)
-        qvec = [embedding]
+        # Convert to numpy array for FAISS
+        qvec = np.array([embedding], dtype=np.float32)
         
         logger.info(f"Query embedding dimension: {len(embedding)}, Index dimension: {index.d}")
 
