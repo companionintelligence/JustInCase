@@ -83,7 +83,7 @@ def get_embedding(text):
     """Get embedding using llama.cpp directly"""
     try:
         if embedding_model is None:
-            init_embedding_model()
+            init_models()
         
         # Get embedding from llama.cpp
         embedding = embedding_model.embed(text)
