@@ -64,13 +64,34 @@ if [ "$NEED_PULL" = true ]; then
     sleep 3
 fi
 
+# Show size of source models
+echo ""
+echo "📊 Source model sizes:"
+if [ -d "$HOME/.ollama/models" ]; then
+    du -sh "$HOME/.ollama/models" 2>/dev/null || echo "Unable to determine size"
+fi
+
 # Create target directory
 mkdir -p ollama_models
 
-# Copy the entire .ollama structure
+# Copy only the essential model files
 echo ""
 echo "📦 Copying models from ~/.ollama to ./ollama_models..."
-cp -r ~/.ollama/* ./ollama_models/ 2>/dev/null || true
+mkdir -p ./ollama_models
+
+# Copy only the models directory structure with progress
+if [ -d "$HOME/.ollama/models" ]; then
+    echo "  Copying model files (this may take a moment)..."
+    # Use rsync if available for progress, otherwise fall back to cp
+    if command -v rsync &> /dev/null; then
+        rsync -av --progress "$HOME/.ollama/models" ./ollama_models/
+    else
+        cp -r "$HOME/.ollama/models" ./ollama_models/
+    fi
+else
+    echo "❌ No models directory found in ~/.ollama"
+    exit 1
+fi
 
 # Verify models were copied
 echo ""
@@ -103,5 +124,6 @@ fi
 echo ""
 echo "✅ All required models are available!"
 echo "📁 Models prepared in: ./ollama_models"
+echo "📊 Total size: $(du -sh ./ollama_models 2>/dev/null | cut -f1 || echo 'Unknown')"
 echo ""
 echo "You can now run: docker compose up --build"
