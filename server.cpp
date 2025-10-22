@@ -10,6 +10,7 @@
 #include <chrono>
 #include <filesystem>
 #include <algorithm>
+#include <queue>
 #include <cstring>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -157,58 +158,92 @@ struct IngestionStatus {
 // Simple vector index implementation
 class SimpleVectorIndex {
 private:
-    std::vector<std::vector<float>> embeddings;
+    std::vector<float> embeddings_data;  // Store all embeddings in a single contiguous array
     int dimension;
+    int num_vectors;
     
 public:
-    SimpleVectorIndex(int dim) : dimension(dim) {}
+    SimpleVectorIndex(int dim) : dimension(dim), num_vectors(0) {
+        // Reserve initial capacity to avoid frequent reallocations
+        embeddings_data.reserve(1000 * dimension);
+    }
     
     void add(const std::vector<float>& embedding) {
-        embeddings.push_back(embedding);
+        embeddings_data.insert(embeddings_data.end(), embedding.begin(), embedding.end());
+        num_vectors++;
     }
     
     void add_batch(int n, const float* data) {
-        for (int i = 0; i < n; i++) {
-            std::vector<float> embedding(data + i * dimension, data + (i + 1) * dimension);
-            embeddings.push_back(embedding);
-        }
+        // Direct copy is much more efficient
+        embeddings_data.insert(embeddings_data.end(), data, data + n * dimension);
+        num_vectors += n;
     }
     
     std::vector<std::pair<int, float>> search(const std::vector<float>& query, int k) {
-        std::vector<std::pair<float, int>> distances;
+        if (num_vectors == 0) return {};
         
-        for (size_t i = 0; i < embeddings.size(); i++) {
-            float dist = 0;
-            for (int j = 0; j < dimension; j++) {
-                float diff = query[j] - embeddings[i][j];
-                dist += diff * diff;
+        // Use a min-heap to keep only top k results
+        std::priority_queue<std::pair<float, int>> top_k;
+        
+        // Process embeddings in chunks to improve cache locality
+        const int chunk_size = 16;  // Process 16 vectors at a time
+        
+        for (int base_idx = 0; base_idx < num_vectors; base_idx += chunk_size) {
+            int end_idx = std::min(base_idx + chunk_size, num_vectors);
+            
+            for (int i = base_idx; i < end_idx; i++) {
+                float dist = 0;
+                const float* embedding = embeddings_data.data() + i * dimension;
+                
+                // Unroll loop for better performance
+                int j = 0;
+                for (; j + 4 <= dimension; j += 4) {
+                    float d0 = query[j] - embedding[j];
+                    float d1 = query[j+1] - embedding[j+1];
+                    float d2 = query[j+2] - embedding[j+2];
+                    float d3 = query[j+3] - embedding[j+3];
+                    dist += d0*d0 + d1*d1 + d2*d2 + d3*d3;
+                }
+                // Handle remaining dimensions
+                for (; j < dimension; j++) {
+                    float diff = query[j] - embedding[j];
+                    dist += diff * diff;
+                }
+                
+                if (top_k.size() < k) {
+                    top_k.push({dist, i});
+                } else if (dist < top_k.top().first) {
+                    top_k.pop();
+                    top_k.push({dist, i});
+                }
             }
-            distances.push_back({dist, i});
         }
         
-        std::sort(distances.begin(), distances.end());
-        
+        // Extract results from heap
         std::vector<std::pair<int, float>> results;
-        for (int i = 0; i < k && i < distances.size(); i++) {
-            results.push_back({distances[i].second, distances[i].first});
+        results.reserve(top_k.size());
+        while (!top_k.empty()) {
+            results.push_back({top_k.top().second, top_k.top().first});
+            top_k.pop();
         }
+        std::reverse(results.begin(), results.end());
         
         return results;
     }
     
-    size_t size() const { return embeddings.size(); }
+    size_t size() const { return num_vectors; }
     
-    void clear() { embeddings.clear(); }
+    void clear() { 
+        embeddings_data.clear();
+        num_vectors = 0;
+    }
     
     void save(const std::string& path) {
         std::ofstream file(path, std::ios::binary);
-        int n = embeddings.size();
-        file.write((char*)&n, sizeof(n));
+        file.write((char*)&num_vectors, sizeof(num_vectors));
         file.write((char*)&dimension, sizeof(dimension));
-        for (const auto& emb : embeddings) {
-            file.write((char*)emb.data(), dimension * sizeof(float));
-        }
-        std::cout << "Saved " << n << " embeddings to " << path << std::endl;
+        file.write((char*)embeddings_data.data(), num_vectors * dimension * sizeof(float));
+        std::cout << "Saved " << num_vectors << " embeddings to " << path << std::endl;
     }
     
     void load(const std::string& path) {
@@ -218,19 +253,13 @@ public:
             return;
         }
         
-        int n;
-        file.read((char*)&n, sizeof(n));
+        file.read((char*)&num_vectors, sizeof(num_vectors));
         file.read((char*)&dimension, sizeof(dimension));
         
-        embeddings.clear();
-        embeddings.reserve(n);
+        embeddings_data.resize(num_vectors * dimension);
+        file.read((char*)embeddings_data.data(), num_vectors * dimension * sizeof(float));
         
-        for (int i = 0; i < n; i++) {
-            std::vector<float> emb(dimension);
-            file.read((char*)emb.data(), dimension * sizeof(float));
-            embeddings.push_back(emb);
-        }
-        std::cout << "Loaded " << n << " embeddings from " << path << std::endl;
+        std::cout << "Loaded " << num_vectors << " embeddings from " << path << std::endl;
     }
 };
 
@@ -757,7 +786,7 @@ void background_ingestion() {
                                 if (embedding.size() == EMBEDDING_DIM) {
                                     // Check memory before adding
                                     size_t new_size = new_embeddings.size() + embedding.size();
-                                    if (new_size > 10000000) { // ~40MB for float vectors
+                                    if (new_size > 2000000) { // ~8MB for float vectors - reduced threshold
                                         std::cout << "Flushing embeddings to index due to memory constraints" << std::endl;
                                         
                                         // Update index with current batch
