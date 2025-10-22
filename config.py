@@ -9,7 +9,6 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
 TIKA_URL = os.getenv("TIKA_URL", "http://tika:9998")
 LLM_URL = os.getenv("LLM_URL", "http://llama-cpp-llm:8080")
 
-
 # GGUF Model Download URLs
 # You can override these with environment variables
 LLAMA_GGUF_REPO = os.getenv("LLAMA_GGUF_REPO", "bartowski/Llama-3.2-1B-Instruct-GGUF")

@@ -6,7 +6,7 @@ import json
 import subprocess
 import os
 import threading
-from config import LLM_MODEL, EMBEDDING_MODEL, TIKA_URL, LLM_URL, LLAMA_GGUF_FILE
+from config import LLM_MODEL, EMBEDDING_MODEL, TIKA_URL, LLM_URL, LLAMA_GGUF_FILE, NOMIC_GGUF_FILE
 
 def wait_for_service(url, service_name, max_retries=30):
     """Wait for a service to be ready"""
@@ -26,10 +26,13 @@ def check_gguf_models():
     """Check if GGUF model files exist"""
     gguf_dir = "./gguf_models"
     llm_path = os.path.join(gguf_dir, LLAMA_GGUF_FILE)
+    embed_path = os.path.join(gguf_dir, NOMIC_GGUF_FILE)
     
     missing = []
     if not os.path.exists(llm_path):
         missing.append(f"LLM model: {LLAMA_GGUF_FILE}")
+    if not os.path.exists(embed_path):
+        missing.append(f"Embedding model: {NOMIC_GGUF_FILE}")
     
     if missing:
         print("\n" + "="*60)

@@ -3,7 +3,7 @@ FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
-# Install system dependencies for gpt4all
+# Install system dependencies for llama-cpp-python
 RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
@@ -23,7 +23,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p /app/data /app/sources /root/.cache/gpt4all
+RUN mkdir -p /app/data /app/sources
 
 # List contents to verify copy
 RUN echo "Contents of /app:" && ls -la /app/ && \

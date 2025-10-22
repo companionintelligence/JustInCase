@@ -1,6 +1,5 @@
 flask
 requests
 faiss-cpu
-nomic
 numpy
-gpt4all
+llama-cpp-python

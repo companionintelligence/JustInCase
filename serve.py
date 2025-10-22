@@ -8,21 +8,44 @@ from pathlib import Path
 from flask import Flask, request, jsonify, send_from_directory
 import requests
 import numpy as np
-from config import LLM_MODEL, EMBEDDING_MODEL, LLM_URL, MAX_CONTEXT_CHUNKS, SEARCH_TOP_K, TIKA_URL, CHUNK_SIZE, CHUNK_OVERLAP
+from llama_cpp import Llama
+from config import LLM_MODEL, EMBEDDING_MODEL, LLM_URL, MAX_CONTEXT_CHUNKS, SEARCH_TOP_K, TIKA_URL, CHUNK_SIZE, CHUNK_OVERLAP, NOMIC_GGUF_FILE
 import logging
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Initialize nomic/gpt4all for embeddings
-try:
-    from nomic import embed
-    # This will download the model on first run if needed
-    logger.info("Initializing nomic embeddings with gpt4all backend...")
-except Exception as e:
-    logger.error(f"Failed to initialize nomic: {e}")
-    raise
+# Initialize embedding model
+embedding_model = None
+
+def init_embedding_model():
+    """Initialize the llama.cpp embedding model"""
+    global embedding_model
+    model_path = f"./gguf_models/{NOMIC_GGUF_FILE}"
+    
+    if not os.path.exists(model_path):
+        logger.error(f"Embedding model not found at {model_path}")
+        logger.error("Please download the GGUF file and place it in ./gguf_models/")
+        raise FileNotFoundError(f"Missing embedding model: {model_path}")
+    
+    logger.info(f"Loading embedding model from {model_path}...")
+    try:
+        # Initialize llama.cpp with embedding mode
+        embedding_model = Llama(
+            model_path=model_path,
+            embedding=True,
+            n_ctx=8192,  # Context size for nomic
+            n_threads=4,  # Adjust based on your CPU
+            verbose=False
+        )
+        logger.info("Embedding model loaded successfully")
+    except Exception as e:
+        logger.error(f"Failed to load embedding model: {e}")
+        raise
+
+# Initialize on startup
+init_embedding_model()
 
 app = Flask(__name__)
 
@@ -38,21 +61,17 @@ ingestion_status = {
 index_lock = threading.Lock()
 
 def get_embedding(text):
-    """Get embedding using nomic with local inference"""
+    """Get embedding using llama.cpp directly"""
     try:
-        # Use nomic's embed function with local inference
-        output = embed.text(
-            texts=[text],
-            model='nomic-embed-text-v1.5',
-            task_type='search_document',
-            inference_mode='local'
-        )
-        embedding = output['embeddings'][0]
+        if embedding_model is None:
+            init_embedding_model()
+        
+        # Get embedding from llama.cpp
+        embedding = embedding_model.embed(text)
         logger.debug(f"Embedding dimension: {len(embedding)}")
         return embedding
     except Exception as e:
         logger.error(f"Error getting embedding: {e}")
-        logger.error(f"Make sure gpt4all is installed and the model is downloaded")
         raise
 
 # Global variables for index and docs
@@ -108,17 +127,14 @@ def split_text(text, chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP):
 def get_embeddings_batch(texts):
     """Get embeddings for multiple texts at once"""
     try:
-        output = embed.text(
-            texts=texts,
-            model='nomic-embed-text-v1.5',
-            task_type='search_document',
-            inference_mode='local'
-        )
-        return output['embeddings']
+        # llama.cpp doesn't support batch embeddings, so we process one by one
+        embeddings = []
+        for text in texts:
+            embeddings.append(get_embedding(text))
+        return embeddings
     except Exception as e:
         logger.error(f"Error getting batch embeddings: {e}")
-        # Fall back to individual embeddings
-        return [get_embedding(text) for text in texts]
+        raise
 
 def background_ingestion():
     """Background task to ingest documents"""
