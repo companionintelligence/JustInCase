@@ -3,6 +3,11 @@ FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
+# Install system dependencies for gpt4all
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy requirements first for better layer caching
 COPY requirements.txt .
 
@@ -18,7 +23,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p /app/data /app/sources
+RUN mkdir -p /app/data /app/sources /root/.cache/gpt4all
 
 # List contents to verify copy
 RUN echo "Contents of /app:" && ls -la /app/ && \

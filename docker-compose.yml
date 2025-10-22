@@ -33,6 +33,7 @@ services:
     volumes:
       - ./sources:/app/sources
       - ./data:/app/data
+      - gpt4all-cache:/root/.cache/gpt4all
     ports:
       - "8080:8080"
     environment:
@@ -41,4 +42,8 @@ services:
       - LLM_MODEL=${LLM_MODEL:-llama3.2}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-nomic-embed-text}
     command: ["python3", "start.py"]
+
+volumes:
+  gpt4all-cache:
+    driver: local
 

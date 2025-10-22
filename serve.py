@@ -10,11 +10,19 @@ import requests
 import numpy as np
 from config import LLM_MODEL, EMBEDDING_MODEL, LLM_URL, MAX_CONTEXT_CHUNKS, SEARCH_TOP_K, TIKA_URL, CHUNK_SIZE, CHUNK_OVERLAP
 import logging
-from nomic import embed
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# Initialize nomic/gpt4all for embeddings
+try:
+    from nomic import embed
+    # This will download the model on first run if needed
+    logger.info("Initializing nomic embeddings with gpt4all backend...")
+except Exception as e:
+    logger.error(f"Failed to initialize nomic: {e}")
+    raise
 
 app = Flask(__name__)
 
@@ -44,6 +52,7 @@ def get_embedding(text):
         return embedding
     except Exception as e:
         logger.error(f"Error getting embedding: {e}")
+        logger.error(f"Make sure gpt4all is installed and the model is downloaded")
         raise
 
 # Global variables for index and docs

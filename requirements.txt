@@ -3,3 +3,4 @@ requests
 faiss-cpu
 nomic
 numpy
+gpt4all
