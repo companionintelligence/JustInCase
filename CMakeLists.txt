@@ -64,35 +64,46 @@ message(STATUS "  CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 
 # Link libraries (order matters for static linking)
 if(EXISTS "/llama-install/lib/libllama.a")
-    # When using pre-built libraries, we need to link them in the correct order
-    # The order is important: more specific libs first, then dependencies
-    file(GLOB ALL_STATIC_LIBS "/llama-install/lib/*.a")
+    # When using pre-built libraries, link them explicitly in dependency order
+    # Start with the most dependent libraries first
+    set(LLAMA_LIBS "")
     
-    # Sort libraries to ensure correct linking order
-    set(ORDERED_LIBS "")
-    foreach(lib ${ALL_STATIC_LIBS})
-        if(lib MATCHES "libllama\\.a$")
-            list(APPEND ORDERED_LIBS ${lib})
-        endif()
-    endforeach()
-    foreach(lib ${ALL_STATIC_LIBS})
-        if(lib MATCHES "libggml.*\\.a$" AND NOT lib MATCHES "libllama\\.a$")
-            list(APPEND ORDERED_LIBS ${lib})
-        endif()
-    endforeach()
+    # First, add the main llama library
+    if(EXISTS "/llama-install/lib/libllama.a")
+        list(APPEND LLAMA_LIBS "/llama-install/lib/libllama.a")
+    endif()
+    
+    # Then add all ggml libraries in the correct order
+    # The order matters: CPU backend must come before general backend
+    file(GLOB GGML_LIBS "/llama-install/lib/libggml*.a")
+    
+    # Sort to ensure consistent order
+    list(SORT GGML_LIBS)
+    
+    # Add common library if it exists
+    if(EXISTS "/llama-install/lib/libcommon.a")
+        list(APPEND LLAMA_LIBS "/llama-install/lib/libcommon.a")
+    endif()
     
     target_link_libraries(jic-server 
         PRIVATE 
-        ${ORDERED_LIBS}
+        ${LLAMA_LIBS}
+        ${GGML_LIBS}
         nlohmann_json
         Threads::Threads
         curl
         openblas
         m  # math library
-        ${CMAKE_DL_LIBS}  # for dlopen if needed
+        dl  # for dlopen
         stdc++  # C++ standard library
         pthread  # POSIX threads
     )
+    
+    # Print the libraries being linked for debugging
+    message(STATUS "Linking with libraries:")
+    foreach(lib ${LLAMA_LIBS} ${GGML_LIBS})
+        message(STATUS "  ${lib}")
+    endforeach()
 else()
     # When building from source
     target_link_libraries(jic-server 
