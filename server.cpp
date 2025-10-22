@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 #include <thread>
 #include <mutex>
 #include <chrono>
@@ -20,6 +21,12 @@
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
+
+// Helper function for C++17 (ends_with is C++20)
+bool string_ends_with(const std::string& str, const std::string& suffix) {
+    if (suffix.size() > str.size()) return false;
+    return str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
 
 // Global configuration
 const int PORT = 8080;
@@ -346,10 +353,10 @@ std::string generate_llm_response(const std::string& prompt) {
     
     // Check context size
     int n_ctx = llama_n_ctx(llm_ctx);
-    int n_ctx_used = llama_memory_seq_pos_max(llama_get_memory(llm_ctx), 0) + 1;
+    int n_ctx_used = llama_get_kv_cache_used_cells(llm_ctx);
     if (n_ctx_used + prompt_tokens.size() > n_ctx) {
         // Clear context if needed
-        llama_kv_cache_clear(llm_ctx);
+        llama_kv_cache_seq_rm(llm_ctx, -1, -1, -1);
     }
     
     // Prepare batch for the prompt
@@ -392,7 +399,7 @@ std::string generate_llm_response(const std::string& prompt) {
         batch = llama_batch_get_one(&new_token_id, 1);
         
         // Check context size again
-        n_ctx_used = llama_memory_seq_pos_max(llama_get_memory(llm_ctx), 0) + 1;
+        n_ctx_used = llama_get_kv_cache_used_cells(llm_ctx);
         if (n_ctx_used + 1 > n_ctx) {
             break;
         }
@@ -518,12 +525,12 @@ void background_ingestion() {
                 try {
                     std::string text;
                     
-                    if (full_path.ends_with(".txt")) {
+                    if (string_ends_with(full_path, ".txt")) {
                         std::ifstream file(full_path);
                         std::stringstream buffer;
                         buffer << file.rdbuf();
                         text = buffer.str();
-                    } else if (full_path.ends_with(".pdf")) {
+                    } else if (string_ends_with(full_path, ".pdf")) {
                         // Use Tika service for PDF extraction
                         text = extract_text_with_tika(full_path);
                         if (text.empty()) {
@@ -609,10 +616,10 @@ std::string serve_static_file(const std::string& path) {
     
     // Determine content type
     std::string content_type = "text/plain";
-    if (file_path.ends_with(".html")) content_type = "text/html";
-    else if (file_path.ends_with(".css")) content_type = "text/css";
-    else if (file_path.ends_with(".js")) content_type = "application/javascript";
-    else if (file_path.ends_with(".json")) content_type = "application/json";
+    if (string_ends_with(file_path, ".html")) content_type = "text/html";
+    else if (string_ends_with(file_path, ".css")) content_type = "text/css";
+    else if (string_ends_with(file_path, ".js")) content_type = "application/javascript";
+    else if (string_ends_with(file_path, ".json")) content_type = "application/json";
     
     return build_http_response(200, content_type, content);
 }
