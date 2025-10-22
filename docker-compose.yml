@@ -1,9 +1,11 @@
 services:
   # Tika service for PDF support
   tika:
-    image: apache/tika:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.tika
+    image: jic-tika:cached
     container_name: tika
-    pull_policy: if_not_present
     ports:
       - "9998:9998"
 

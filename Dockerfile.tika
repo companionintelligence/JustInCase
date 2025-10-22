@@ -1,0 +1,5 @@
+# Dockerfile to cache Tika image locally
+FROM apache/tika:latest
+
+# This creates a local cached version of the Tika image
+# No modifications needed, just caching
