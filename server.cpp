@@ -33,7 +33,7 @@ const std::string NOMIC_MODEL_PATH = "./gguf_models/nomic-embed-text-v1.5.Q4_K_M
 const std::string TIKA_URL = "http://tika:9998/tika";
 
 // CURL callback for response data
-size_t curl_write_callback(void* contents, size_t size, size_t nmemb, std::string* userp) {
+size_t tika_write_callback(void* contents, size_t size, size_t nmemb, std::string* userp) {
     userp->append((char*)contents, size * nmemb);
     return size * nmemb;
 }
@@ -65,7 +65,7 @@ std::string extract_text_with_tika(const std::string& filepath) {
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     
     // Response handling
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, tika_write_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
     
     // Perform request
@@ -241,7 +241,7 @@ HttpRequest parse_http_request(const std::string& request) {
 // Initialize models
 bool init_models() {
     // Initialize LLM
-    llama_backend_init(false);
+    llama_backend_init();
     
     llama_model_params model_params = llama_model_default_params();
     llm_model = llama_load_model_from_file(LLAMA_MODEL_PATH.c_str(), model_params);
