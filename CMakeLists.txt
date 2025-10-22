@@ -21,9 +21,12 @@ add_subdirectory(llama.cpp)
 
 # Add nlohmann/json
 include(FetchContent)
+set(FETCHCONTENT_TRY_FIND_PACKAGE_MODE NEVER)
 FetchContent_Declare(json
     GIT_REPOSITORY https://github.com/nlohmann/json.git
     GIT_TAG v3.11.2
+    GIT_SHALLOW TRUE
+    GIT_CONFIG "http.sslVerify=false"
 )
 FetchContent_MakeAvailable(json)
 

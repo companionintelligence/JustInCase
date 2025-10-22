@@ -16,7 +16,7 @@
 #include <signal.h>
 #include <curl/curl.h>
 #include "llama.h"
-#include "json.hpp"
+#include "nlohmann/json.hpp"
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
