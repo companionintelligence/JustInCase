@@ -68,32 +68,11 @@ def main():
     
     # List available models for debugging
     try:
-        # First check what's actually in the container
-        print("\nDebug: Checking mounted directory in container...")
-        debug_result = subprocess.run(
-            ["docker", "exec", "ollama", "ls", "-la", "/root/.ollama/"],
-            capture_output=True, text=True
-        )
-        if debug_result.returncode == 0:
-            print("Contents of /root/.ollama/:")
-            print(debug_result.stdout)
-        else:
-            print("Could not check /root/.ollama/ directory")
-            
-        # Check models subdirectory
-        debug_result = subprocess.run(
-            ["docker", "exec", "ollama", "find", "/root/.ollama/models", "-type", "d", "-name", "*llama*", "-o", "-name", "*nomic*"],
-            capture_output=True, text=True
-        )
-        if debug_result.returncode == 0 and debug_result.stdout:
-            print("\nModel directories found:")
-            print(debug_result.stdout)
-        
         req = urllib.request.Request(f"{OLLAMA_URL}/api/tags")
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read())
             available_models = [m.get('name', '') for m in data.get('models', [])]
-            print(f"\nAvailable Ollama models via API: {available_models}")
+            print(f"Available Ollama models: {available_models}")
     except Exception as e:
         print(f"Could not list models: {e}")
     
@@ -111,13 +90,13 @@ def main():
         print("\n" + "="*60)
         print("Verifying required models...")
         print("="*60)
-    
-    for model in models_needed:
-        if check_model_exists(model, OLLAMA_URL, retry_count=5):
-            print(f"✅ Model {model} is available")
-        else:
-            print(f"❌ Model {model} NOT FOUND")
-            missing_models.append(model)
+        
+        for model in models_needed:
+            if check_model_exists(model, OLLAMA_URL, retry_count=5):
+                print(f"✅ Model {model} is available")
+            else:
+                print(f"❌ Model {model} NOT FOUND")
+                missing_models.append(model)
     
     if missing_models:
         print("\n" + "="*60)
