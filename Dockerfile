@@ -1,14 +1,6 @@
 # syntax=docker/dockerfile:1
 FROM python:3.11-slim-bookworm
 
-# Install system dependencies including build tools for llama.cpp
-RUN apt-get update && apt-get install -y \
-    curl \
-    git \
-    build-essential \
-    cmake \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
 # Copy requirements first for better layer caching
@@ -20,9 +12,6 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 # Copy application code
 COPY . .
-
-# Build llama.cpp
-RUN chmod +x build-llama-cpp.sh && ./build-llama-cpp.sh
 
 # Create data directory
 RUN mkdir -p /app/data

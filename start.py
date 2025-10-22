@@ -21,16 +21,16 @@ def wait_for_service(url, service_name, max_retries=30):
             time.sleep(2)
     raise Exception(f"{service_name} failed to start after {max_retries} attempts")
 
-def start_llama_server():
-    """Start the llama.cpp server wrapper in a separate thread"""
-    def run_server():
+def start_llama_wrapper():
+    """Start the llama.cpp wrapper in a separate thread"""
+    def run_wrapper():
         subprocess.run(["python3", "llama_server.py"])
     
-    thread = threading.Thread(target=run_server, daemon=True)
+    thread = threading.Thread(target=run_wrapper, daemon=True)
     thread.start()
     
-    # Wait for the llama server to be ready
-    wait_for_service(f"{OLLAMA_URL}/api/tags", "Llama.cpp server")
+    # Wait for the wrapper to be ready
+    wait_for_service(f"{OLLAMA_URL}/api/tags", "Llama wrapper")
 
 def check_gguf_models():
     """Check if GGUF model files exist"""
@@ -61,12 +61,18 @@ def main():
     # Check GGUF models first
     check_gguf_models()
     
-    # Wait for Tika
+    # Wait for services
     wait_for_service(TIKA_URL, "Tika")
     
-    # Start llama.cpp server wrapper
-    print("Starting llama.cpp server wrapper...")
-    start_llama_server()
+    # Wait for llama.cpp containers
+    llm_url = os.getenv("LLM_URL", "http://llama-cpp-llm:8080")
+    embed_url = os.getenv("EMBED_URL", "http://llama-cpp-embed:8080")
+    wait_for_service(f"{llm_url}/health", "LLM server")
+    wait_for_service(f"{embed_url}/health", "Embedding server")
+    
+    # Start the Ollama-compatible wrapper
+    print("Starting Ollama-compatible wrapper...")
+    start_llama_wrapper()
     
     # Run ingestion if needed
     if not os.path.exists("data/index.faiss"):

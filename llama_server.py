@@ -1,61 +1,19 @@
 #!/usr/bin/env python3
 """
 Llama.cpp server wrapper for JIC system
-Provides Ollama-compatible API endpoints using llama.cpp
+Provides Ollama-compatible API endpoints using llama.cpp Docker containers
 """
 import os
 import json
-import subprocess
-import threading
-import time
 import requests
 from flask import Flask, request, jsonify
 from config import LLAMA_GGUF_FILE, NOMIC_GGUF_FILE
 
 app = Flask(__name__)
 
-# Global process handles
-llm_process = None
-embed_process = None
-
-# Model paths
-GGUF_DIR = "./gguf_models"
-LLM_MODEL_PATH = os.path.join(GGUF_DIR, LLAMA_GGUF_FILE)
-EMBED_MODEL_PATH = os.path.join(GGUF_DIR, NOMIC_GGUF_FILE)
-
-# Ports for llama.cpp servers
-LLM_PORT = 8081
-EMBED_PORT = 8082
-
-def start_llama_server(model_path, port, embedding_mode=False):
-    """Start a llama.cpp server instance"""
-    cmd = [
-        "./llama.cpp/build/bin/llama-server",
-        "-m", model_path,
-        "--port", str(port),
-        "--host", "0.0.0.0",
-        "-c", "2048",  # context size
-        "--n-gpu-layers", "-1",  # Use GPU if available
-    ]
-    
-    if embedding_mode:
-        cmd.extend(["--embedding", "--pooling", "mean"])
-    
-    print(f"Starting llama.cpp server: {' '.join(cmd)}")
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    
-    # Wait for server to be ready
-    max_retries = 30
-    for i in range(max_retries):
-        try:
-            resp = requests.get(f"http://localhost:{port}/health")
-            if resp.status_code == 200:
-                print(f"Server on port {port} is ready!")
-                return process
-        except:
-            time.sleep(1)
-    
-    raise Exception(f"Server on port {port} failed to start")
+# URLs for the llama.cpp containers
+LLM_URL = os.getenv("LLM_URL", "http://llama-cpp-llm:8080")
+EMBED_URL = os.getenv("EMBED_URL", "http://llama-cpp-embed:8080")
 
 @app.route("/api/generate", methods=["POST"])
 def generate():
@@ -73,7 +31,7 @@ def generate():
     }
     
     try:
-        resp = requests.post(f"http://localhost:{LLM_PORT}/completion", json=llama_request)
+        resp = requests.post(f"{LLM_URL}/completion", json=llama_request)
         if resp.status_code == 200:
             result = resp.json()
             return jsonify({"response": result.get("content", "")})
@@ -89,7 +47,7 @@ def embed():
     text = data.get("input", "")
     
     try:
-        resp = requests.post(f"http://localhost:{EMBED_PORT}/embedding", 
+        resp = requests.post(f"{EMBED_URL}/embedding", 
                            json={"content": text})
         if resp.status_code == 200:
             result = resp.json()
@@ -103,57 +61,16 @@ def embed():
 @app.route("/api/tags", methods=["GET"])
 def list_models():
     """Ollama-compatible model listing endpoint"""
-    models = []
-    
-    if os.path.exists(LLM_MODEL_PATH):
-        models.append({"name": "llama3.2", "size": os.path.getsize(LLM_MODEL_PATH)})
-    
-    if os.path.exists(EMBED_MODEL_PATH):
-        models.append({"name": "nomic-embed-text", "size": os.path.getsize(EMBED_MODEL_PATH)})
-    
+    models = [
+        {"name": "llama3.2", "size": 1000000000},  # Approximate
+        {"name": "nomic-embed-text", "size": 500000000}  # Approximate
+    ]
     return jsonify({"models": models})
 
 def main():
-    global llm_process, embed_process
-    
-    # Check if models exist
-    if not os.path.exists(LLM_MODEL_PATH):
-        raise Exception(f"LLM model not found: {LLM_MODEL_PATH}")
-    if not os.path.exists(EMBED_MODEL_PATH):
-        raise Exception(f"Embedding model not found: {EMBED_MODEL_PATH}")
-    
-    # Build llama.cpp if needed
-    if not os.path.exists("./llama.cpp/build/bin/llama-server"):
-        print("Building llama.cpp...")
-        result = subprocess.run(["./build-llama-cpp.sh"], capture_output=True, text=True)
-        if result.returncode != 0:
-            print(f"Build failed with error:\n{result.stderr}")
-            raise Exception("Failed to build llama.cpp")
-        
-        # Double-check the binary exists
-        if not os.path.exists("./llama.cpp/build/bin/llama-server"):
-            print("ERROR: llama-server binary not found after build!")
-            print("Checking build directory...")
-            subprocess.run(["ls", "-la", "./llama.cpp/build/"])
-            raise Exception("llama-server binary not found")
-    
-    # Start llama.cpp servers
-    print("Starting LLM server...")
-    llm_process = start_llama_server(LLM_MODEL_PATH, LLM_PORT)
-    
-    print("Starting embedding server...")
-    embed_process = start_llama_server(EMBED_MODEL_PATH, EMBED_PORT, embedding_mode=True)
-    
     # Start Flask wrapper
     print("Starting Ollama-compatible API wrapper on port 11434...")
     app.run(host="0.0.0.0", port=11434)
 
 if __name__ == "__main__":
-    try:
-        main()
-    finally:
-        # Cleanup
-        if llm_process:
-            llm_process.terminate()
-        if embed_process:
-            embed_process.terminate()
+    main()
