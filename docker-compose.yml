@@ -13,6 +13,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: jic
+    platform: linux/arm64
     depends_on:
       - tika
     volumes:
