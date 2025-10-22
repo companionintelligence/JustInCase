@@ -127,32 +127,43 @@ All model references are centralized in `config.py` for easy modification.
 
 ### Model Management
 
-Models are stored in Docker volume `ollama_data` and persist across container restarts.
+Models are stored in Docker volume `ollama_data` which provides durable storage.
 
 **Important:** 
-- Models are stored in Docker volume (not local filesystem)
-- Models persist across container restarts
+- Models are downloaded ONCE and stored permanently in Docker volume
+- Models SURVIVE all these operations:
+  - `docker compose down` and `docker compose up`
+  - `docker compose up --build` (rebuilding containers)
+  - Container restarts and code changes
+- Models are ONLY deleted if you run `docker compose down -v` (with -v flag)
 - ~1.6GB total (varies by model choice)
 - Default models: llama3.2 (LLM) and nomic-embed-text (embeddings)
 
 ### Workflow:
 
-1. **Start the system**:
+1. **First time setup** (downloads models ONCE):
    ```bash
-   docker compose up --build
-   ```
-
-2. **Import models** (first time only):
-   ```bash
+   # Start the system
+   docker compose up -d
+   
+   # Import models (this downloads them into durable Docker volume)
    ./import-models.sh
+   
+   # Models are now permanently stored!
    ```
-   This downloads models into the Docker volume where they persist.
 
-3. **Subsequent runs**:
+2. **All future runs** (no downloads needed):
    ```bash
    docker compose up
    ```
    Models are already in the volume, no re-download needed.
+
+3. **Even after rebuilds** (still no downloads):
+   ```bash
+   docker compose down
+   docker compose up --build
+   # Models are still there!
+   ```
 
 ### If models are missing:
 
