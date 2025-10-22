@@ -135,7 +135,6 @@ EOF
 RUN cmake -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_FLAGS="-O3 -march=armv8-a" \
-    -C CMakeLists-fast.txt \
     . && \
     cmake --build build -- -j$(nproc)
 
