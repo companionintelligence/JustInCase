@@ -37,18 +37,34 @@ function checkSystemStatus() {
       if (!statusDiv) {
         const div = document.createElement('div');
         div.id = 'system-status';
-        div.style.cssText = 'position: fixed; top: 10px; right: 10px; background: #333; color: white; padding: 10px; border-radius: 5px; font-size: 12px;';
+        div.style.cssText = 'position: fixed; top: 10px; right: 10px; background: #333; color: white; padding: 10px; border-radius: 5px; font-size: 12px; display: flex; align-items: center; gap: 10px;';
         document.body.appendChild(div);
       }
       
       const status = data.ingestion;
-      let statusText = `📚 ${data.documents_indexed} docs indexed`;
+      let statusHTML = `<span>📚 ${data.documents_indexed} docs</span>`;
       
       if (status && status.in_progress) {
-        statusText += ` | ⏳ Ingesting: ${status.files_processed}/${status.total_files} files`;
+        const percent = data.progress_percent || 0;
+        statusHTML += `
+          <span style="display: flex; align-items: center; gap: 5px;">
+            <span>⏳ Ingesting:</span>
+            <div style="width: 100px; height: 8px; background: #555; border-radius: 4px; overflow: hidden;">
+              <div style="width: ${percent}%; height: 100%; background: #4CAF50; transition: width 0.3s;"></div>
+            </div>
+            <span>${percent}%</span>
+          </span>
+        `;
+        if (status.current_file) {
+          statusHTML += `<span style="font-size: 11px; opacity: 0.8;">${status.current_file}</span>`;
+        }
+      } else if (data.documents_indexed === 0) {
+        statusHTML += `<span style="color: #ff9800;">⚠️ No documents indexed yet</span>`;
+      } else {
+        statusHTML += `<span style="color: #4CAF50;">✓ Ready</span>`;
       }
       
-      document.getElementById('system-status').textContent = statusText;
+      document.getElementById('system-status').innerHTML = statusHTML;
     })
     .catch(err => console.error('Failed to check status:', err));
 }
@@ -155,6 +171,10 @@ function sendMessage() {
     addBotMessage(data.answer);
     if (data.matches && data.matches.length > 0) {
       addSourcesMessage(data.matches);
+    }
+    // Update status if included in response
+    if (data.status) {
+      checkSystemStatus();
     }
   })
   .catch(err => {
