@@ -1,7 +1,16 @@
 // Chat functionality for Just In Case
 let isProcessing = false;
+let conversationId = null;
+
+// Generate a unique conversation ID
+function generateConversationId() {
+  return 'conv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
 
 function initializeChat() {
+  // Initialize conversation ID
+  conversationId = generateConversationId();
+  
   addBotMessage("Hello! I'm your emergency knowledge assistant. I can help you with survival tips, emergency procedures, medical advice, and preparedness information. What would you like to know?");
   
   // Add suggested prompts
@@ -141,11 +150,14 @@ function sendMessage() {
   document.getElementById('send-button').disabled = true;
   showTypingIndicator();
   
-  // Send to API
+  // Send to API with conversation ID
   fetch('/query', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({query: message})
+    body: JSON.stringify({
+      query: message,
+      conversation_id: conversationId
+    })
   })
   .then(async response => {
     const contentType = response.headers.get("content-type") || "";
@@ -193,4 +205,17 @@ function sendMessage() {
 document.addEventListener('DOMContentLoaded', () => {
   initializeChat();
   document.getElementById('user-input').focus();
+  
+  // Add a "New Conversation" button
+  const newConvButton = document.createElement('button');
+  newConvButton.textContent = 'New Conversation';
+  newConvButton.style.cssText = 'position: fixed; top: 10px; left: 10px; padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;';
+  newConvButton.onclick = () => {
+    if (confirm('Start a new conversation? Current conversation history will be cleared.')) {
+      conversationId = generateConversationId();
+      document.getElementById('chat-messages').innerHTML = '';
+      initializeChat();
+    }
+  };
+  document.body.appendChild(newConvButton);
 });

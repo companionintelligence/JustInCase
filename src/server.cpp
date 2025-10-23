@@ -7,6 +7,8 @@
 #include <thread>
 #include <filesystem>
 #include <cstring>
+#include <chrono>
+#include <mutex>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
@@ -89,6 +91,14 @@ std::vector<Document> documents;
 EmbeddingGenerator* embeddings = nullptr;
 LLMGenerator* llm = nullptr;
 
+// Conversation history storage
+struct ConversationHistory {
+    std::vector<std::pair<std::string, std::string>> messages; // role, content pairs
+    std::chrono::system_clock::time_point last_activity;
+};
+std::map<std::string, ConversationHistory> conversations;
+std::mutex conversations_mutex;
+
 // Load index from disk
 void load_index() {
     if (vector_index) delete vector_index;
@@ -159,7 +169,14 @@ std::string handle_query(const std::string& body) {
         auto request_json = json::parse(body);
         std::string query = request_json["query"];
         
+        // Get or create conversation ID
+        std::string conversation_id = "default";
+        if (request_json.contains("conversation_id") && !request_json["conversation_id"].is_null()) {
+            conversation_id = request_json["conversation_id"];
+        }
+        
         json response;
+        response["conversation_id"] = conversation_id;
         
         if (documents.empty()) {
             // No documents indexed, use LLM directly
@@ -196,9 +213,56 @@ std::string handle_query(const std::string& body) {
             }
         }
         
-        // Generate response with context
-        std::string prompt = "Context: " + context + "\n\nQuestion: " + query + "\n\nAnswer:";
+        // Get conversation history
+        std::vector<std::pair<std::string, std::string>> history;
+        {
+            std::lock_guard<std::mutex> lock(conversations_mutex);
+            auto& conv = conversations[conversation_id];
+            history = conv.messages;
+            
+            // Clean up old conversations (older than 1 hour)
+            auto now = std::chrono::system_clock::now();
+            for (auto it = conversations.begin(); it != conversations.end(); ) {
+                if (std::chrono::duration_cast<std::chrono::hours>(now - it->second.last_activity).count() > 1) {
+                    it = conversations.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+        }
+        
+        // Build prompt with conversation history
+        std::string prompt;
+        if (!context.empty()) {
+            prompt = "Context from documents:\n" + context + "\n\n";
+        }
+        
+        // Add conversation history
+        if (!history.empty()) {
+            prompt += "Previous conversation:\n";
+            for (const auto& [role, content] : history) {
+                prompt += role + ": " + content + "\n";
+            }
+            prompt += "\n";
+        }
+        
+        prompt += "User: " + query + "\n\nAssistant:";
+        
         std::string answer = llm->generate(prompt);
+        
+        // Update conversation history
+        {
+            std::lock_guard<std::mutex> lock(conversations_mutex);
+            auto& conv = conversations[conversation_id];
+            conv.messages.push_back({"User", query});
+            conv.messages.push_back({"Assistant", answer});
+            conv.last_activity = std::chrono::system_clock::now();
+            
+            // Keep only last 10 exchanges (20 messages)
+            if (conv.messages.size() > 20) {
+                conv.messages.erase(conv.messages.begin(), conv.messages.begin() + 2);
+            }
+        }
         
         response["answer"] = answer;
         response["matches"] = matches;

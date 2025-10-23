@@ -64,10 +64,18 @@ public:
         // Get chat template
         const char* tmpl = llama_model_chat_template(model, nullptr);
         
-        // Create chat messages
+        // Parse the prompt to extract conversation history if present
         std::vector<llama_chat_message> messages;
-        messages.push_back({"system", "You are a helpful emergency knowledge assistant. Answer questions based on the provided context."});
-        messages.push_back({"user", prompt.c_str()});
+        messages.push_back({"system", "You are a helpful emergency knowledge assistant. Answer questions based on the provided context. Remember information from the conversation history."});
+        
+        // Check if prompt contains conversation history
+        if (prompt.find("Previous conversation:") != std::string::npos) {
+            // For now, just pass the whole prompt as a user message
+            // In a more sophisticated implementation, we'd parse the history
+            messages.push_back({"user", prompt.c_str()});
+        } else {
+            messages.push_back({"user", prompt.c_str()});
+        }
         
         // Apply chat template
         std::vector<char> formatted(2048);
