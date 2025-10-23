@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 #include <thread>
 #include <filesystem>
 #include <cstring>
@@ -198,16 +199,23 @@ std::string handle_query(const std::string& body) {
         // Build context from top matches
         std::string context;
         json matches = json::array();
+        std::set<std::string> used_files; // Track which files we've already cited
         int chunks_used = 0;
         
         for (const auto& [idx, dist] : results) {
             if (chunks_used >= MAX_CONTEXT_CHUNKS) break;
             if (idx >= 0 && idx < documents.size()) {
                 context += documents[idx].text + "\n\n";
-                matches.push_back({
-                    {"filename", documents[idx].filename},
-                    {"text", documents[idx].text}
-                });
+                
+                // Only add unique files to matches (avoid duplicate citations)
+                if (used_files.find(documents[idx].filename) == used_files.end()) {
+                    matches.push_back({
+                        {"filename", documents[idx].filename},
+                        {"text", documents[idx].text.substr(0, 200) + "..."}, // Truncate for display
+                        {"score", 1.0f - (dist / 100.0f)} // Convert distance to similarity score
+                    });
+                    used_files.insert(documents[idx].filename);
+                }
                 chunks_used++;
             }
         }
@@ -233,7 +241,8 @@ std::string handle_query(const std::string& body) {
         // Build prompt with conversation history
         std::string prompt;
         if (!context.empty()) {
-            prompt = "Context from documents:\n" + context + "\n\n";
+            prompt = "You are an emergency knowledge assistant. Use the following context from emergency preparedness documents to answer the user's question. Be specific and cite which documents you're referencing when providing information.\n\n";
+            prompt += "Context from documents:\n" + context + "\n\n";
         }
         
         // Add conversation history

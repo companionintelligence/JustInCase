@@ -222,6 +222,7 @@ int main() {
                     }
                     
                     std::cout << "Completed processing: " << rel_path << std::endl;
+                    std::cout << "Total chunks indexed: " << documents.size() << std::endl;
                     
                 } catch (const std::exception& e) {
                     std::cerr << "Error processing " << rel_path << ": " << e.what() << std::endl;
@@ -229,7 +230,8 @@ int main() {
                 }
             }
             
-            std::cout << "Ingestion batch complete. Total documents: " << documents.size() << std::endl;
+            std::cout << "Ingestion batch complete. Total chunks indexed: " << documents.size() << std::endl;
+            std::cout << "Files processed: " << processed_files.size() << std::endl;
         }
         
         // Sleep before next scan

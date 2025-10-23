@@ -213,6 +213,40 @@
   margin: 0;
 }
 
+/* Enhanced source citations styling for chat */
+.message.sources {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  max-width: 90%;
+}
+
+.message.sources .source-item {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--primary);
+  transition: all 0.2s ease;
+}
+
+.message.sources .source-item:hover {
+  background: var(--bg-secondary);
+  transform: translateX(2px);
+}
+
+.message.sources .source-item a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.message.sources .source-item a:hover {
+  text-decoration: underline;
+}
+
 .error {
   max-width: 700px;
   margin: 0 auto;

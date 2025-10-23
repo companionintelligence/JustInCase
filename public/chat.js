@@ -88,13 +88,14 @@ function addSourcesMessage(sources) {
   const messageDiv = document.createElement('div');
   messageDiv.className = 'message sources';
   
-  let html = '<strong>Sources:</strong>';
+  let html = '<strong>📚 Sources Used:</strong>';
   sources.forEach(source => {
     const fileUrl = '/sources/' + source.filename;
+    const score = source.score ? ` (${Math.round(source.score * 100)}% relevant)` : '';
     html += `
       <div class="source-item">
-        <a href="${fileUrl}" target="_blank">${source.filename}</a>
-        <p style="margin: 0.25rem 0 0 0; color: var(--text-secondary);">${source.text.substring(0, 150)}...</p>
+        <a href="${fileUrl}" target="_blank" title="Click to view PDF">📄 ${source.filename}</a>${score}
+        <p style="margin: 0.25rem 0 0 0; color: var(--text-secondary); font-size: 0.85em;">${source.text}</p>
       </div>
     `;
   });
