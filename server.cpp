@@ -713,13 +713,13 @@ void background_ingestion() {
                 std::vector<std::pair<std::string, std::string>> files_to_process;
                 
                 // Find new files
-                if (fs::exists("sources")) {
+                if (fs::exists("public/sources")) {
                     try {
-                        for (const auto& entry : fs::recursive_directory_iterator("sources")) {
+                        for (const auto& entry : fs::recursive_directory_iterator("public/sources")) {
                             if (entry.is_regular_file()) {
                                 std::string ext = entry.path().extension();
                                 if (ext == ".txt" || ext == ".pdf") {
-                                    std::string rel_path = fs::relative(entry.path(), "sources").string();
+                                    std::string rel_path = fs::relative(entry.path(), "public/sources").string();
                                     if (processed_files.find(rel_path) == processed_files.end()) {
                                         files_to_process.push_back({entry.path().string(), rel_path});
                                     }
@@ -727,7 +727,7 @@ void background_ingestion() {
                             }
                         }
                     } catch (const std::exception& e) {
-                        std::cerr << "Error scanning sources directory: " << e.what() << std::endl;
+                        std::cerr << "Error scanning public/sources directory: " << e.what() << std::endl;
                     }
                 }
         
@@ -940,6 +940,14 @@ std::string serve_static_file(const std::string& path) {
     if (!fs::exists(file_path)) {
         return build_http_response(404, "text/plain", "Not Found");
     }
+    
+    // Determine content type
+    std::string content_type = "text/plain";
+    if (string_ends_with(file_path, ".html")) content_type = "text/html";
+    else if (string_ends_with(file_path, ".css")) content_type = "text/css";
+    else if (string_ends_with(file_path, ".js")) content_type = "application/javascript";
+    else if (string_ends_with(file_path, ".json")) content_type = "application/json";
+    else if (string_ends_with(file_path, ".pdf")) content_type = "application/pdf";
     
     // Read file
     std::ifstream file(file_path, std::ios::binary);
