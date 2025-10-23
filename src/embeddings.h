@@ -4,6 +4,7 @@
 #include <string>
 #include <mutex>
 #include <iostream>
+#include <algorithm>  // for std::min
 #include "llama.h"
 #include "config.h"
 

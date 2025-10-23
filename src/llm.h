@@ -5,6 +5,7 @@
 #include <mutex>
 #include <iostream>
 #include <cstring>
+#include <algorithm>  // for std::string::find
 #include "llama.h"
 #include "config.h"
 
