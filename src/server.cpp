@@ -260,8 +260,8 @@ std::string handle_query(const std::string& body) {
         prompt += "1. DO NOT repeat or quote the reference text verbatim\n";
         prompt += "2. Synthesize the information to directly answer the user's question\n";
         prompt += "3. Provide step-by-step instructions when appropriate\n";
-        prompt += "4. Be concise and practical\n";
-        prompt += "5. Mention which reference you're using only when citing specific procedures\n\n";
+        prompt += "4. Be concise, practical, and conversational\n";
+        prompt += "5. Focus on giving helpful advice in a natural, human way\n\n";
         
         if (!context.empty()) {
             // Limit context size to prevent token overflow
@@ -270,7 +270,7 @@ std::string handle_query(const std::string& body) {
                 std::cout << "Truncated context to 1500 characters" << std::endl;
             }
             prompt += "REFERENCE MATERIALS:\n" + context + "\n";
-            prompt += "Based on the above references, please answer the user's question.\n\n";
+            prompt += "Based on the above information, please provide helpful advice.\n\n";
         }
         
         // Add conversation history (limit to recent exchanges)
