@@ -84,7 +84,8 @@ RUN mkdir -p include/nlohmann && \
     echo "Downloaded nlohmann/json.hpp"
 
 # Copy ONLY our application files
-COPY server.cpp CMakeLists.txt ./
+COPY src/ ./src/
+COPY CMakeLists.txt ./
 
 # Build our server using pre-built llama
 RUN echo "=== Starting server build ===" && \
