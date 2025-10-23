@@ -251,14 +251,22 @@ std::string handle_query(const std::string& body) {
         std::string prompt;
         if (!context.empty()) {
             prompt = "You are an emergency knowledge assistant. Use the following context from emergency preparedness documents to answer the user's question. Be specific and cite which documents you're referencing when providing information.\n\n";
+            
+            // Limit context size to prevent token overflow
+            if (context.length() > 2000) {
+                context = context.substr(0, 2000) + "...";
+                std::cout << "Truncated context to 2000 characters" << std::endl;
+            }
             prompt += "Context from documents:\n" + context + "\n\n";
         }
         
-        // Add conversation history
+        // Add conversation history (limit to recent exchanges)
         if (!history.empty()) {
             prompt += "Previous conversation:\n";
-            for (const auto& [role, content] : history) {
-                prompt += role + ": " + content + "\n";
+            // Only include last 4 exchanges (8 messages) to save tokens
+            size_t start_idx = history.size() > 8 ? history.size() - 8 : 0;
+            for (size_t i = start_idx; i < history.size(); i++) {
+                prompt += history[i].first + ": " + history[i].second + "\n";
             }
             prompt += "\n";
         }

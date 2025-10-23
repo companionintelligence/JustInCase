@@ -31,6 +31,7 @@ public:
         llama_context_params ctx_params = llama_context_default_params();
         ctx_params.n_ctx = 2048;
         ctx_params.n_batch = 512;
+        ctx_params.n_ubatch = 512;  // Set ubatch to match n_batch
         ctx_params.n_threads = 4;
         ctx_params.n_threads_batch = 4;
         
@@ -53,6 +54,7 @@ public:
         llama_context_params ctx_params = llama_context_default_params();
         ctx_params.n_ctx = 2048;
         ctx_params.n_batch = 512;
+        ctx_params.n_ubatch = 512;  // Set ubatch to match n_batch
         ctx_params.n_threads = 4;
         ctx_params.n_threads_batch = 4;
         ctx = llama_init_from_model(model, ctx_params);
@@ -125,6 +127,12 @@ public:
         int n_ctx = llama_n_ctx(ctx);
         if (prompt_tokens.size() > n_ctx - 512) {
             prompt_tokens.resize(n_ctx - 512);
+        }
+        
+        // Check batch size limit
+        if (prompt_tokens.size() > 512) {  // n_batch is 512
+            std::cerr << "LLM: Prompt too long (" << prompt_tokens.size() << " tokens), truncating to 512" << std::endl;
+            prompt_tokens.resize(512);
         }
         
         // Prepare batch

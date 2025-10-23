@@ -94,6 +94,12 @@ public:
         }
         tokens.resize(actual_tokens);
         
+        // Check batch size limit
+        if (tokens.size() > 2048) {  // n_batch is 2048 for embeddings
+            std::cerr << "Embeddings: Input too long (" << tokens.size() << " tokens), truncating to 2048" << std::endl;
+            tokens.resize(2048);
+        }
+        
         // Prepare batch
         llama_batch batch = llama_batch_get_one(tokens.data(), tokens.size());
         
