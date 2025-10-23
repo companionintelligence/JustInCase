@@ -185,7 +185,6 @@ std::string handle_query(const std::string& body) {
             
             response["answer"] = answer;
             response["matches"] = json::array();
-            response["status"]["documents_indexed"] = 0;
             
             return build_http_response(200, "application/json", response.dump());
         }
@@ -266,7 +265,6 @@ std::string handle_query(const std::string& body) {
         
         response["answer"] = answer;
         response["matches"] = matches;
-        response["status"]["documents_indexed"] = documents.size();
         
         return build_http_response(200, "application/json", response.dump());
         
@@ -280,20 +278,14 @@ std::string handle_query(const std::string& body) {
 // Handle status endpoint
 std::string handle_status() {
     json status;
+    
+    // Reload index to get current count
+    load_index();
+    
     status["documents_indexed"] = documents.size();
     
-    // Check if ingestion process is running by looking at file modification time
-    bool ingestion_active = false;
-    if (fs::exists("data/processed_files.txt")) {
-        auto last_modified = fs::last_write_time("data/processed_files.txt");
-        auto now = fs::file_time_type::clock::now();
-        auto duration = now - last_modified;
-        auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
-        ingestion_active = (seconds < 60); // Active if modified in last minute
-    }
-    
-    status["ingestion"]["in_progress"] = ingestion_active;
-    status["progress_percent"] = documents.empty() ? 0 : 100;
+    // Since ingestion is separate, we just show the current state
+    // The UI will show the document count which updates as ingestion progresses
     
     return build_http_response(200, "application/json", status.dump());
 }

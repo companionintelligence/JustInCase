@@ -46,29 +46,14 @@ function checkSystemStatus() {
       if (!statusDiv) {
         const div = document.createElement('div');
         div.id = 'system-status';
-        div.style.cssText = 'position: fixed; top: 10px; right: 10px; background: #333; color: white; padding: 10px; border-radius: 5px; font-size: 12px; display: flex; align-items: center; gap: 10px;';
+        div.style.cssText = 'position: fixed; bottom: 10px; right: 10px; background: #333; color: white; padding: 10px; border-radius: 5px; font-size: 12px; display: flex; align-items: center; gap: 10px; z-index: 1000;';
         document.body.appendChild(div);
       }
       
-      const status = data.ingestion;
-      let statusHTML = `<span>📚 ${data.documents_indexed} docs</span>`;
+      let statusHTML = `<span>📚 ${data.documents_indexed} documents indexed</span>`;
       
-      if (status && status.in_progress) {
-        const percent = data.progress_percent || 0;
-        statusHTML += `
-          <span style="display: flex; align-items: center; gap: 5px;">
-            <span>⏳ Ingesting:</span>
-            <div style="width: 100px; height: 8px; background: #555; border-radius: 4px; overflow: hidden;">
-              <div style="width: ${percent}%; height: 100%; background: #4CAF50; transition: width 0.3s;"></div>
-            </div>
-            <span>${percent}%</span>
-          </span>
-        `;
-        if (status.current_file) {
-          statusHTML += `<span style="font-size: 11px; opacity: 0.8;">${status.current_file}</span>`;
-        }
-      } else if (data.documents_indexed === 0) {
-        statusHTML += `<span style="color: #ff9800;">⚠️ No documents indexed yet</span>`;
+      if (data.documents_indexed === 0) {
+        statusHTML += `<span style="color: #ff9800;">⚠️ Loading knowledge base...</span>`;
       } else {
         statusHTML += `<span style="color: #4CAF50;">✓ Ready</span>`;
       }
@@ -209,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Add a "New Conversation" button
   const newConvButton = document.createElement('button');
   newConvButton.textContent = 'New Conversation';
-  newConvButton.style.cssText = 'position: fixed; top: 10px; left: 10px; padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;';
+  newConvButton.style.cssText = 'position: fixed; bottom: 10px; left: 10px; padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; z-index: 1000;';
   newConvButton.onclick = () => {
     if (confirm('Start a new conversation? Current conversation history will be cleared.')) {
       conversationId = generateConversationId();
