@@ -96,7 +96,7 @@ function addSourcesMessage(sources) {
   
   let html = '<strong>Sources:</strong>';
   sources.forEach(source => {
-    const fileUrl = '/pdfs/' + source.filename;
+    const fileUrl = '/sources/' + source.filename;
     html += `
       <div class="source-item">
         <a href="${fileUrl}" target="_blank">${source.filename}</a>
