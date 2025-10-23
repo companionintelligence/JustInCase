@@ -184,7 +184,8 @@ std::string handle_query(const std::string& body) {
         if (documents.empty()) {
             std::cout << "No documents indexed, using LLM directly" << std::endl;
             // No documents indexed, use LLM directly
-            std::string prompt = "Question: " + query + "\n\nAnswer:";
+            std::string prompt = "You are an emergency knowledge assistant. Please answer the following question:\n\n";
+            prompt += "Question: " + query + "\n\nAnswer:";
             std::cout << "Generating LLM response..." << std::endl;
             std::string answer = llm->generate(prompt);
             std::cout << "LLM response generated: " << answer.substr(0, 50) << "..." << std::endl;
@@ -211,9 +212,14 @@ std::string handle_query(const std::string& body) {
         std::set<std::string> used_files; // Track which files we've already cited
         int chunks_used = 0;
         
-        for (const auto& [idx, dist] : results) {
-            if (chunks_used >= MAX_CONTEXT_CHUNKS) break;
+        // Only use top 5 results maximum
+        int max_results = std::min(5, (int)results.size());
+        
+        for (int i = 0; i < max_results; i++) {
+            const auto& [idx, dist] = results[i];
             if (idx >= 0 && idx < documents.size()) {
+                // Add to context for LLM
+                context += "From " + documents[idx].filename + ":\n";
                 context += documents[idx].text + "\n\n";
                 
                 // Only add unique files to matches (avoid duplicate citations)
@@ -248,16 +254,15 @@ std::string handle_query(const std::string& body) {
         }
         
         // Build prompt with conversation history
-        std::string prompt;
+        std::string prompt = "You are an emergency knowledge assistant. Use the following context from emergency preparedness documents to answer the user's question. Be specific and cite which documents you're referencing when providing information.\n\n";
+        
         if (!context.empty()) {
-            prompt = "You are an emergency knowledge assistant. Use the following context from emergency preparedness documents to answer the user's question. Be specific and cite which documents you're referencing when providing information.\n\n";
-            
             // Limit context size to prevent token overflow
             if (context.length() > 2000) {
                 context = context.substr(0, 2000) + "...";
                 std::cout << "Truncated context to 2000 characters" << std::endl;
             }
-            prompt += "Context from documents:\n" + context + "\n\n";
+            prompt += "Context from documents:\n" + context + "\n";
         }
         
         // Add conversation history (limit to recent exchanges)

@@ -7,8 +7,8 @@ const int PORT = 8080;
 const int EMBEDDING_DIM = 768;  // nomic-embed-text-v1.5 uses 768 dimensions
 const int CHUNK_SIZE = 1500;
 const int CHUNK_OVERLAP = 150;
-const int MAX_CONTEXT_CHUNKS = 3;
-const int SEARCH_TOP_K = 5;
+const int MAX_CONTEXT_CHUNKS = 5;  // Use up to 5 chunks for context
+const int SEARCH_TOP_K = 10;  // Search for top 10, but only use top 5
 
 const std::string LLAMA_MODEL_PATH = "./gguf_models/Llama-3.2-1B-Instruct-Q4_K_S.gguf";
 const std::string NOMIC_MODEL_PATH = "./gguf_models/nomic-embed-text-v1.5.Q4_K_M.gguf";
