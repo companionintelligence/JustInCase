@@ -167,8 +167,10 @@ std::string serve_static_file(const std::string& path) {
 // Handle query endpoint
 std::string handle_query(const std::string& body) {
     try {
+        std::cout << "Handling query request" << std::endl;
         auto request_json = json::parse(body);
         std::string query = request_json["query"];
+        std::cout << "Query: " << query << std::endl;
         
         // Get or create conversation ID
         std::string conversation_id = "default";
@@ -180,9 +182,12 @@ std::string handle_query(const std::string& body) {
         response["conversation_id"] = conversation_id;
         
         if (documents.empty()) {
+            std::cout << "No documents indexed, using LLM directly" << std::endl;
             // No documents indexed, use LLM directly
             std::string prompt = "Question: " + query + "\n\nAnswer:";
+            std::cout << "Generating LLM response..." << std::endl;
             std::string answer = llm->generate(prompt);
+            std::cout << "LLM response generated: " << answer.substr(0, 50) << "..." << std::endl;
             
             response["answer"] = answer;
             response["matches"] = json::array();
@@ -191,10 +196,14 @@ std::string handle_query(const std::string& body) {
         }
         
         // Get query embedding
+        std::cout << "Getting query embedding..." << std::endl;
         auto query_embedding = embeddings->get_embedding(query);
+        std::cout << "Query embedding size: " << query_embedding.size() << std::endl;
         
         // Search in vector index
+        std::cout << "Searching vector index..." << std::endl;
         auto results = vector_index->search(query_embedding, SEARCH_TOP_K);
+        std::cout << "Found " << results.size() << " results" << std::endl;
         
         // Build context from top matches
         std::string context;
@@ -256,7 +265,10 @@ std::string handle_query(const std::string& body) {
         
         prompt += "User: " + query + "\n\nAssistant:";
         
+        std::cout << "Generating LLM response with context..." << std::endl;
+        std::cout << "Prompt length: " << prompt.length() << " characters" << std::endl;
         std::string answer = llm->generate(prompt);
+        std::cout << "LLM response generated successfully" << std::endl;
         
         // Update conversation history
         {
@@ -278,8 +290,14 @@ std::string handle_query(const std::string& body) {
         return build_http_response(200, "application/json", response.dump());
         
     } catch (const std::exception& e) {
+        std::cerr << "Error in handle_query: " << e.what() << std::endl;
         json error_response;
         error_response["error"] = e.what();
+        return build_http_response(500, "application/json", error_response.dump());
+    } catch (...) {
+        std::cerr << "Unknown error in handle_query" << std::endl;
+        json error_response;
+        error_response["error"] = "Unknown error occurred";
         return build_http_response(500, "application/json", error_response.dump());
     }
 }

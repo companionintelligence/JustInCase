@@ -46,6 +46,8 @@ public:
     std::string generate(const std::string& prompt) {
         std::lock_guard<std::mutex> lock(mutex);
         
+        std::cout << "LLM: Starting generation" << std::endl;
+        
         // Recreate context for each request
         llama_free(ctx);
         llama_context_params ctx_params = llama_context_default_params();
@@ -56,8 +58,11 @@ public:
         ctx = llama_init_from_model(model, ctx_params);
         
         if (!ctx) {
+            std::cerr << "LLM: Failed to recreate context" << std::endl;
             return "Error: Failed to recreate LLM context";
         }
+        
+        std::cout << "LLM: Context recreated successfully" << std::endl;
         
         // Get vocab from model
         const llama_vocab* vocab = llama_model_get_vocab(model);
@@ -98,11 +103,23 @@ public:
         std::string formatted_prompt(formatted.begin(), formatted.begin() + formatted_len);
         
         // Tokenize
+        std::cout << "LLM: Tokenizing prompt..." << std::endl;
         int n_prompt = -llama_tokenize(vocab, formatted_prompt.c_str(), formatted_prompt.size(), NULL, 0, true, true);
+        std::cout << "LLM: Prompt will use " << n_prompt << " tokens" << std::endl;
+        
+        if (n_prompt <= 0) {
+            std::cerr << "LLM: Invalid token count: " << n_prompt << std::endl;
+            return "Error: Invalid prompt token count";
+        }
+        
         std::vector<llama_token> prompt_tokens(n_prompt);
-        if (llama_tokenize(vocab, formatted_prompt.c_str(), formatted_prompt.size(), prompt_tokens.data(), prompt_tokens.size(), true, true) < 0) {
+        int actual_tokens = llama_tokenize(vocab, formatted_prompt.c_str(), formatted_prompt.size(), prompt_tokens.data(), prompt_tokens.size(), true, true);
+        if (actual_tokens < 0) {
+            std::cerr << "LLM: Tokenization failed with code: " << actual_tokens << std::endl;
             return "Error: Failed to tokenize prompt";
         }
+        prompt_tokens.resize(actual_tokens);
+        std::cout << "LLM: Actually tokenized " << actual_tokens << " tokens" << std::endl;
         
         // Check context size
         int n_ctx = llama_n_ctx(ctx);
@@ -114,9 +131,13 @@ public:
         llama_batch batch = llama_batch_get_one(prompt_tokens.data(), prompt_tokens.size());
         
         // Evaluate prompt
-        if (llama_decode(ctx, batch) != 0) {
+        std::cout << "LLM: Evaluating prompt..." << std::endl;
+        int decode_result = llama_decode(ctx, batch);
+        if (decode_result != 0) {
+            std::cerr << "LLM: Decode failed with code: " << decode_result << std::endl;
             return "Error: Failed to process prompt";
         }
+        std::cout << "LLM: Prompt evaluated successfully" << std::endl;
         
         // Initialize sampler
         llama_sampler* smpl = llama_sampler_chain_init(llama_sampler_chain_default_params());

@@ -49,9 +49,12 @@ public:
     std::vector<float> get_embedding(const std::string& text) {
         std::lock_guard<std::mutex> lock(mutex);
         
+        std::cout << "Embeddings: Getting embedding for text of length " << text.length() << std::endl;
+        
         // Reset context if getting full
         int n_ctx = llama_n_ctx(ctx);
         if (n_past > n_ctx * 0.75) {
+            std::cout << "Embeddings: Resetting context (n_past=" << n_past << ", n_ctx=" << n_ctx << ")" << std::endl;
             llama_free(ctx);
             
             llama_context_params ctx_params = llama_context_default_params();
