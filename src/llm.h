@@ -77,7 +77,7 @@ public:
         std::vector<llama_chat_message> messages;
         
         // Create system message
-        const char* system_msg = "You are a helpful emergency knowledge assistant. Answer questions based on the provided context. When you use information from the context, mention which document it comes from. Remember information from the conversation history.";
+        const char* system_msg = "You are an emergency first aid expert. Provide clear, actionable advice based on the reference materials. DO NOT repeat the reference text - instead, synthesize it into practical instructions. Be concise and helpful.";
         llama_chat_message sys_msg = {"system", system_msg};
         messages.push_back(sys_msg);
         

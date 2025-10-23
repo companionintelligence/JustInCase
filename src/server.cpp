@@ -212,15 +212,16 @@ std::string handle_query(const std::string& body) {
         std::set<std::string> used_files; // Track which files we've already cited
         int chunks_used = 0;
         
-        // Only use top 5 results maximum
-        int max_results = std::min(5, (int)results.size());
+        // Only use top 3 results maximum for better focus
+        int max_results = std::min(3, (int)results.size());
         
         for (int i = 0; i < max_results; i++) {
             const auto& [idx, dist] = results[i];
             if (idx >= 0 && idx < documents.size()) {
-                // Add to context for LLM
-                context += "From " + documents[idx].filename + ":\n";
-                context += documents[idx].text + "\n\n";
+                // Add to context for LLM - format it clearly
+                context += "[REFERENCE " + std::to_string(i+1) + " from " + documents[idx].filename + "]\n";
+                context += documents[idx].text + "\n";
+                context += "[END REFERENCE " + std::to_string(i+1) + "]\n\n";
                 
                 // Only add unique files to matches (avoid duplicate citations)
                 if (used_files.find(documents[idx].filename) == used_files.end()) {
@@ -254,15 +255,22 @@ std::string handle_query(const std::string& body) {
         }
         
         // Build prompt with conversation history
-        std::string prompt = "You are an emergency knowledge assistant. Use the following context from emergency preparedness documents to answer the user's question. Be specific and cite which documents you're referencing when providing information.\n\n";
+        std::string prompt = "You are an emergency first aid assistant. Your role is to provide clear, actionable first aid advice based on the reference materials provided.\n\n";
+        prompt += "IMPORTANT INSTRUCTIONS:\n";
+        prompt += "1. DO NOT repeat or quote the reference text verbatim\n";
+        prompt += "2. Synthesize the information to directly answer the user's question\n";
+        prompt += "3. Provide step-by-step instructions when appropriate\n";
+        prompt += "4. Be concise and practical\n";
+        prompt += "5. Mention which reference you're using only when citing specific procedures\n\n";
         
         if (!context.empty()) {
             // Limit context size to prevent token overflow
-            if (context.length() > 2000) {
-                context = context.substr(0, 2000) + "...";
-                std::cout << "Truncated context to 2000 characters" << std::endl;
+            if (context.length() > 1500) {
+                context = context.substr(0, 1500) + "...\n[REMAINING CONTENT TRUNCATED]\n";
+                std::cout << "Truncated context to 1500 characters" << std::endl;
             }
-            prompt += "Context from documents:\n" + context + "\n";
+            prompt += "REFERENCE MATERIALS:\n" + context + "\n";
+            prompt += "Based on the above references, please answer the user's question.\n\n";
         }
         
         // Add conversation history (limit to recent exchanges)
