@@ -1,6 +1,7 @@
 // Chat functionality for Just In Case
 let isProcessing = false;
 let conversationId = null;
+let useContext = true; // Toggle for using document context
 
 // Generate a unique conversation ID
 function generateConversationId() {
@@ -136,13 +137,14 @@ function sendMessage() {
   document.getElementById('send-button').disabled = true;
   showTypingIndicator();
   
-  // Send to API with conversation ID
+  // Send to API with conversation ID and context preference
   fetch('/query', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
       query: message,
-      conversation_id: conversationId
+      conversation_id: conversationId,
+      use_context: useContext
     })
   })
   .then(async response => {
@@ -204,4 +206,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
   document.body.appendChild(newConvButton);
+  
+  // Add context toggle button
+  const contextToggle = document.createElement('div');
+  contextToggle.style.cssText = 'position: fixed; top: 70px; right: 10px; background: #333; color: white; padding: 10px; border-radius: 5px; font-size: 14px; display: flex; align-items: center; gap: 10px; z-index: 1000;';
+  contextToggle.innerHTML = `
+    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+      <input type="checkbox" id="context-toggle" checked style="cursor: pointer;">
+      <span>Use Document Context</span>
+    </label>
+  `;
+  document.body.appendChild(contextToggle);
+  
+  document.getElementById('context-toggle').addEventListener('change', (e) => {
+    useContext = e.target.checked;
+    const status = useContext ? 'enabled' : 'disabled';
+    addBotMessage(`Document context ${status}. I'll ${useContext ? 'search documents to help answer your questions' : 'respond directly without searching documents'}.`);
+  });
 });

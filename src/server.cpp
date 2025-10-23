@@ -178,17 +178,70 @@ std::string handle_query(const std::string& body) {
             conversation_id = request_json["conversation_id"];
         }
         
+        // Check if we should use context
+        bool use_context = true;
+        if (request_json.contains("use_context") && request_json["use_context"].is_boolean()) {
+            use_context = request_json["use_context"];
+        }
+        std::cout << "Use context: " << (use_context ? "yes" : "no") << std::endl;
+        
         json response;
         response["conversation_id"] = conversation_id;
         
-        if (documents.empty()) {
-            std::cout << "No documents indexed, using LLM directly" << std::endl;
-            // No documents indexed, use LLM directly
-            std::string prompt = "You are an emergency knowledge assistant. Please answer the following question:\n\n";
-            prompt += "Question: " + query + "\n\nAnswer:";
+        if (documents.empty() || !use_context) {
+            std::cout << "Using LLM directly without document context" << std::endl;
+            
+            // Get conversation history
+            std::vector<std::pair<std::string, std::string>> history;
+            {
+                std::lock_guard<std::mutex> lock(conversations_mutex);
+                auto& conv = conversations[conversation_id];
+                history = conv.messages;
+                
+                // Clean up old conversations (older than 1 hour)
+                auto now = std::chrono::system_clock::now();
+                for (auto it = conversations.begin(); it != conversations.end(); ) {
+                    if (std::chrono::duration_cast<std::chrono::hours>(now - it->second.last_activity).count() > 1) {
+                        it = conversations.erase(it);
+                    } else {
+                        ++it;
+                    }
+                }
+            }
+            
+            // Build prompt with just conversation history
+            std::string prompt = "";
+            
+            // Add conversation history
+            if (!history.empty()) {
+                prompt += "Previous conversation:\n";
+                // Only include last 6 exchanges (12 messages) to save tokens
+                size_t start_idx = history.size() > 12 ? history.size() - 12 : 0;
+                for (size_t i = start_idx; i < history.size(); i++) {
+                    prompt += history[i].first + ": " + history[i].second + "\n";
+                }
+                prompt += "\n";
+            }
+            
+            prompt += "User: " + query + "\n\nAssistant:";
+            
             std::cout << "Generating LLM response..." << std::endl;
             std::string answer = llm->generate(prompt);
             std::cout << "LLM response generated: " << answer.substr(0, 50) << "..." << std::endl;
+            
+            // Update conversation history
+            {
+                std::lock_guard<std::mutex> lock(conversations_mutex);
+                auto& conv = conversations[conversation_id];
+                conv.messages.push_back({"User", query});
+                conv.messages.push_back({"Assistant", answer});
+                conv.last_activity = std::chrono::system_clock::now();
+                
+                // Keep only last 10 exchanges (20 messages)
+                if (conv.messages.size() > 20) {
+                    conv.messages.erase(conv.messages.begin(), conv.messages.begin() + 2);
+                }
+            }
             
             response["answer"] = answer;
             response["matches"] = json::array();

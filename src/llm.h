@@ -76,8 +76,13 @@ public:
         // Parse the prompt to extract conversation history if present
         std::vector<llama_chat_message> messages;
         
-        // Create system message
-        const char* system_msg = "You are a friendly emergency first aid expert. Provide clear, actionable advice based on the reference materials. Speak naturally and conversationally, as if helping a friend. Be concise and practical.";
+        // Create system message - check if we have reference materials
+        const char* system_msg;
+        if (prompt.find("REFERENCE MATERIALS:") != std::string::npos) {
+            system_msg = "You are a friendly emergency first aid expert. Provide clear, actionable advice based on the reference materials. Speak naturally and conversationally, as if helping a friend. Be concise and practical.";
+        } else {
+            system_msg = "You are a helpful AI assistant. Have a natural conversation and help with any questions. Be friendly, informative, and conversational.";
+        }
         llama_chat_message sys_msg = {"system", system_msg};
         messages.push_back(sys_msg);
         
