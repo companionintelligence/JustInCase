@@ -63,7 +63,7 @@ int main() {
         return 1;
     }
     
-    // For now, use SimpleVectorIndex - later we'll switch to PGVectorStore
+    // Use SimpleVectorIndex for now
     SimpleVectorIndex index(EMBEDDING_DIM);
     std::vector<Document> documents;
     

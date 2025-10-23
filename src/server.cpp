@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <thread>
+#include <filesystem>
 #include <cstring>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -18,7 +19,15 @@
 #include "llm.h"
 #include "simple_vector_index.h"
 
+namespace fs = std::filesystem;
+
 using json = nlohmann::json;
+
+// Document structure (matches pg_vector_store.h)
+struct Document {
+    std::string filename;
+    std::string text;
+};
 
 // HTTP response builder
 std::string build_http_response(int status_code, const std::string& content_type, const std::string& body) {
