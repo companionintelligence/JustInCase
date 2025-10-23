@@ -8,6 +8,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # Find packages
 find_package(Threads REQUIRED)
+find_package(PostgreSQL REQUIRED)
 
 # Configure llama.cpp build options to avoid X11 dependencies
 set(LLAMA_BUILD_TESTS OFF CACHE BOOL "llama: build tests" FORCE)
@@ -77,6 +78,7 @@ if(EXISTS "/llama-install/lib/libllama.a")
         nlohmann_json
         Threads::Threads
         curl
+        ${PostgreSQL_LIBRARIES}
         openblas
         gomp  # OpenMP runtime library
         m  # math library
@@ -96,6 +98,7 @@ else()
         nlohmann_json
         Threads::Threads
         curl
+        ${PostgreSQL_LIBRARIES}
         openblas
         m  # math library
         ${CMAKE_DL_LIBS}  # for dlopen if needed
@@ -108,11 +111,13 @@ if(EXISTS "/llama-install/lib/libllama.a")
     target_include_directories(jic-server PRIVATE 
         /llama-install/include
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${PostgreSQL_INCLUDE_DIRS}
     )
 else()
     # When building from source
     target_include_directories(jic-server PRIVATE 
         ${CMAKE_CURRENT_SOURCE_DIR}/llama.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${PostgreSQL_INCLUDE_DIRS}
     )
 endif()
