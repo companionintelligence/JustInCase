@@ -4,6 +4,7 @@
 #include <vector>
 #include <mutex>
 #include <iostream>
+#include <cstring>
 #include "llama.h"
 #include "config.h"
 
@@ -66,15 +67,21 @@ public:
         
         // Parse the prompt to extract conversation history if present
         std::vector<llama_chat_message> messages;
-        messages.push_back({"system", "You are a helpful emergency knowledge assistant. Answer questions based on the provided context. Remember information from the conversation history."});
+        
+        // Create system message
+        const char* system_msg = "You are a helpful emergency knowledge assistant. Answer questions based on the provided context. Remember information from the conversation history.";
+        llama_chat_message sys_msg = {"system", system_msg};
+        messages.push_back(sys_msg);
         
         // Check if prompt contains conversation history
         if (prompt.find("Previous conversation:") != std::string::npos) {
             // For now, just pass the whole prompt as a user message
             // In a more sophisticated implementation, we'd parse the history
-            messages.push_back({"user", prompt.c_str()});
+            llama_chat_message user_msg = {"user", prompt.c_str()};
+            messages.push_back(user_msg);
         } else {
-            messages.push_back({"user", prompt.c_str()});
+            llama_chat_message user_msg = {"user", prompt.c_str()};
+            messages.push_back(user_msg);
         }
         
         // Apply chat template
