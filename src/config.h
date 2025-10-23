@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <cstdlib>  // for getenv()
 
 // Global configuration
 const int PORT = 8080;
