@@ -124,7 +124,7 @@ COPY --from=app-builder /build/build/jic-server /app/
 COPY public/ ./public/
 
 # Create directories
-RUN mkdir -p data sources gguf_models
+RUN mkdir -p data public/sources gguf_models
 
 EXPOSE 8080
 

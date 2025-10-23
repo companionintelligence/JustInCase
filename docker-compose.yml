@@ -26,7 +26,7 @@ services:
           cpus: '0'  # No CPU limit - use all available cores
           memory: 8G
     volumes:
-      - ./sources:/app/sources
+      - ./public:/app/public
       - ./data:/app/data
       - ./gguf_models:/app/gguf_models:ro
     ports:

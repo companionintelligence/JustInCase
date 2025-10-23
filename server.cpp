@@ -947,13 +947,6 @@ std::string serve_static_file(const std::string& path) {
     buffer << file.rdbuf();
     std::string content = buffer.str();
     
-    // Determine content type
-    std::string content_type = "text/plain";
-    if (string_ends_with(file_path, ".html")) content_type = "text/html";
-    else if (string_ends_with(file_path, ".css")) content_type = "text/css";
-    else if (string_ends_with(file_path, ".js")) content_type = "application/javascript";
-    else if (string_ends_with(file_path, ".json")) content_type = "application/json";
-    
     return build_http_response(200, content_type, content);
 }
 
