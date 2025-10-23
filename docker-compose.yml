@@ -33,4 +33,29 @@ services:
       - "8080:8080"
     environment:
       - TIKA_URL=http://tika:9998
+    command: ["./jic-server"]
+
+  # Ingestion service
+  ingestion:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILDKIT_PROGRESS: plain
+        DOCKER_BUILDKIT: 1
+    container_name: ingestion
+    depends_on:
+      - tika
+    deploy:
+      resources:
+        limits:
+          cpus: '2'  # Limit CPU usage for ingestion
+          memory: 4G
+    volumes:
+      - ./public:/app/public
+      - ./data:/app/data
+      - ./gguf_models:/app/gguf_models:ro
+    environment:
+      - TIKA_URL=http://tika:9998
+    command: ["./jic-ingestion"]
 
