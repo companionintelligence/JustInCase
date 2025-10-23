@@ -8,7 +8,6 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # Find packages
 find_package(Threads REQUIRED)
-find_package(PostgreSQL REQUIRED)
 
 # Configure llama.cpp build options to avoid X11 dependencies
 set(LLAMA_BUILD_TESTS OFF CACHE BOOL "llama: build tests" FORCE)
@@ -50,8 +49,56 @@ endif()
 add_library(nlohmann_json INTERFACE)
 target_include_directories(nlohmann_json INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-# Main executable
-add_executable(jic-server server.cpp)
+# Main executables
+add_executable(jic-server src/server.cpp)
+add_executable(jic-ingestion src/ingestion.cpp)
+
+# Configure ingestion executable
+if(EXISTS "/llama-install/lib/libllama.a")
+    target_link_libraries(jic-ingestion 
+        PRIVATE 
+        -Wl,--whole-archive
+        /llama-install/lib/libllama.a
+        /llama-install/lib/libcommon.a
+        /llama-install/lib/libggml-base.a
+        /llama-install/lib/libggml-cpu.a
+        /llama-install/lib/libggml.a
+        -Wl,--no-whole-archive
+        nlohmann_json
+        Threads::Threads
+        curl
+        openblas
+        gomp
+        m
+        dl
+        stdc++
+        pthread
+    )
+    
+    target_include_directories(jic-ingestion PRIVATE 
+        /llama-install/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+else()
+    target_link_libraries(jic-ingestion 
+        PRIVATE 
+        llama
+        ggml
+        nlohmann_json
+        Threads::Threads
+        curl
+        openblas
+        m
+        ${CMAKE_DL_LIBS}
+    )
+    
+    target_include_directories(jic-ingestion PRIVATE 
+        ${CMAKE_CURRENT_SOURCE_DIR}/llama.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+endif()
 
 # Enable verbose output during compilation
 set(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL "Enable verbose build output" FORCE)
@@ -78,7 +125,6 @@ if(EXISTS "/llama-install/lib/libllama.a")
         nlohmann_json
         Threads::Threads
         curl
-        ${PostgreSQL_LIBRARIES}
         openblas
         gomp  # OpenMP runtime library
         m  # math library
@@ -98,7 +144,6 @@ else()
         nlohmann_json
         Threads::Threads
         curl
-        ${PostgreSQL_LIBRARIES}
         openblas
         m  # math library
         ${CMAKE_DL_LIBS}  # for dlopen if needed
@@ -111,13 +156,13 @@ if(EXISTS "/llama-install/lib/libllama.a")
     target_include_directories(jic-server PRIVATE 
         /llama-install/include
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${PostgreSQL_INCLUDE_DIRS}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
     )
 else()
     # When building from source
     target_include_directories(jic-server PRIVATE 
         ${CMAKE_CURRENT_SOURCE_DIR}/llama.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${PostgreSQL_INCLUDE_DIRS}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
     )
 endif()

@@ -1,0 +1,384 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
+#include <map>
+#include <thread>
+#include <cstring>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <signal.h>
+#include "llama.h"
+#include "nlohmann/json.hpp"
+#include "config.h"
+#include "text_utils.h"
+#include "embeddings.h"
+#include "llm.h"
+#include "simple_vector_index.h"
+
+using json = nlohmann::json;
+
+// HTTP response builder
+std::string build_http_response(int status_code, const std::string& content_type, const std::string& body) {
+    std::ostringstream response;
+    response << "HTTP/1.1 " << status_code << " OK\r\n";
+    response << "Content-Type: " << content_type << "\r\n";
+    response << "Content-Length: " << body.length() << "\r\n";
+    response << "Access-Control-Allow-Origin: *\r\n";
+    response << "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n";
+    response << "Access-Control-Allow-Headers: Content-Type\r\n";
+    response << "\r\n";
+    response << body;
+    return response.str();
+}
+
+// Parse HTTP request
+struct HttpRequest {
+    std::string method;
+    std::string path;
+    std::map<std::string, std::string> headers;
+    std::string body;
+};
+
+HttpRequest parse_http_request(const std::string& request) {
+    HttpRequest req;
+    std::istringstream stream(request);
+    std::string line;
+    
+    // Parse request line
+    std::getline(stream, line);
+    std::istringstream request_line(line);
+    request_line >> req.method >> req.path;
+    
+    // Parse headers
+    while (std::getline(stream, line) && line != "\r" && !line.empty()) {
+        if (line == "\n") break;
+        size_t colon_pos = line.find(':');
+        if (colon_pos != std::string::npos) {
+            std::string key = line.substr(0, colon_pos);
+            std::string value = line.substr(colon_pos + 2);
+            value.erase(value.find_last_not_of("\r\n") + 1);
+            req.headers[key] = value;
+        }
+    }
+    
+    // Parse body based on Content-Length
+    if (req.headers.find("Content-Length") != req.headers.end()) {
+        int content_length = std::stoi(req.headers["Content-Length"]);
+        req.body.resize(content_length);
+        stream.read(&req.body[0], content_length);
+    }
+    
+    return req;
+}
+
+// Global state
+SimpleVectorIndex* vector_index = nullptr;
+std::vector<Document> documents;
+EmbeddingGenerator* embeddings = nullptr;
+LLMGenerator* llm = nullptr;
+
+// Load index from disk
+void load_index() {
+    if (vector_index) delete vector_index;
+    vector_index = new SimpleVectorIndex(EMBEDDING_DIM);
+    
+    if (fs::exists("data/index.bin") && fs::exists("data/metadata.jsonl")) {
+        vector_index->load("data/index.bin");
+        
+        std::ifstream metadata_file("data/metadata.jsonl");
+        std::string line;
+        documents.clear();
+        while (std::getline(metadata_file, line)) {
+            auto j = json::parse(line);
+            documents.push_back({j["filename"], j["text"]});
+        }
+        
+        std::cout << "Loaded " << documents.size() << " documents from index" << std::endl;
+    } else {
+        std::cout << "No existing index found" << std::endl;
+    }
+}
+
+// Handle static file serving
+std::string serve_static_file(const std::string& path) {
+    std::string file_path = path;
+    if (file_path == "/") {
+        file_path = "/index.html";
+    }
+    
+    // Remove leading slash
+    if (!file_path.empty() && file_path[0] == '/') {
+        file_path = file_path.substr(1);
+    }
+    
+    // Prepend public/ directory
+    file_path = "public/" + file_path;
+    
+    // Security check - prevent directory traversal
+    if (file_path.find("..") != std::string::npos) {
+        return build_http_response(403, "text/plain", "Forbidden");
+    }
+    
+    // Check if file exists
+    if (!fs::exists(file_path)) {
+        return build_http_response(404, "text/plain", "Not Found");
+    }
+    
+    // Determine content type
+    std::string content_type = "text/plain";
+    if (string_ends_with(file_path, ".html")) content_type = "text/html";
+    else if (string_ends_with(file_path, ".css")) content_type = "text/css";
+    else if (string_ends_with(file_path, ".js")) content_type = "application/javascript";
+    else if (string_ends_with(file_path, ".json")) content_type = "application/json";
+    else if (string_ends_with(file_path, ".pdf")) content_type = "application/pdf";
+    
+    // Read file
+    std::ifstream file(file_path, std::ios::binary);
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string content = buffer.str();
+    
+    return build_http_response(200, content_type, content);
+}
+
+// Handle query endpoint
+std::string handle_query(const std::string& body) {
+    try {
+        auto request_json = json::parse(body);
+        std::string query = request_json["query"];
+        
+        json response;
+        
+        if (documents.empty()) {
+            // No documents indexed, use LLM directly
+            std::string prompt = "Question: " + query + "\n\nAnswer:";
+            std::string answer = llm->generate(prompt);
+            
+            response["answer"] = answer;
+            response["matches"] = json::array();
+            response["status"]["documents_indexed"] = 0;
+            
+            return build_http_response(200, "application/json", response.dump());
+        }
+        
+        // Get query embedding
+        auto query_embedding = embeddings->get_embedding(query);
+        
+        // Search in vector index
+        auto results = vector_index->search(query_embedding, SEARCH_TOP_K);
+        
+        // Build context from top matches
+        std::string context;
+        json matches = json::array();
+        int chunks_used = 0;
+        
+        for (const auto& [idx, dist] : results) {
+            if (chunks_used >= MAX_CONTEXT_CHUNKS) break;
+            if (idx >= 0 && idx < documents.size()) {
+                context += documents[idx].text + "\n\n";
+                matches.push_back({
+                    {"filename", documents[idx].filename},
+                    {"text", documents[idx].text}
+                });
+                chunks_used++;
+            }
+        }
+        
+        // Generate response with context
+        std::string prompt = "Context: " + context + "\n\nQuestion: " + query + "\n\nAnswer:";
+        std::string answer = llm->generate(prompt);
+        
+        response["answer"] = answer;
+        response["matches"] = matches;
+        response["status"]["documents_indexed"] = documents.size();
+        
+        return build_http_response(200, "application/json", response.dump());
+        
+    } catch (const std::exception& e) {
+        json error_response;
+        error_response["error"] = e.what();
+        return build_http_response(500, "application/json", error_response.dump());
+    }
+}
+
+// Handle status endpoint
+std::string handle_status() {
+    json status;
+    status["documents_indexed"] = documents.size();
+    
+    // Check if ingestion process is running by looking at file modification time
+    bool ingestion_active = false;
+    if (fs::exists("data/processed_files.txt")) {
+        auto last_modified = fs::last_write_time("data/processed_files.txt");
+        auto now = fs::file_time_type::clock::now();
+        auto duration = now - last_modified;
+        auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
+        ingestion_active = (seconds < 60); // Active if modified in last minute
+    }
+    
+    status["ingestion"]["in_progress"] = ingestion_active;
+    status["progress_percent"] = documents.empty() ? 0 : 100;
+    
+    return build_http_response(200, "application/json", status.dump());
+}
+
+// Handle client connection
+void handle_client(int client_socket) {
+    std::vector<char> buffer(65536);
+    int total_read = 0;
+    int valread;
+    
+    // Read request headers first
+    while ((valread = read(client_socket, buffer.data() + total_read, buffer.size() - total_read - 1)) > 0) {
+        total_read += valread;
+        buffer[total_read] = '\0';
+        
+        // Check if we have complete headers
+        std::string current(buffer.data(), total_read);
+        size_t header_end = current.find("\r\n\r\n");
+        if (header_end != std::string::npos) {
+            // Parse to get content length
+            HttpRequest temp_req = parse_http_request(current);
+            
+            // If POST request with body, ensure we read it all
+            if (temp_req.method == "POST" && temp_req.headers.find("Content-Length") != temp_req.headers.end()) {
+                int content_length = std::stoi(temp_req.headers["Content-Length"]);
+                int body_start = header_end + 4;
+                int body_read = total_read - body_start;
+                
+                // Read remaining body if needed
+                while (body_read < content_length) {
+                    valread = read(client_socket, buffer.data() + total_read, buffer.size() - total_read - 1);
+                    if (valread <= 0) break;
+                    total_read += valread;
+                    body_read += valread;
+                    buffer[total_read] = '\0';
+                }
+            }
+            break;
+        }
+        
+        // Resize buffer if needed
+        if (total_read >= buffer.size() - 1024) {
+            buffer.resize(buffer.size() * 2);
+        }
+    }
+    
+    if (total_read > 0) {
+        std::string request_str(buffer.data(), total_read);
+        HttpRequest request = parse_http_request(request_str);
+        
+        std::string response;
+        
+        if (request.method == "OPTIONS") {
+            response = build_http_response(200, "text/plain", "");
+        } else if (request.method == "POST" && request.path == "/query") {
+            response = handle_query(request.body);
+        } else if (request.method == "GET" && request.path == "/status") {
+            response = handle_status();
+        } else if (request.method == "GET") {
+            response = serve_static_file(request.path);
+        } else {
+            response = build_http_response(404, "text/plain", "Not Found");
+        }
+        
+        send(client_socket, response.c_str(), response.length(), 0);
+    }
+    
+    close(client_socket);
+}
+
+int main() {
+    // Initialize llama backend
+    llama_backend_init();
+    llama_log_set([](enum ggml_log_level level, const char * text, void *) {
+        if (level >= GGML_LOG_LEVEL_ERROR) {
+            fprintf(stderr, "%s", text);
+        }
+    }, nullptr);
+    
+    // Load dynamic backends
+    ggml_backend_load_all();
+    
+    // Initialize models
+    std::cout << "Initializing models..." << std::endl;
+    
+    embeddings = new EmbeddingGenerator();
+    if (!embeddings->init()) {
+        std::cerr << "Failed to initialize embeddings" << std::endl;
+        return 1;
+    }
+    
+    llm = new LLMGenerator();
+    if (!llm->init()) {
+        std::cerr << "Failed to initialize LLM" << std::endl;
+        return 1;
+    }
+    
+    // Load existing index
+    load_index();
+    
+    // Create socket
+    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_fd == 0) {
+        std::cerr << "Socket creation failed" << std::endl;
+        return 1;
+    }
+    
+    // Allow socket reuse
+    int opt = 1;
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+        std::cerr << "Setsockopt failed" << std::endl;
+        return 1;
+    }
+    
+    // Bind socket
+    struct sockaddr_in address;
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+    
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        std::cerr << "Bind failed" << std::endl;
+        return 1;
+    }
+    
+    // Listen for connections
+    if (listen(server_fd, 3) < 0) {
+        std::cerr << "Listen failed" << std::endl;
+        return 1;
+    }
+    
+    std::cout << "Server listening on port " << PORT << std::endl;
+    
+    // Accept connections
+    while (true) {
+        int addrlen = sizeof(address);
+        int client_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen);
+        
+        if (client_socket < 0) {
+            std::cerr << "Accept failed" << std::endl;
+            continue;
+        }
+        
+        // Handle client in a new thread
+        try {
+            std::thread client_thread(handle_client, client_socket);
+            client_thread.detach();
+        } catch (const std::exception& e) {
+            std::cerr << "Error creating client thread: " << e.what() << std::endl;
+            close(client_socket);
+        }
+    }
+    
+    // Cleanup
+    delete embeddings;
+    delete llm;
+    delete vector_index;
+    llama_backend_free();
+    
+    return 0;
+}

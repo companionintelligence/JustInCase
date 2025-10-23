@@ -1,0 +1,41 @@
+#pragma once
+
+#include <string>
+
+// Global configuration
+const int PORT = 8080;
+const int EMBEDDING_DIM = 768;  // nomic-embed-text-v1.5 uses 768 dimensions
+const int CHUNK_SIZE = 1500;
+const int CHUNK_OVERLAP = 150;
+const int MAX_CONTEXT_CHUNKS = 3;
+const int SEARCH_TOP_K = 5;
+
+const std::string LLAMA_MODEL_PATH = "./gguf_models/Llama-3.2-1B-Instruct-Q4_K_S.gguf";
+const std::string NOMIC_MODEL_PATH = "./gguf_models/nomic-embed-text-v1.5.Q4_K_M.gguf";
+const std::string TIKA_URL = "http://tika:9998/tika";
+
+// PostgreSQL configuration from environment
+inline std::string get_pg_host() { 
+    const char* h = getenv("POSTGRES_HOST");
+    return h ? h : "postgres";
+}
+
+inline int get_pg_port() {
+    const char* p = getenv("POSTGRES_PORT");
+    return p ? std::stoi(p) : 5432;
+}
+
+inline std::string get_pg_db() {
+    const char* d = getenv("POSTGRES_DB");
+    return d ? d : "jic_db";
+}
+
+inline std::string get_pg_user() {
+    const char* u = getenv("POSTGRES_USER");
+    return u ? u : "jic";
+}
+
+inline std::string get_pg_password() {
+    const char* p = getenv("POSTGRES_PASSWORD");
+    return p ? p : "jic_password";
+}
