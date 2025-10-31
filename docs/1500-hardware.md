@@ -1,6 +1,8 @@
 ## Hardware
 
-Hardware has its own issues:
+(ChatGPT generated)
+
+Running a JIC server at home requires performant hardware. Hardware itself has its own issues:
 
 1. Redundancy and backup format ... multiple copies, including non-magnetic or optical media make sense. SSDs are more robust but can degrade.
 

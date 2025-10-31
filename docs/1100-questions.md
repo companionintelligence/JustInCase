@@ -1,5 +1,7 @@
 ## Typical Questions
 
+(ChatGPT generated)
+
 - **My child is choking and turning blue! What do I do right now?**
 - **I just got bit by a snake, and I don’t know if it’s venomous—what should I do?**
 - **I think my friend is having a heart attack—what should I do first?**

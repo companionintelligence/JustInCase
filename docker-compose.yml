@@ -33,6 +33,12 @@ services:
       - "8080:8080"
     environment:
       - TIKA_URL=http://tika:9998
+      # Model Configuration - Change here to switch models
+      - LLM_MODEL=qwen2.5-vl:7b
+      - EMBEDDING_MODEL=nomic-embed-text
+      - LLM_GGUF_FILE=Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf
+      - LLM_MMPROJ_FILE=mmproj-Qwen2.5-VL-7B-Instruct-f16.gguf
+      - EMBEDDING_GGUF_FILE=nomic-embed-text-v1.5.Q4_K_M.gguf
     command: ["./jic-server"]
 
   # Ingestion service
@@ -57,5 +63,11 @@ services:
       - ./gguf_models:/app/gguf_models:ro
     environment:
       - TIKA_URL=http://tika:9998
+      # Model Configuration - Change here to switch models
+      - LLM_MODEL=qwen2.5-vl:7b
+      - EMBEDDING_MODEL=nomic-embed-text
+      - LLM_GGUF_FILE=Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf
+      - LLM_MMPROJ_FILE=mmproj-Qwen2.5-VL-7B-Instruct-f16.gguf
+      - EMBEDDING_GGUF_FILE=nomic-embed-text-v1.5.Q4_K_M.gguf
     command: ["./jic-ingestion"]
 

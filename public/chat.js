@@ -164,14 +164,24 @@ function sendMessage() {
       throw new Error(data.error || "Unknown error");
     }
 
+    console.log("Raw server response:", data); // Add debug logging
     return data;
   })
   .then(data => {
     hideTypingIndicator();
-    addBotMessage(data.answer);
+    console.log("Received response:", data); // Debug log
+    
+    if (data.answer && data.answer.trim()) {
+      addBotMessage(data.answer);
+    } else {
+      console.warn("Empty or missing answer in response:", data);
+      addBotMessage("I received an empty response. Please try rephrasing your question.");
+    }
+    
     if (data.matches && data.matches.length > 0) {
       addSourcesMessage(data.matches);
     }
+    
     // Update status if included in response
     if (data.status) {
       checkSystemStatus();
@@ -207,20 +217,13 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   document.body.appendChild(newConvButton);
   
-  // Add context toggle button
-  const contextToggle = document.createElement('div');
-  contextToggle.style.cssText = 'position: fixed; top: 70px; right: 10px; background: #333; color: white; padding: 10px; border-radius: 5px; font-size: 14px; display: flex; align-items: center; gap: 10px; z-index: 1000;';
-  contextToggle.innerHTML = `
-    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
-      <input type="checkbox" id="context-toggle" checked style="cursor: pointer;">
-      <span>Use Document Context</span>
-    </label>
-  `;
-  document.body.appendChild(contextToggle);
-  
-  document.getElementById('context-toggle').addEventListener('change', (e) => {
-    useContext = e.target.checked;
-    const status = useContext ? 'enabled' : 'disabled';
-    addBotMessage(`Document context ${status}. I'll ${useContext ? 'search documents to help answer your questions' : 'respond directly without searching documents'}.`);
-  });
+  // Set up header context toggle
+  const headerToggle = document.getElementById('header-context-toggle');
+  if (headerToggle) {
+    headerToggle.addEventListener('change', (e) => {
+      useContext = e.target.checked;
+      const status = useContext ? 'enabled' : 'disabled';
+      addBotMessage(`Document context ${status}. I'll ${useContext ? 'search documents to help answer your questions' : 'respond directly without searching documents'}.`);
+    });
+  }
 });

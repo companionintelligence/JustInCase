@@ -23,7 +23,7 @@ public:
     
     bool init() {
         llama_model_params model_params = llama_model_default_params();
-        model = llama_model_load_from_file(LLAMA_MODEL_PATH.c_str(), model_params);
+        model = llama_model_load_from_file(get_llm_model_path().c_str(), model_params);
         if (!model) {
             std::cerr << "Failed to load LLM model" << std::endl;
             return false;
@@ -129,16 +129,13 @@ public:
         prompt_tokens.resize(actual_tokens);
         std::cout << "LLM: Actually tokenized " << actual_tokens << " tokens" << std::endl;
         
-        // Check context size
+        // Check context size and batch limit more intelligently
         int n_ctx = llama_n_ctx(ctx);
-        if (prompt_tokens.size() > n_ctx - 512) {
-            prompt_tokens.resize(n_ctx - 512);
-        }
+        int max_prompt_tokens = std::min(n_ctx - 512, 800);  // Leave room for response, but allow more than 512
         
-        // Check batch size limit
-        if (prompt_tokens.size() > 512) {  // n_batch is 512
-            std::cerr << "LLM: Prompt too long (" << prompt_tokens.size() << " tokens), truncating to 512" << std::endl;
-            prompt_tokens.resize(512);
+        if (prompt_tokens.size() > max_prompt_tokens) {
+            std::cerr << "LLM: Prompt too long (" << prompt_tokens.size() << " tokens), truncating to " << max_prompt_tokens << std::endl;
+            prompt_tokens.resize(max_prompt_tokens);
         }
         
         // Prepare batch
@@ -159,37 +156,60 @@ public:
         llama_sampler_chain_add(smpl, llama_sampler_init_temp(0.8f));
         llama_sampler_chain_add(smpl, llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
         
-        // Generate response
+        // Generate response with timeout protection
         std::string response;
         int n_decode = 0;
-        const int n_max_tokens = 1024;
+        const int n_max_tokens = 512;  // Reduced from 1024 to be safer
         
-        while (n_decode < n_max_tokens) {
-            llama_token new_token_id = llama_sampler_sample(smpl, ctx, -1);
-            
-            if (llama_vocab_is_eog(vocab, new_token_id)) {
-                break;
+        try {
+            while (n_decode < n_max_tokens) {
+                llama_token new_token_id = llama_sampler_sample(smpl, ctx, -1);
+                
+                if (llama_vocab_is_eog(vocab, new_token_id)) {
+                    break;
+                }
+                
+                char buf[256];
+                int n = llama_token_to_piece(vocab, new_token_id, buf, sizeof(buf), 0, true);
+                if (n < 0) {
+                    std::cerr << "LLM: Token to piece conversion failed" << std::endl;
+                    break;
+                }
+                response.append(buf, n);
+                
+                batch = llama_batch_get_one(&new_token_id, 1);
+                
+                if (prompt_tokens.size() + n_decode + 1 >= n_ctx) {
+                    std::cerr << "LLM: Context limit reached" << std::endl;
+                    break;
+                }
+                
+                if (llama_decode(ctx, batch) != 0) {
+                    std::cerr << "LLM: Decode failed during generation" << std::endl;
+                    break;
+                }
+                
+                n_decode++;
+                
+                // Safety check - if response is getting very long, stop
+                if (response.length() > 2000) {
+                    std::cerr << "LLM: Response length limit reached" << std::endl;
+                    break;
+                }
             }
-            
-            char buf[256];
-            int n = llama_token_to_piece(vocab, new_token_id, buf, sizeof(buf), 0, true);
-            if (n < 0) break;
-            response.append(buf, n);
-            
-            batch = llama_batch_get_one(&new_token_id, 1);
-            
-            if (prompt_tokens.size() + n_decode + 1 >= n_ctx) {
-                break;
-            }
-            
-            if (llama_decode(ctx, batch) != 0) {
-                break;
-            }
-            
-            n_decode++;
+        } catch (const std::exception& e) {
+            std::cerr << "LLM: Exception during generation: " << e.what() << std::endl;
+            response = "Error occurred during response generation.";
         }
         
         llama_sampler_free(smpl);
+        
+        if (response.empty()) {
+            std::cerr << "LLM: Generated empty response" << std::endl;
+            return "I apologize, but I'm having trouble generating a response right now. Please try again.";
+        }
+        
+        std::cout << "LLM: Generated response of " << response.length() << " characters" << std::endl;
         return response;
     }
 };

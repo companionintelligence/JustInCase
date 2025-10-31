@@ -1,16 +1,26 @@
 # Just In Case (JIC) - System Architecture
 
-(ChatGPT generated)
+(Largely ChatGPT generated)
 
-## Overview
+## Reviewing JIC
 
 Just In Case is an emergency knowledge assistant that provides conversational access to a collection of PDF documents through a modern AI-powered interface. The system is designed to be self-contained, efficient, and deployable in resource-constrained environments where internet connectivity may be limited or unavailable.
 
-## Core Architecture Principles
+## Reviewing RAG
+
+Modern large-language-model systems rely on vector representations to bridge the gap between unstructured text and computational reasoning. At the foundation is a document store—a repository that holds source material such as reports, articles, and transcripts, broken into manageable chunks. Each chunk is converted into a dense vector, a high-dimensional numerical embedding that encodes the semantic meaning of the text. These vectors make it possible to compare passages not by keywords but by conceptual similarity, allowing the system to recall relevant context even when the phrasing differs entirely from the user’s query.
+
+To generate these embeddings, open-source models such as Nomic-Embed, E5, or GTE are widely used. They are lightweight transformer encoders trained to map sentences into a shared semantic space where related ideas cluster together. Nomic’s model, in particular, is optimized for general retrieval across domains and languages, offering both quality and speed for local deployments. The resulting vectors are stored in a vector index—for example, FAISS, HNSWlib, or pgvector—that supports approximate nearest-neighbor search over millions of items with millisecond latency.
+
+When a query arrives, the system encodes it into its own vector and searches the index for the closest matches. The top-ranked chunks are then optionally re-ranked using a more precise cross-encoder or a lightweight LLM to refine relevance. The highest-scoring passages are concatenated with the user’s question to form the prompt context passed to the model. This retrieval-augmented process effectively expands the model’s working memory beyond its fixed context window, allowing it to reason over large document collections while staying grounded in verifiable sources.
+
+Finally, a carefully designed pre-prompt or system instruction establishes the model’s behavior—directing it to use retrieved material faithfully, cite evidence, or adopt a particular tone. Together, these elements—document storage, vector embeddings, fast similarity search, reranking, and prompt construction—form the backbone of modern retrieval-augmented generation (RAG) pipelines that extend LLMs from generic text generators into targeted, knowledge-grounded assistants.
+
+## Implementation approach here: Core Architecture Principles
 
 The architecture follows a "pure C++" approach, directly binding to the llama.cpp library without intermediate layers or language bindings. This design choice prioritizes performance, minimal dependencies, and deployment simplicity. The entire system runs as containerized services, making it portable across different environments while maintaining consistent behavior.
 
-## Key Components
+## Implementation approach: Key Components
 
 ### Document Processing Pipeline
 
@@ -22,9 +32,13 @@ The system uses Nomic Embed Text v1.5, a state-of-the-art embedding model optimi
 
 ### Vector Storage and Retrieval
 
-Rather than using external dependencies like FAISS, we implemented a custom in-memory vector index with brute-force nearest neighbor search. While this approach may seem simplistic, it provides several advantages: zero external dependencies, complete control over the implementation, and surprisingly good performance for moderate-sized document collections. The index is persisted to disk in a simple binary format, allowing for quick startup times and data persistence across container restarts.
+[ This may migrate to pgvector ]
+
+Rather than using external dependencies like FAISS, we implemented a custom in-memory vector index with brute-force nearest neighbor search. While this approach may seem simplistic, it provides several advantages: zero external dependencies, complete control over the implementation, and surprisingly good performance for moderate-sized document collections. The index is persisted to disk in a simple binary format, allowing for quick startup times and data persistence across container restarts. 
 
 ### Language Model Integration
+
+[ This may change to Qwen or other models ]
 
 The conversational interface is powered by Llama 3.2 1B Instruct, chosen for its balance of capability and resource efficiency. The model runs directly through llama.cpp, leveraging GGUF quantization to reduce memory requirements while maintaining quality. The integration includes careful prompt engineering to ensure the model synthesizes information from retrieved documents rather than simply regurgitating text.
 
@@ -39,6 +53,8 @@ A clean, modern web interface provides the user-facing experience. Built with va
 The decision to use C++ throughout the stack eliminates the overhead of language bindings and ensures maximum performance. By directly linking against llama.cpp, we avoid the complexity and potential instability of Python bindings or HTTP APIs. This approach also reduces memory usage and startup time, critical factors in emergency scenarios.
 
 ### Custom Vector Store vs. FAISS
+
+[ This may change ]
 
 While FAISS offers sophisticated indexing algorithms, our custom implementation provides adequate performance for typical document collections while eliminating a complex dependency. The brute-force search is parallelized and optimized for cache locality, making it surprisingly efficient for collections up to tens of thousands of documents.
 

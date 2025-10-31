@@ -2,7 +2,9 @@
 
 How do we organize the data so that it can be statically browsed? Can we provide multiple organizational schemes for crisis on different time scales and for different kinds of users? How is data traditionally organized?
 
-Here are a few of the requirements we have:
+## Kinds of ways people would access a JIC dataset:
+
+Here are a few of the requirements we have around how people would use a dataset like this:
 
 - Short term versus longer term ... Information needs vary from short to medium to long-term.
 - Crisis mode... Information can be hard to find quickly in a crisis (an LLM may provide critical indexability / searchability).
@@ -12,6 +14,8 @@ Here are a few of the requirements we have:
 - Updating....  Some data, like advanced medical guidelines, might change significantly over time; others (public domain literature) don’t.
 - Quality over quantity.... Endless gigabytes of unorganized data can be worse than a smaller, well-indexed collection.
 - Printed guides... provide step-by-step guide (even a printed manual) on how to access the data and use any software.
+
+## Kinds of ways people consume / digest knowledge:
 
 It's worth noting that there are different flavors of knowledge as well as different ways that people prefer to acquire knowledge:
 
@@ -27,6 +31,8 @@ The fact that we need this dataset offline also adds challenges:
 - Searchability ... big offline library quickly becomes useless if you can’t find what you need. Tools like Kiwix offer an offline “Wikipedia-like” search interface for large wikis. For general PDF or HTML collections, a local search engine like DocFetcher or Apache Solr or an open-source full-text may be critical... or even a full blown LLM.
 
 - Metadata and Summaries ... a simple plain-text or HTML “index” file at the root directory listing each major folder and describing its contents is extremely helpful. Include meta instructions for how to use the library (especially if there are special viewers, compressed file archives, or search tools). This document itself may be part of an 'about' page about the collection - a place to allow us to wrestle with the organizational concepts themselves.
+
+## Kinds of ways people organize knowledge
 
 ### Dewey Decimal System:
 
@@ -84,6 +90,8 @@ Z -- BIBLIOGRAPHY. LIBRARY SCIENCE. INFORMATION RESOURCES (GENERAL)
 4. Social; world history, politics, economics, anthropology
 
 ### ChatGPT's proposed scheme:
+
+(This felt like the best structure - a kind of mix of the previous patterns and seemed fairly intuitive - it is the approach that is used in the docs folder)
 
 - survival
 - shelter, construction, primitive, modern, energy, power, water filtering

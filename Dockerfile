@@ -8,7 +8,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 
 WORKDIR /build
 RUN git config --global http.sslverify false && \
-    git clone --depth 1 https://github.com/ggerganov/llama.cpp.git && \
+    git clone --depth 1 --branch master https://github.com/ggerganov/llama.cpp.git && \
     git config --global http.sslverify true
 
 # Second stage: Build llama.cpp library (cached separately)

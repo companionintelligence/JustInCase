@@ -308,19 +308,13 @@ std::string handle_query(const std::string& body) {
         }
         
         // Build prompt with conversation history
-        std::string prompt = "You are an emergency first aid assistant. Your role is to provide clear, actionable first aid advice based on the reference materials provided.\n\n";
-        prompt += "IMPORTANT INSTRUCTIONS:\n";
-        prompt += "1. DO NOT repeat or quote the reference text verbatim\n";
-        prompt += "2. Synthesize the information to directly answer the user's question\n";
-        prompt += "3. Provide step-by-step instructions when appropriate\n";
-        prompt += "4. Be concise, practical, and conversational\n";
-        prompt += "5. Focus on giving helpful advice in a natural, human way\n\n";
+        std::string prompt = "You are a helpful emergency first aid assistant. Provide clear, practical advice.\n\n";
         
         if (!context.empty()) {
-            // Limit context size to prevent token overflow
-            if (context.length() > 1500) {
-                context = context.substr(0, 1500) + "...\n[REMAINING CONTENT TRUNCATED]\n";
-                std::cout << "Truncated context to 1500 characters" << std::endl;
+            // Limit context size more aggressively to prevent token overflow
+            if (context.length() > 800) {
+                context = context.substr(0, 800) + "...\n[REMAINING CONTENT TRUNCATED]\n";
+                std::cout << "Truncated context to 800 characters" << std::endl;
             }
             prompt += "REFERENCE MATERIALS:\n" + context + "\n";
             prompt += "Based on the above information, please provide helpful advice.\n\n";

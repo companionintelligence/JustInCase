@@ -23,7 +23,7 @@ public:
     
     bool init() {
         llama_model_params model_params = llama_model_default_params();
-        model = llama_model_load_from_file(NOMIC_MODEL_PATH.c_str(), model_params);
+        model = llama_model_load_from_file(get_embedding_model_path().c_str(), model_params);
         if (!model) {
             std::cerr << "Failed to load embedding model" << std::endl;
             return false;
