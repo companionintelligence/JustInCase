@@ -1,5 +1,5 @@
 # First stage: Download and cache llama.cpp
-FROM --platform=linux/arm64 ubuntu:24.04 AS llama-downloader
+FROM ubuntu:24.04 AS llama-downloader
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     git \
     ca-certificates \
@@ -12,7 +12,7 @@ RUN git config --global http.sslverify false && \
     git config --global http.sslverify true
 
 # Second stage: Build llama.cpp library (cached separately)
-FROM --platform=linux/arm64 ubuntu:24.04 AS llama-builder
+FROM ubuntu:24.04 AS llama-builder
 
 # Install build dependencies
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -56,7 +56,7 @@ RUN cd llama.cpp && \
     echo "=== Libraries copied ===" && ls -la /llama-install/lib/
 
 # Third stage: Build our server (this is the only part that rebuilds when server.cpp changes)
-FROM --platform=linux/arm64 ubuntu:24.04 AS app-builder
+FROM ubuntu:24.04 AS app-builder
 
 # Install build dependencies
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -97,7 +97,7 @@ RUN echo "=== Starting server build ===" && \
     echo "=== Configuring CMake ===" && \
     cmake -B build \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_FLAGS="-O3 -march=armv8-a" \
+    -DCMAKE_CXX_FLAGS="-O3" \
     -DCMAKE_VERBOSE_MAKEFILE=ON \
     -DCMAKE_RULE_MESSAGES=ON \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
@@ -107,7 +107,7 @@ RUN echo "=== Starting server build ===" && \
     cmake --build build --verbose -- -j$(nproc) VERBOSE=1 V=1
 
 # Runtime image
-FROM --platform=linux/arm64 ubuntu:24.04
+FROM ubuntu:24.04
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     libopenblas0 \
