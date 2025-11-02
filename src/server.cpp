@@ -33,10 +33,36 @@ struct Document {
     std::string text;
 };
 
+// Helper function to get reason phrase for status code
+std::string get_reason_phrase(int status_code) {
+    switch (status_code) {
+        case 200: return "OK";
+        case 201: return "Created";
+        case 202: return "Accepted";
+        case 204: return "No Content";
+        case 301: return "Moved Permanently";
+        case 302: return "Found";
+        case 304: return "Not Modified";
+        case 400: return "Bad Request";
+        case 401: return "Unauthorized";
+        case 403: return "Forbidden";
+        case 404: return "Not Found";
+        case 405: return "Method Not Allowed";
+        case 413: return "Request Entity Too Large";
+        case 415: return "Unsupported Media Type";
+        case 429: return "Too Many Requests";
+        case 500: return "Internal Server Error";
+        case 501: return "Not Implemented";
+        case 502: return "Bad Gateway";
+        case 503: return "Service Unavailable";
+        default:  return "Unknown";
+    }
+}
+
 // HTTP response builder with security headers
 std::string build_http_response(int status_code, const std::string& content_type, const std::string& body) {
     std::ostringstream response;
-    response << "HTTP/1.1 " << status_code << " OK\r\n";
+    response << "HTTP/1.1 " << status_code << " " << get_reason_phrase(status_code) << "\r\n";
     response << "Content-Type: " << content_type << "\r\n";
     response << "Content-Length: " << body.length() << "\r\n";
     
