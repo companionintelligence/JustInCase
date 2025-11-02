@@ -113,7 +113,7 @@ HttpRequest parse_http_request(const std::string& request) {
     }
     
     // Parse body based on Content-Length with validation
-    const size_t MAX_REQUEST_SIZE = 10 * 1024 * 1024; // 10MB
+    const size_t MAX_REQUEST_SIZE = 30 * 1024 * 1024; // 30MB
     try {
         if (req.headers.find("Content-Length") != req.headers.end()) {
             long content_length = std::stol(req.headers["Content-Length"]);
@@ -491,7 +491,7 @@ std::string handle_status() {
 
 // Handle client connection with security protections
 void handle_client(int client_socket) {
-    const size_t MAX_REQUEST_SIZE = 10 * 1024 * 1024; // 10MB
+    const size_t MAX_REQUEST_SIZE = 30 * 1024 * 1024; // 30MB
     const int READ_TIMEOUT_SEC = 30;
     
     // Set socket timeout to prevent slowloris attacks
