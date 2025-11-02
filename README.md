@@ -1,8 +1,9 @@
-# 🛟 Just In Case: Offline Emergency Knowledge Search 🛟
+# 🛟 Just In Case 🛟
+### Offline Emergency Knowledge Search
 
 ## [LIVE WEB DEMO](https://jic.companionintel.com)
 
-### [Learn More CompanionIntelligence.com/JIC](https://companionintelligence.com/JIC)
+### [Learn More - CompanionIntelligence.com/JIC](https://companionintelligence.com/JIC)
 
 If the Internet goes dark, you should still be able to quickly find the knowledge that can help you survive and thrive during a crisis. The goal of the JIC project is to deliver a self-contained LLM-powered / AI driven conversational search engine over a curated set of emergency survival pdfs that can be used without the Internet.
 
@@ -16,7 +17,7 @@ Please feel free to join us. This is a work in progress and we welcome your part
 
 Also note this is for research purposes only - do not rely on this for real world use at this time. Use at your own risk.
 
-## The challenge: Conversational Search
+## The Challenge: Conversational Search
 
 Many of us have some kind of plan for a crisis; a flashlight in a drawer, extra food supplies, water, cash, a map of community resources, a muster-point, a group of friends to rely on. We're generally aware of region specific risks, tornados, tsunamis, forest fires - but what's missing is actionable instant information - the stuff that fills in the gaps in the larger plan.
 
@@ -52,19 +53,19 @@ There are many excellent existing efforts to provide offline emergency knowledge
 
 Validating a tool like this raises many questions. Who are typical users of the dataset? What are typical scenarios? Can we build a list of typical questions a user may ask of the dataset? Can we have regression tests against the ability of the dataset to resolve the queries? Are there differences in what is needed for short, medium or extended emergencies or extended survival situations? Here are a few documents that we used to ground our thinking so far:
 
-[Typical Questions](docs/1100-questions.md)
+[Typical Questions In an Emergency](docs/1100-questions.md) 
 
-[Persona](docs/1200-persona.md)
+[Emergency User Personas](docs/1200-persona.md)
 
-[Categorization](docs/1300-categorization.md)
+[Vital Data Categorization](docs/1300-categorization.md)
 
 Note as well that the general topic of ingesting large amounts of data and making that data conversationally accessible (by prompting the llm with appropriate context) is a well known one, and this proof of concept effectively is an implementation of that larger thesis. Here are a few details on lower level technical aspects:
 
-[Data Sources](docs/1400-sources.md)
+[High Value Data Sources](docs/1400-sources.md)
 
-[Hardware](docs/1500-hardware.md)
+[Easy to access Commodity Hardware](docs/1500-hardware.md)
 
-[Architecture](docs/1600-architecture.md)
+[Portable On-Prem Architecture](docs/1600-architecture.md)
 
 ## Screenshot
 
@@ -99,13 +100,11 @@ Make sure your system supports Docker. See [https://docs.docker.com/get-docker/]
 
 ### Build Options
 
-### 1. Add your PDFs
+### 1. Download Datasources (PDF Docs)
 
-Put any `.pdf` files or text files you want indexed into the `public/sources/` folder. These will make them visible to both the runtime ingestion and to the server so the user can see the documents when they are returned as part of an llm suggested action.
+Put emergency data and docs, or any `.pdf` files or text files you want indexed into the `public/sources/` folder. These will make them visible to both the runtime ingestion and to the server so the user can see the documents when they are returned as part of an llm suggested action.
 
-### [Starting Data Sources](https://github.com/companionintelligence/JustInCase/tree/main/public/sources)
-
-> You can start with the [Survival Data Corpus](https://github.com/PR0M3TH3AN/Survival-Data)
+## [DOWNLOAD - Data Sources](https://github.com/companionintelligence/JustInCase/tree/main/public/sources)
 
 > Also see [fetch-source-data.sh](helper-scripts/fetch-source-data.sh) - this is a helpful script to fetch some other sources - however sources may change and things may break - so this may need ongoing work.
 
