@@ -1,16 +1,20 @@
 # 🛟 Just In Case: Offline Emergency Knowledge Search 🛟
 
+## [LIVE WEB DEMO](https://jic.companionintel.com)
 
-## [ LIVE WEB DEMO](https://jic.companionintel.com)
-
-### [ Learn More CompanionIntelligence.com/JIC](https://companionintelligence.com/JIC)
+### [Learn More CompanionIntelligence.com/JIC](https://companionintelligence.com/JIC)
 
 If the Internet goes dark, you should still be able to quickly find the knowledge that can help you survive and thrive during a crisis. The goal of the JIC project is to deliver a self-contained LLM-powered / AI driven conversational search engine over a curated set of emergency survival pdfs that can be used without the Internet.
 
 This includes survival guides, medical references, even agricultural know-how and engineering resources, as well as broader educational materials like offline Wikipedia, open textbooks, art and humanities. If the Internet goes dark, you should still be able to quickly find the knowledge that can help you survive and thrive during a crisis.
 
 
-Please feel free to join us. This is a work in progress and we welcome your participation. https://discord.gg/Companion . Also note this is for research purposes only - do not rely on this for real world use at this time. Use at your own risk.
+Please feel free to join us. This is a work in progress and we welcome your participation. 
+
+<a target="_blank" href="https://discord.gg/companion"><img src="https://dcbadge.limes.pink/api/server/companion" alt="COMPANION DISCORD" /></a>
+
+
+Also note this is for research purposes only - do not rely on this for real world use at this time. Use at your own risk.
 
 ## The challenge: Conversational Search
 
@@ -98,6 +102,8 @@ Make sure your system supports Docker. See [https://docs.docker.com/get-docker/]
 ### 1. Add your PDFs
 
 Put any `.pdf` files or text files you want indexed into the `public/sources/` folder. These will make them visible to both the runtime ingestion and to the server so the user can see the documents when they are returned as part of an llm suggested action.
+
+### [Starting Data Sources](https://github.com/companionintelligence/JustInCase/tree/main/public/sources)
 
 > You can start with the [Survival Data Corpus](https://github.com/PR0M3TH3AN/Survival-Data)
 
