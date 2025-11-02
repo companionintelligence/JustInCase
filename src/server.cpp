@@ -48,7 +48,7 @@ std::string build_http_response(int status_code, const std::string& content_type
     response << "Referrer-Policy: strict-origin-when-cross-origin\r\n";
     
     // CORS headers (restrictive configuration)
-    response << "Access-Control-Allow-Origin: *\r\n";
+    response << "Access-Control-Allow-Origin: https://example.com\r\n";
     response << "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n";
     response << "Access-Control-Allow-Headers: Content-Type\r\n";
     response << "\r\n";
