@@ -2,6 +2,7 @@
 
 #include <string>
 #include <cstdlib>  // for getenv()
+#include <iostream>  // for std::cerr
 
 // Global configuration
 const int PORT = 8080;
@@ -59,10 +60,18 @@ inline std::string get_pg_db() {
 
 inline std::string get_pg_user() {
     const char* u = getenv("POSTGRES_USER");
-    return u ? u : "jic";
+    if (!u) {
+        std::cerr << "WARNING: Using default database user. Set POSTGRES_USER environment variable for production." << std::endl;
+        return "jic";
+    }
+    return u;
 }
 
 inline std::string get_pg_password() {
     const char* p = getenv("POSTGRES_PASSWORD");
-    return p ? p : "jic_password";
+    if (!p) {
+        std::cerr << "WARNING: Using default database password. Set POSTGRES_PASSWORD environment variable for production." << std::endl;
+        return "jic_password";
+    }
+    return p;
 }
