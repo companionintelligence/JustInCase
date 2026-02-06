@@ -5,9 +5,7 @@
 
 ### [Learn More - CompanionIntelligence.com/JIC](https://companionintelligence.com/JIC)
 
-If the Internet goes dark, you should still be able to quickly find the knowledge that can help you survive and thrive during a crisis. The goal of the JIC project is to deliver a self-contained LLM-powered / AI driven conversational search engine over a curated set of emergency survival pdfs that can be used without the Internet.
-
-This includes survival guides, medical references, even agricultural know-how and engineering resources, as well as broader educational materials like offline Wikipedia, open textbooks, art and humanities. If the Internet goes dark, you should still be able to quickly find the knowledge that can help you survive and thrive during a crisis.
+If the Internet goes dark, you should still be able to quickly find the knowledge that can help you survive and thrive. JIC aims to deliver a self-contained LLM-powered conversational search engine over curated emergency PDFs that can be used fully offline. The corpus includes survival guides, medical references, agricultural know-how, engineering resources, and broader educational materials like offline Wikipedia and open textbooks.
 
 
 Please feel free to join us. This is a work in progress and we welcome your participation. 
@@ -27,7 +25,7 @@ The problem is that these services are often cloud based, and not always at our 
 
 The fact is that there's a real difference between the difficulty of trying to read through a book on how to treat a burn during an emergency, versus getting some quick help or counsel, conversationally, right away, or at least getting some quick guidance on where to look for more details. What would you do if the internet went down? Or even just an extended power outage? What is your families plan for region-specific threats such as tornadoes, tsunamis, or forest fires? Many of us have some kind of plan; a flashlight in a drawer, extra food supplies, water, cash, a map of community resources, a muster-point.
 
-The world has changed, we now heavily rely on tools such as ChatGPT, Claude, Google and other online resources. Even for small questions such as "how do you wire up rechargeable batteries to a solar panel?" or "what is the probable cause of a lower right side stomach pain?". The thing most of us rely heavily on information itself, and that information is not always at our fingertips.
+The world has changed, and we now rely on these tools for rapid answers. The problem is that information itself is not always at our fingertips when connectivity fails.
 
 Validating a tool like this raises many questions. Who are typical users of the dataset? What are typical scenarios? Can we build a list of typical questions a user may ask of the dataset? Can we have regression tests against the ability of the dataset to resolve the queries? Are there differences in what is needed for short, medium or extended emergencies or extended survival situations? In this ongoing project we'll try to tackle these and improve this over time.
 
@@ -77,14 +75,14 @@ We've tried a variety of approaches, ollama, python, n8n - our current stack is 
 
 | Component         | Role                                            |
 |-------------------|-------------------------------------------------|
-| 🧠 `Llama.cpp`    | LLM loader (e.g. `llama3`)                      |
+| 🧠 `Llama.cpp`    | LLM loader (GGUF models)                        |
 | 📄 `Apache Tika`  | PDF-to-text extractor                           |
-| 🔍 `FAISS`        | Vector search over parsed PDF chunks            |
+| 🔍 `SimpleVectorIndex` | In-memory vector search over parsed chunks |
 | 🌐 `C++ Server`   | Simple API + minimal HTML frontend              |
 
 Note we may shift a few pieces around here - may move to pgvector for example.
 
-We're thinking of these engines for chewing through the context (the pdfs) - basically presenting each pdf page (generated with Tika) to qwen2.5-vl. Using a smaller model to be (high end) laptop friendly:
+We're thinking of these engines for chewing through the context (the PDFs). The current configuration uses `qwen2.5-vl:7b` with a matching `mmproj` file. Using a smaller model keeps things high-end laptop friendly:
 
 https://huggingface.co/ggml-org/Qwen2.5-VL-7B-Instruct-GGUF
 
@@ -115,7 +113,7 @@ find Survival-Data/HOME -type f -iname "*.pdf" -exec cp {} sources/ \;
 
 ### 2. Prepare models
 
-**Important:** Our setup of Docker will avoid downloading models from the internet. You must prepare them locally first.
+**Important:** The Docker setup avoids downloading models from the internet. You must prepare them locally first.
 
 1. **Download GGUF files manually** (one time, on any connection):
    ```bash
@@ -177,8 +175,11 @@ You can customize which models to use by setting environment variables:
 
 ```bash
 # Use different models
-export LLM_MODEL=llama3.2
+export LLM_MODEL=qwen2.5-vl:7b
 export EMBEDDING_MODEL=nomic-embed-text
+export LLM_GGUF_FILE=Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf
+export LLM_MMPROJ_FILE=mmproj-Qwen2.5-VL-7B-Instruct-f16.gguf
+export EMBEDDING_GGUF_FILE=nomic-embed-text-v1.5.Q4_K_M.gguf
 
 # Download your chosen models
 ./helper-scripts/fetch-models.sh
@@ -187,4 +188,3 @@ export EMBEDDING_MODEL=nomic-embed-text
 docker compose build
 docker compose up
 ```
-

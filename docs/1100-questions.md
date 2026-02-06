@@ -29,4 +29,4 @@
 - **I see people looting the store across the street. Should I try to stop them?**
 - **My neighbor is unconscious after the explosion. How can I check if they’re alive?**
 - **I haven’t seen a rescue team in days. What else can I do to get help?**
-- **There’s a dead near our shelter. How do we handle this safely?**
+- **There’s a deceased person near our shelter. How do we handle this safely?**

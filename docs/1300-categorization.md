@@ -8,7 +8,7 @@ Here are a few of the requirements we have around how people would use a dataset
 
 - Short term versus longer term ... Information needs vary from short to medium to long-term.
 - Crisis mode... Information can be hard to find quickly in a crisis (an LLM may provide critical indexability / searchability).
-- Education... Readers themselves have varying education leveks, comprehension, backgrounds, languages.
+- Education... Readers themselves have varying education levels, comprehension, backgrounds, languages.
 - Visual Learners... Many readers consume information visually, through mixed-media, not always text.
 - Biases... It's worth noting that there may be biases in how we organize by default as well - this article covers some of those observations: https://www.careharder.com/blog/systemic-injustice-in-the-dewey-decimal-system
 - Updating....  Some data, like advanced medical guidelines, might change significantly over time; others (public domain literature) don’t.
@@ -24,7 +24,7 @@ It's worth noting that there are different flavors of knowledge as well as diffe
 - Procedural ... know-how or steps required to complete a task; acquired via practice (riding a bike).
 - Declarative ... facts, concepts (a persons name).
 - Empirical ... based on observation of the world.
-- Meta-cognition; awareness of ones own thinking process and learning strategies.
+- Meta-cognition; awareness of one's own thinking process and learning strategies.
 
 The fact that we need this dataset offline also adds challenges:
 
