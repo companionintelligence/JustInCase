@@ -1,153 +1,161 @@
 #pragma once
 
+// Text utilities: recursive semantic chunking.
+// Splits text by progressively finer boundaries (paragraphs → sentences →
+// words) so that chunks respect natural document structure.
+
 #include <string>
 #include <vector>
-#include <fstream>
-#include <sstream>
-#include <filesystem>
 #include <iostream>
-#include <curl/curl.h>
 #include "config.h"
 
-namespace fs = std::filesystem;
+// ── Helpers ──────────────────────────────────────────────────────────
 
-// Helper function for C++17 (ends_with is C++20)
 inline bool string_ends_with(const std::string& str, const std::string& suffix) {
     if (suffix.size() > str.size()) return false;
     return str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
-// CURL callback for response data
-size_t tika_write_callback(void* contents, size_t size, size_t nmemb, std::string* userp) {
-    userp->append((char*)contents, size * nmemb);
-    return size * nmemb;
+// Trim leading / trailing whitespace
+inline std::string trim(const std::string& s) {
+    size_t start = s.find_first_not_of(" \t\r\n");
+    if (start == std::string::npos) return "";
+    size_t end = s.find_last_not_of(" \t\r\n");
+    return s.substr(start, end - start + 1);
 }
 
-// Extract text from file using Tika
-std::string extract_text_with_tika(const std::string& filepath) {
-    CURL* curl = curl_easy_init();
-    if (!curl) {
-        std::cerr << "Failed to initialize CURL for Tika" << std::endl;
-        return "";
-    }
-    
-    std::string response;
-    
-    // Check file size first
-    std::error_code ec;
-    auto file_size = fs::file_size(filepath, ec);
-    if (ec) {
-        std::cerr << "Failed to get file size: " << filepath << std::endl;
-        curl_easy_cleanup(curl);
-        return "";
-    }
-    
-    // Skip very large files
-    const size_t MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
-    if (file_size > MAX_FILE_SIZE) {
-        std::cerr << "File too large for processing: " << filepath << " (" << file_size << " bytes)" << std::endl;
-        curl_easy_cleanup(curl);
-        return "";
-    }
-    
-    // Read file content
-    std::ifstream file(filepath, std::ios::binary);
-    if (!file) {
-        std::cerr << "Failed to open file: " << filepath << std::endl;
-        curl_easy_cleanup(curl);
-        return "";
-    }
-    
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    std::string file_content = buffer.str();
-    
-    // Set up CURL with timeout
-    curl_easy_setopt(curl, CURLOPT_URL, TIKA_URL.c_str());
-    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, file_content.c_str());
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, file_content.size());
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L); // 30 second timeout
-    
-    // Headers
-    struct curl_slist* headers = NULL;
-    headers = curl_slist_append(headers, "Accept: text/plain");
-    
-    // Determine content type based on file extension
-    std::string content_type = "application/octet-stream";
-    if (string_ends_with(filepath, ".pdf")) {
-        content_type = "application/pdf";
-    } else if (string_ends_with(filepath, ".txt")) {
-        content_type = "text/plain";
-    } else if (string_ends_with(filepath, ".html") || string_ends_with(filepath, ".htm")) {
-        content_type = "text/html";
-    }
-    
-    std::string content_type_header = "Content-Type: " + content_type;
-    headers = curl_slist_append(headers, content_type_header.c_str());
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-    
-    // Response handling
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, tika_write_callback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-    
-    // Perform request
-    CURLcode res = curl_easy_perform(curl);
-    
-    // Get HTTP response code
-    long http_code = 0;
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-    
-    // Cleanup
-    curl_slist_free_all(headers);
-    curl_easy_cleanup(curl);
-    
-    if (res != CURLE_OK) {
-        std::cerr << "CURL error: " << curl_easy_strerror(res) << std::endl;
-        return "";
-    }
-    
-    if (http_code != 200) {
-        std::cerr << "Tika HTTP error: " << http_code << " for file: " << filepath << std::endl;
-        std::cerr << "Response: " << response.substr(0, 200) << "..." << std::endl;
-        return "";
-    }
-    
-    std::cout << "Successfully extracted " << response.length() << " characters from " << filepath << std::endl;
-    return response;
-}
+// ── Recursive text splitter ──────────────────────────────────────────
+// Tries each separator in order; the first one that appears in the text
+// is used to divide it.  Pieces are merged back up to max_chunk_size,
+// and any piece that is still too large is recursively split with the
+// next finer separator.
 
-// Split text into chunks
-std::vector<std::string> split_text(const std::string& text) {
-    std::vector<std::string> chunks;
-    
-    // Reserve space to avoid reallocations
-    size_t estimated_chunks = (text.length() / (CHUNK_SIZE - CHUNK_OVERLAP)) + 1;
-    chunks.reserve(estimated_chunks);
-    
+inline std::vector<std::string> split_by(const std::string& text,
+                                         const std::string& sep) {
+    std::vector<std::string> parts;
     size_t start = 0;
-    
     while (start < text.length()) {
-        size_t end = std::min(start + CHUNK_SIZE, text.length());
-        
-        // Try to break at sentence boundaries
-        if (end < text.length()) {
-            size_t period = text.rfind(". ", end);
-            if (period != std::string::npos && period > start + CHUNK_SIZE - 100) {
-                end = period + 2;
-            }
+        size_t pos = text.find(sep, start);
+        if (pos == std::string::npos) {
+            parts.push_back(text.substr(start));
+            break;
         }
-        
-        chunks.push_back(text.substr(start, end - start));
-        start = end - CHUNK_OVERLAP;
-        
-        // Prevent infinite loop if overlap is too large
-        if (start <= chunks.size() * CHUNK_OVERLAP) {
-            start = chunks.size() * (CHUNK_SIZE - CHUNK_OVERLAP);
+        // Keep the separator attached to the piece before it
+        parts.push_back(text.substr(start, pos - start + sep.length()));
+        start = pos + sep.length();
+    }
+    return parts;
+}
+
+inline std::vector<std::string> recursive_split(
+        const std::string& text,
+        int max_chunk_size,
+        int overlap,
+        int sep_idx) {
+
+    static const std::vector<std::string> separators = {
+        "\n\n",     // paragraph
+        "\n",       // line
+        ". ",       // sentence
+        "? ",
+        "! ",
+        "; ",
+        ", ",
+        " "         // word (last resort)
+    };
+
+    // Base case: fits in one chunk
+    if (static_cast<int>(text.length()) <= max_chunk_size) {
+        std::string t = trim(text);
+        if (t.empty()) return {};
+        return {t};
+    }
+
+    // Find the coarsest separator that actually appears
+    int use_idx = sep_idx;
+    while (use_idx < static_cast<int>(separators.size()) &&
+           text.find(separators[use_idx]) == std::string::npos) {
+        use_idx++;
+    }
+
+    // If no separator found, hard-split by character count
+    if (use_idx >= static_cast<int>(separators.size())) {
+        std::vector<std::string> out;
+        for (size_t i = 0; i < text.length();
+             i += static_cast<size_t>(max_chunk_size - overlap)) {
+            std::string piece = text.substr(i, max_chunk_size);
+            std::string t = trim(piece);
+            if (!t.empty()) out.push_back(t);
+        }
+        return out;
+    }
+
+    auto pieces = split_by(text, separators[use_idx]);
+
+    // Merge small pieces into chunks
+    std::vector<std::string> chunks;
+    std::string current;
+
+    for (const auto& piece : pieces) {
+        if (current.empty()) {
+            current = piece;
+        } else if (static_cast<int>(current.length() + piece.length()) <= max_chunk_size) {
+            current += piece;
+        } else {
+            std::string t = trim(current);
+            if (!t.empty()) chunks.push_back(t);
+            current = piece;
         }
     }
-    
-    std::cout << "Created " << chunks.size() << " chunks from " << text.length() << " characters" << std::endl;
-    
-    return chunks;
+    {
+        std::string t = trim(current);
+        if (!t.empty()) chunks.push_back(t);
+    }
+
+    // Recursively split any chunk that is still too large
+    std::vector<std::string> final_chunks;
+    for (const auto& chunk : chunks) {
+        if (static_cast<int>(chunk.length()) > max_chunk_size) {
+            auto sub = recursive_split(chunk, max_chunk_size, overlap, use_idx + 1);
+            final_chunks.insert(final_chunks.end(), sub.begin(), sub.end());
+        } else {
+            final_chunks.push_back(chunk);
+        }
+    }
+
+    // Apply overlap: prepend the tail of the previous chunk
+    if (overlap > 0 && final_chunks.size() > 1) {
+        std::vector<std::string> overlapped;
+        overlapped.push_back(final_chunks[0]);
+        for (size_t i = 1; i < final_chunks.size(); i++) {
+            const auto& prev = final_chunks[i - 1];
+            std::string prefix;
+            if (static_cast<int>(prev.length()) > overlap) {
+                prefix = prev.substr(prev.length() - overlap);
+            } else {
+                prefix = prev;
+            }
+            overlapped.push_back(prefix + final_chunks[i]);
+        }
+        return overlapped;
+    }
+
+    return final_chunks;
+}
+
+// Public entry point — matches old split_text() signature
+inline std::vector<std::string> split_text(const std::string& text,
+                                           int max_chunk = CHUNK_SIZE,
+                                           int overlap   = CHUNK_OVERLAP) {
+    auto chunks = recursive_split(text, max_chunk, overlap, 0);
+
+    // Drop tiny chunks that would add noise
+    std::vector<std::string> filtered;
+    for (auto& c : chunks) {
+        if (c.length() >= 80) filtered.push_back(std::move(c));
+    }
+
+    std::cout << "Chunker: " << text.length() << " chars → "
+              << filtered.size() << " chunks" << std::endl;
+    return filtered;
 }

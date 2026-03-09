@@ -1,77 +1,50 @@
 #pragma once
 
 #include <string>
-#include <cstdlib>  // for getenv()
-#include <iostream>  // for std::cerr
+#include <cstdlib>
+#include <iostream>
 
-// Global configuration
+// ── Network ──────────────────────────────────────────────────────────
 const int PORT = 8080;
-const int EMBEDDING_DIM = 768;  // nomic-embed-text-v1.5 uses 768 dimensions
-const int CHUNK_SIZE = 2000;  // Larger chunks for more complete information
-const int CHUNK_OVERLAP = 200;  // Slightly more overlap
-const int MAX_CONTEXT_CHUNKS = 3;  // Use up to 3 chunks for context to keep it focused
-const int SEARCH_TOP_K = 10;  // Search for top 10, but only use top 3
 
-const std::string LLAMA_MODEL_PATH = "./gguf_models/Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf";
-const std::string NOMIC_MODEL_PATH = "./gguf_models/nomic-embed-text-v1.5.Q4_K_M.gguf";
+// ── Embeddings ───────────────────────────────────────────────────────
+const int EMBEDDING_DIM = 768;  // nomic-embed-text-v1.5 → 768 dimensions
 
-// Model configuration from environment
+// ── Chunking ─────────────────────────────────────────────────────────
+const int CHUNK_SIZE    = 1500; // characters per chunk (target)
+const int CHUNK_OVERLAP = 200;  // overlap between adjacent chunks
+
+// ── Retrieval ────────────────────────────────────────────────────────
+const int MAX_CONTEXT_CHUNKS = 5;   // chunks sent to the LLM
+const int SEARCH_CANDIDATES  = 30;  // candidates pulled before re-ranking
+
+// ── LLM ──────────────────────────────────────────────────────────────
+const int LLM_CONTEXT_SIZE   = 8192;  // n_ctx — token window
+const int LLM_MAX_TOKENS     = 1024;  // max tokens in a generated response
+const int LLM_BATCH_SIZE     = 512;
+
+// ── Database ─────────────────────────────────────────────────────────
+const std::string DB_PATH = "data/jic.db";
+
+// ── Model paths (overridable via environment) ────────────────────────
 inline std::string get_llm_model_path() {
-    const char* file = getenv("LLM_GGUF_FILE");
-    return std::string("./gguf_models/") + (file ? file : "Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf");
-}
-
-inline std::string get_llm_mmproj_path() {
-    const char* file = getenv("LLM_MMPROJ_FILE");
-    return file ? std::string("./gguf_models/") + file : "";
+    const char* f = getenv("LLM_GGUF_FILE");
+    return std::string("./gguf_models/") +
+           (f ? f : "Llama-3.2-3B-Instruct-Q4_K_M.gguf");
 }
 
 inline std::string get_embedding_model_path() {
-    const char* file = getenv("EMBEDDING_GGUF_FILE");
-    return std::string("./gguf_models/") + (file ? file : "nomic-embed-text-v1.5.Q4_K_M.gguf");
+    const char* f = getenv("EMBEDDING_GGUF_FILE");
+    return std::string("./gguf_models/") +
+           (f ? f : "nomic-embed-text-v1.5.Q4_K_M.gguf");
 }
 
 inline std::string get_llm_model_name() {
-    const char* name = getenv("LLM_MODEL");
-    return name ? name : "qwen2.5-vl:7b";
+    const char* n = getenv("LLM_MODEL");
+    return n ? n : "llama3.2:3b";
 }
 
 inline std::string get_embedding_model_name() {
-    const char* name = getenv("EMBEDDING_MODEL");
-    return name ? name : "nomic-embed-text";
-}
-const std::string TIKA_URL = "http://tika:9998/tika";
-
-// PostgreSQL configuration from environment
-inline std::string get_pg_host() { 
-    const char* h = getenv("POSTGRES_HOST");
-    return h ? h : "postgres";
-}
-
-inline int get_pg_port() {
-    const char* p = getenv("POSTGRES_PORT");
-    return p ? std::stoi(p) : 5432;
-}
-
-inline std::string get_pg_db() {
-    const char* d = getenv("POSTGRES_DB");
-    return d ? d : "jic_db";
-}
-
-inline std::string get_pg_user() {
-    const char* u = getenv("POSTGRES_USER");
-    if (!u) {
-        std::cerr << "WARNING: Using default database user. Set POSTGRES_USER environment variable for production." << std::endl;
-        return "jic";
-    }
-    return u;
-}
-
-inline std::string get_pg_password() {
-    const char* p = getenv("POSTGRES_PASSWORD");
-    if (!p) {
-        std::cerr << "WARNING: Using default database password. Set POSTGRES_PASSWORD environment variable for production." << std::endl;
-        return "jic_password";
-    }
-    return p;
+    const char* n = getenv("EMBEDDING_MODEL");
+    return n ? n : "nomic-embed-text";
 }

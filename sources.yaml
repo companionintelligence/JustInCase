@@ -1,0 +1,132 @@
+# ══════════════════════════════════════════════════════════════════════
+# JIC — Curated Source Manifest
+#
+# Run `helper-scripts/fetch-source-data.sh` to download these into
+# public/sources/.  All items listed here are public-domain, Creative
+# Commons, or explicitly free for redistribution.
+#
+# Format:
+#   - url:      Direct download link
+#     filename: Target filename inside public/sources/<category>/
+#     category: Subfolder (100_Survival, 200_Medical, etc.)
+#     title:    Human-readable name
+#     license:  License type (PD = public domain, CC0, CC-BY, etc.)
+#     sha256:   (optional) SHA-256 hash for integrity verification
+# ══════════════════════════════════════════════════════════════════════
+
+sources:
+
+  # ── 100 Survival ──────────────────────────────────────────────────
+  - url: https://www.hsdl.org/c/wp-content/uploads/2020/09/are-you-ready.pdf
+    filename: FEMA-Are-You-Ready.pdf
+    category: 100_Survival
+    title: "FEMA — Are You Ready? An In-Depth Guide to Citizen Preparedness"
+    license: PD (US Government)
+
+  - url: https://www.ready.gov/sites/default/files/2021-02/ready_checklist.pdf
+    filename: FEMA-Emergency-Checklist.pdf
+    category: 100_Survival
+    title: "FEMA — Emergency Supply Checklist"
+    license: PD (US Government)
+
+  - url: https://www.lrl.usace.army.mil/Portals/64/docs/CWProjects/RecManual/FM21-76-SurvivalManual.pdf
+    filename: FM21-76-US-Army-Survival.pdf
+    category: 100_Survival
+    title: "US Army Survival Manual FM 21-76"
+    license: PD (US Government)
+
+  - url: https://archive.org/download/sos-signals-of-survivors/SOS-Signals-of-Survivors.pdf
+    filename: SOS-Signals-of-Survivors.pdf
+    category: 100_Survival
+    title: "SOS — Signals of Survivors"
+    license: PD
+
+  # ── 200 Medical ───────────────────────────────────────────────────
+  - url: https://www.hesperian.org/wp-content/uploads/pdf/en_wtnd_2022/en_wtnd_2022_full_book.pdf
+    filename: Where-There-Is-No-Doctor.pdf
+    category: 200_Medical
+    title: "Where There Is No Doctor (Hesperian, 2022)"
+    license: CC-BY-NC
+
+  - url: https://www.redcross.org/content/dam/redcross/atg/PDF_s/Health___Safety_Services/First_Aid_-_CPR_-_AED/FA-CPR-AED-Participant-Manual.pdf
+    filename: RedCross-FirstAid-CPR-AED-Manual.pdf
+    category: 200_Medical
+    title: "Red Cross First Aid / CPR / AED Participant Manual"
+    license: Freely distributed
+
+  - url: https://apps.who.int/iris/bitstream/handle/10665/44515/9789241548014_eng.pdf
+    filename: WHO-Emergency-Triage.pdf
+    category: 200_Medical
+    title: "WHO — Emergency Triage Assessment and Treatment (ETAT)"
+    license: CC-BY-NC-SA (WHO)
+
+  # ── 300 Food ──────────────────────────────────────────────────────
+  - url: https://nchfp.uga.edu/publications/publications_usda.html
+    filename: USDA-Complete-Guide-Home-Canning.pdf
+    category: 300_Food
+    title: "USDA Complete Guide to Home Canning"
+    license: PD (US Government)
+    note: "Landing page — download PDF sections from there"
+
+  - url: https://www.fao.org/3/y5113e/y5113e00.htm
+    filename: FAO-Food-Storage-Manual.pdf
+    category: 300_Food
+    title: "FAO — Food Storage Manual"
+    license: CC-BY-NC-SA (FAO)
+    note: "HTML version — download PDF from FAO document repository"
+
+  # ── 400 Engineering ───────────────────────────────────────────────
+  - url: https://www.nrel.gov/docs/fy04osti/36178.pdf
+    filename: NREL-PV-Solar-Systems.pdf
+    category: 400_Engineering
+    title: "NREL — Photovoltaic Solar Resource of the United States"
+    license: PD (US Government)
+
+  - url: https://www.lifewater.org/resources/rws1.pdf
+    filename: Lifewater-Rural-Water-Supply.pdf
+    category: 400_Engineering
+    title: "Lifewater — Rural Water Supply Design Manual"
+    license: Freely distributed
+
+  # ── 500 Communications ────────────────────────────────────────────
+  - url: http://www.arrl.org/files/file/Technology/tis/info/pdf/0209038.pdf
+    filename: ARRL-Emergency-Comms.pdf
+    category: 500_Comms
+    title: "ARRL — Emergency Communications"
+    license: Freely distributed
+
+  # ── 600 Education ─────────────────────────────────────────────────
+  - url: https://dumps.wikimedia.org/other/kiwix/zim/wikipedia/
+    filename: wikipedia-en-simple.zim
+    category: 600_Education
+    title: "Simple English Wikipedia (Kiwix ZIM archive)"
+    license: CC-BY-SA
+    note: "Large file (~1 GB+).  Download the 'simple' English edition."
+
+  - url: https://openstax.org/details/books/biology-2e
+    filename: OpenStax-Biology-2e.pdf
+    category: 600_Education
+    title: "OpenStax Biology 2e"
+    license: CC-BY
+    note: "Download PDF from OpenStax website"
+
+  # ── 700 Social / Governance ───────────────────────────────────────
+  - url: https://www.un.org/en/about-us/universal-declaration-of-human-rights
+    filename: UN-Universal-Declaration-Human-Rights.pdf
+    category: 700_Social
+    title: "Universal Declaration of Human Rights"
+    license: PD (United Nations)
+    note: "Download PDF version from the UN website"
+
+  # ── 800 Software / Reference ──────────────────────────────────────
+  - url: https://greenteapress.com/thinkpython2/thinkpython2.pdf
+    filename: ThinkPython2.pdf
+    category: 800_Software
+    title: "Think Python 2nd Edition"
+    license: CC-BY-NC
+
+  - url: https://www.gutenberg.org/ebooks/10.txt.utf-8
+    filename: KJV-Bible.txt
+    category: 700_Social
+    title: "King James Bible (Project Gutenberg)"
+    license: PD

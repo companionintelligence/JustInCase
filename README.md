@@ -1,190 +1,92 @@
-# 🛟 Just In Case 🛟
-### Offline Emergency Knowledge Search
+# Just In Case
 
-## [LIVE WEB DEMO](https://jic.companionintel.com)
+**Offline emergency knowledge search.**
 
-### [Learn More - CompanionIntelligence.com/JIC](https://companionintelligence.com/JIC)
+[Live demo](https://jic.companionintel.com) · [CompanionIntelligence.com/JIC](https://companionintelligence.com/JIC) · [Discord](https://discord.gg/companion)
 
-If the Internet goes dark, you should still be able to quickly find the knowledge that can help you survive and thrive during a crisis. The goal of the JIC project is to deliver a self-contained LLM-powered / AI driven conversational search engine over a curated set of emergency survival pdfs that can be used without the Internet.
+JIC is a self-contained, LLM-powered conversational search engine that runs entirely offline on commodity hardware. You feed it emergency PDFs — survival guides, medical references, agricultural manuals, engineering resources — and it lets you ask questions in natural language and get grounded, source-attributed answers. No cloud, no network, no JVM, no Python. Just C++ and a few GGUF model files.
 
-This includes survival guides, medical references, even agricultural know-how and engineering resources, as well as broader educational materials like offline Wikipedia, open textbooks, art and humanities. If the Internet goes dark, you should still be able to quickly find the knowledge that can help you survive and thrive during a crisis.
+> **Research project.** Do not rely on this for real-world use at this time. Use at your own risk.
 
+---
 
-Please feel free to join us. This is a work in progress and we welcome your participation. 
+## Why
 
-<a target="_blank" href="https://discord.gg/companion"><img src="https://dcbadge.limes.pink/api/server/companion" alt="COMPANION DISCORD" /></a>
+We lean heavily on ChatGPT, Claude, Google, and similar services for even simple practical questions — _how do I wire batteries to a solar panel_, _what causes lower-right abdominal pain_. During a prolonged crisis those services may not be available. JIC bridges that gap: an offline conversational interface to actionable emergency knowledge that fits on a single machine.
 
+Background thinking on the problem space is in the [docs/](docs/) folder: [typical emergency questions](docs/1100-questions.md), [user personas](docs/1200-persona.md), [data categorisation](docs/1300-categorization.md), [high-value sources](docs/1400-sources.md), [target hardware](docs/1500-hardware.md), and [architecture notes](docs/1600-architecture.md).
 
-Also note this is for research purposes only - do not rely on this for real world use at this time. Use at your own risk.
+---
 
-## The Challenge: Conversational Search
+## How it works
 
-Many of us have some kind of plan for a crisis; a flashlight in a drawer, extra food supplies, water, cash, a map of community resources, a muster-point, a group of friends to rely on. We're generally aware of region specific risks, tornados, tsunamis, forest fires - but what's missing is actionable instant information - the stuff that fills in the gaps in the larger plan.
+The system is written in C++17 and compiles to two binaries: a server and an ingestion worker. Both link against [llama.cpp](https://github.com/ggml-org/llama.cpp) (pinned to `b8250`) for LLM inference and embeddings, [MuPDF](https://github.com/ArtifexSoftware/mupdf) (`1.27.2`) for PDF text extraction, and SQLite with [sqlite-vec](https://github.com/asg017/sqlite-vec) and FTS5 for hybrid search. The server uses [cpp-httplib](https://github.com/yhirose/cpp-httplib) for HTTP. The default LLM is Llama 3.2 3B Instruct (Q4_K_M, ~2 GB); embeddings use nomic-embed-text-v1.5 (768-dimensional, ~260 MB).
 
-For better or worse we now heavily rely on conversational search tools such as ChatGPT, Claude, Google AI and other online resources. Even for small questions such as "how do you wire up rechargeable batteries to a solar panel?" or "what is the probable cause of a lower right side stomach pain?".
+During ingestion, each PDF is parsed with MuPDF, split into chunks using a recursive paragraph → sentence → word splitter, embedded, and stored in a single SQLite database. At query time the user's question is embedded and run against both the vector index (sqlite-vec, approximate nearest neighbours) and the full-text index (FTS5 / BM25). Results are merged with Reciprocal Rank Fusion, and the top chunks are passed as context to the LLM, which produces an answer grounded in the source material.
 
-The problem is that these services are often cloud based, and not always at our fingertips. We don't realize that during an emergency, the very thing we rely on may not be there. To get a feel for this try turn off your phone and the Internet for just one day.
+Docker is used only for packaging — there is no runtime dependency on it. You can build and run natively if you prefer.
 
-The fact is that there's a real difference between the difficulty of trying to read through a book on how to treat a burn during an emergency, versus getting some quick help or counsel, conversationally, right away, or at least getting some quick guidance on where to look for more details. What would you do if the internet went down? Or even just an extended power outage? What is your families plan for region-specific threats such as tornadoes, tsunamis, or forest fires? Many of us have some kind of plan; a flashlight in a drawer, extra food supplies, water, cash, a map of community resources, a muster-point.
+---
 
-The world has changed, we now heavily rely on tools such as ChatGPT, Claude, Google and other online resources. Even for small questions such as "how do you wire up rechargeable batteries to a solar panel?" or "what is the probable cause of a lower right side stomach pain?". The thing most of us rely heavily on information itself, and that information is not always at our fingertips.
+## Quickstart
 
-Validating a tool like this raises many questions. Who are typical users of the dataset? What are typical scenarios? Can we build a list of typical questions a user may ask of the dataset? Can we have regression tests against the ability of the dataset to resolve the queries? Are there differences in what is needed for short, medium or extended emergencies or extended survival situations? In this ongoing project we'll try to tackle these and improve this over time.
+You need [Docker and Docker Compose](https://docs.docker.com/get-docker/), roughly 4 GB of disk for models, and whatever space your PDF library requires.
 
-Conversational interfaces can bridge a gap - at the very least providing search engine like guidance on how to get more information quickly.
+### 1. Get source data
 
-## Proposed approach:
+JIC does not ship with data. Place `.pdf` or `.txt` files into `public/sources/` — the ingestion service scans recursively, so organise them however you like. A curated manifest of public-domain emergency documents is listed in [sources.yaml](sources.yaml); a companion data repository is available at [github.com/companionintelligence/JustInCase](https://github.com/companionintelligence/JustInCase/tree/main/public/sources). You may also find the community [Survival-Data](https://github.com/PR0M3TH3AN/Survival-Data) repo useful.
 
-Overall the goal of the JIC project is to provide offline information:
+### 2. Download models
 
-- a wide variety of documents and reference material
-- possibly later also live maps of recent regional data
-- interactive intelligence / llms
-
-The novel feature (as mentioned) that seems the most useful for non-technical users is a conversational interface to emergency data.
-
-To tackle that we propose an offline llm driven knowledge corpus, collecting documents, and providing actionable intelligence over them. This is a variation of common corporate RAG style document stores with query engines, but needs to run in an offline context.
-
-## Classical offline knowledge sources
-
-There are many excellent existing efforts to provide offline emergency knowledge - and those are great fuel for the LLM. This includes survival guides, medical references, even agricultural know-how and engineering resources, as well as broader educational materials like offline Wikipedia, open textbooks, art and humanities. There are also many challenges here in terms of deciding what to curate, what kinds of ongoing aggregation are needed (prior to a catastrophe) and how to organize that knowledge statically.
-
-## Design thinking
-
-Validating a tool like this raises many questions. Who are typical users of the dataset? What are typical scenarios? Can we build a list of typical questions a user may ask of the dataset? Can we have regression tests against the ability of the dataset to resolve the queries? Are there differences in what is needed for short, medium or extended emergencies or extended survival situations? Here are a few documents that we used to ground our thinking so far:
-
-[Typical Questions In an Emergency](docs/1100-questions.md) 
-
-[Emergency User Personas](docs/1200-persona.md)
-
-[Vital Data Categorization](docs/1300-categorization.md)
-
-Note as well that the general topic of ingesting large amounts of data and making that data conversationally accessible (by prompting the llm with appropriate context) is a well known one, and this proof of concept effectively is an implementation of that larger thesis. Here are a few details on lower level technical aspects:
-
-[High Value Data Sources](docs/1400-sources.md)
-
-[Easy to access Commodity Hardware](docs/1500-hardware.md)
-
-[Portable On-Prem Architecture](docs/1600-architecture.md)
-
-## Screenshot
-
-![screenshot](screenshot.png?raw=true "screenshot")
-
-## 📦 Approach: Components
-
-We've tried a variety of approaches, ollama, python, n8n - our current stack is turning out to be simply C++ with what feels like 'direct to the metal' interactions with the tools we need:
-
-| Component         | Role                                            |
-|-------------------|-------------------------------------------------|
-| 🧠 `Llama.cpp`    | LLM loader (e.g. `llama3`)                      |
-| 📄 `Apache Tika`  | PDF-to-text extractor                           |
-| 🔍 `FAISS`        | Vector search over parsed PDF chunks            |
-| 🌐 `C++ Server`   | Simple API + minimal HTML frontend              |
-
-Note we may shift a few pieces around here - may move to pgvector for example.
-
-We're thinking of these engines for chewing through the context (the pdfs) - basically presenting each pdf page (generated with Tika) to qwen2.5-vl. Using a smaller model to be (high end) laptop friendly:
-
-https://huggingface.co/ggml-org/Qwen2.5-VL-7B-Instruct-GGUF
-
-This also seems interesting but is not used yet:
-
-https://github.com/deepseek-ai/DeepSeek-OCR/blob/main/DeepSeek_OCR_paper.pdf
-
-## 🚀 Quickstart
-
-### 1. Install Docker + Docker Compose
-
-Make sure your system supports Docker. See [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/)
-
-### Build Options
-
-### 1. Download Datasources (PDF Docs)
-
-Put emergency data and docs, or any `.pdf` files or text files you want indexed into the `public/sources/` folder. These will make them visible to both the runtime ingestion and to the server so the user can see the documents when they are returned as part of an llm suggested action.
-
-## [DOWNLOAD - Data Sources](https://github.com/companionintelligence/JustInCase/tree/main/public/sources)
-
-> Also see [fetch-source-data.sh](helper-scripts/fetch-source-data.sh) - this is a helpful script to fetch some other sources - however sources may change and things may break - so this may need ongoing work.
+Models must be present before starting Docker — they are not fetched at runtime.
 
 ```bash
-git clone https://github.com/PR0M3TH3AN/Survival-Data.git
-find Survival-Data/HOME -type f -iname "*.pdf" -exec cp {} sources/ \;
+./helper-scripts/fetch-models.sh
 ```
 
-### 2. Prepare models
+This places two GGUF files in `./gguf_models/`: `Llama-3.2-3B-Instruct-Q4_K_M.gguf` (~2.0 GB, the LLM) and `nomic-embed-text-v1.5.Q4_K_M.gguf` (~260 MB, the embedding model).
 
-**Important:** Our setup of Docker will avoid downloading models from the internet. You must prepare them locally first.
-
-1. **Download GGUF files manually** (one time, on any connection):
-   ```bash
-   # Create directory
-   mkdir -p gguf_models
-   
-   # Run this for download instructions and URLs:
-   ./helper-scripts/fetch-models.sh
-   
-   # The script will show you the exact URLs and wget commands
-   # Place downloaded .gguf files in ./gguf_models/
-   ```
-
-2. **Load models into Docker**:
-   ```bash
-   # Download GGUF models
-   ./helper-scripts/fetch-models.sh
-   
-   # Start Docker containers
-   docker compose up --build
-   ```
-
-For detailed instructions, run: `./helper-scripts/fetch-models.sh`
-
-### 3. Start the system
+### 3. Build and run
 
 ```bash
 docker compose up --build
 ```
 
-This:
-- Launches Apache Tika
-- Starts ingestor that will continually indexes your PDFs
-- Starts the web UI on port `8080`
+The multi-stage Docker build compiles everything from source, then starts the server on port 8080 and the ingestion worker alongside it. Once models and sources are loaded, no internet connection is required.
 
-**Note:** No internet connection required after models are loaded!
-
----
-
-## 🌐 Access
-
-- Web Interface: [http://localhost:8080](http://localhost:8080)
-- API: `POST /query`  
-  Example:
+The web UI is at [http://localhost:8080](http://localhost:8080). You can also query the API directly:
 
 ```bash
-curl -X POST http://localhost:8080/query \
+curl -s -X POST http://localhost:8080/query \
   -H "Content-Type: application/json" \
   -d '{"query": "How do I purify water in the wild?"}'
 ```
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
-### Model Selection
+To swap the LLM, set `LLM_GGUF_FILE` in the environment or edit `docker-compose.yml`. Any GGUF-format instruction-tuned model should work. A few reasonable options for different hardware budgets:
 
-You can customize which models to use by setting environment variables:
+| Model | Parameters | RAM | Notes |
+|---|---|---|---|
+| **Llama 3.2 3B** (default) | 3B | ~3 GB | Fast, good quality, fits comfortably in 8 GB |
+| Phi-4-mini | 3.8B | ~3.5 GB | Strong reasoning for its size |
+| Gemma 3 4B | 4B | ~4 GB | Broad general knowledge |
+| Llama 3.1 8B | 8B | ~6 GB | Better answers, needs ≥16 GB RAM |
 
-```bash
-# Use different models
-export LLM_MODEL=llama3.2
-export EMBEDDING_MODEL=nomic-embed-text
+---
 
-# Download your chosen models
-./helper-scripts/fetch-models.sh
+## Screenshot
 
-# Build and run with your models
-docker compose build
-docker compose up
-```
+![screenshot](screenshot.png?raw=true "screenshot")
 
+---
+
+## Contributing
+
+Work in progress — contributions welcome. See the [Discord](https://discord.gg/companion) for discussion.
+
+## License
+
+See [LICENSE](LICENSE).
