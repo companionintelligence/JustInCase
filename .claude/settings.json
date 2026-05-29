@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose*)",
+      "Bash(cmake*)",
+
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(git fetch*)",
+      "Bash(gh issue*)",
+      "Bash(gh pr*)",
+      "Bash(docker ps*)",
+      "Bash(docker logs*)"
+    ],
+    "deny": []
+  }
+}

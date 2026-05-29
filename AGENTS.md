@@ -1,29 +1,47 @@
-# Codex Agent Guide
+# AGENTS.md — JustInCase
 
-## Repo Summary
-- Offline emergency knowledge assistant built in C++ with llama.cpp.
-- Docker Compose runs `tika`, `jic` (server), and `ingestion`.
-- Documents live under `public/sources` and are ingested into a vector index.
+## Platform context
 
-## Key Paths
-- `docker-compose.yml`: primary model configuration and service wiring.
-- `src/`: C++ server and ingestion pipeline.
-- `public/sources/`: PDFs and other content to ingest.
-- `helper-scripts/`: scripts for model fetching and basic testing.
+JustInCase is the **App/Agent** layer component of the Companion Intelligence platform — a private, local-first digital memory system.
 
-## Local Setup
+Full architecture: `CI-Engineering/architecture/architecture.md`
+
+## Repo summary
+
+Offline emergency knowledge assistant. C++ server with llama.cpp backend, Tika document parsing, and a vector index. Runs via Docker Compose.
+
+## Stack
+
+- C++ / llama.cpp (server + ingestion)
+- Apache Tika (document parsing)
+- Docker Compose (jic + tika + ingestion services)
+- GGUF model files (in gguf_models/)
+
+## Setup & commands
+
+```bash
+# download GGUF models: ./helper-scripts/fetch-models.sh   # install
+docker compose up --build   # dev
+./helper-scripts/test-config.sh && ./helper-scripts/test-server.sh   # test
+docker compose build   # build
+```
+
+## Setup
+
 1. Install Docker + Docker Compose.
-2. Download GGUF files into `./gguf_models/` (see `helper-scripts/fetch-models.sh`).
-3. Run: `docker compose up --build`.
+2. Download GGUF files into `./gguf_models/` via `helper-scripts/fetch-models.sh`.
+3. Run `docker compose up --build`.
 
-## Tests (Local)
-- Config sanity: `./helper-scripts/test-config.sh`
-- Server smoke test (server must be running): `./helper-scripts/test-server.sh`
+## Licensing
 
-## Remote / CI Guidance
-- Minimal CI should run `./helper-scripts/test-config.sh`.
-- Optional CI step (if services can be started): `docker compose up -d` then `./helper-scripts/test-server.sh`, then `docker compose down`.
+Keep licensing and provenance clear for all content added to `public/sources/`. Prefer public-domain or explicitly redistributable materials.
 
-## Data Notes
-- Keep licensing and provenance clear for all added sources.
-- Prefer public-domain or explicitly redistributable materials.
+## Git discipline
+
+- Never `git reset --hard` or `git clean -f` without user confirmation.
+- Commit messages: imperative mood, ≤ 72 chars.
+- Reference CI-Engineering issues in PRs (e.g. `Closes companionintelligence/CI-Engineering#32`).
+
+## Confidentiality
+
+Private & Confidential — Property of Lifescope Inc. Do not distribute.
