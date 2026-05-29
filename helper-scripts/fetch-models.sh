@@ -1,165 +1,79 @@
 #!/bin/bash
+set -euo pipefail
 
-echo "🚀 Model Download Guide (LOCAL ONLY)"
-echo "===================================="
+echo "═══════════════════════════════════════════"
+echo "  JIC — Model Download"
+echo "═══════════════════════════════════════════"
 echo ""
-echo "This system requires models to be downloaded LOCALLY before use."
-echo "Docker will NOT download models from the internet."
+echo "Docker will NOT download models at runtime."
+echo "You must place GGUF files in ./gguf_models/ first."
 echo ""
 
-# Get model names and URLs from environment variables or use defaults
-LLM_MODEL="${LLM_MODEL:-qwen2.5-vl:7b}"
-EMBEDDING_MODEL="${EMBEDDING_MODEL:-nomic-embed-text}"
+# ── Configurable via environment ─────────────────────────────────────
+LLM_FILE="${LLM_GGUF_FILE:-Llama-3.2-3B-Instruct-Q4_K_M.gguf}"
+LLM_REPO="${LLM_GGUF_REPO:-bartowski/Llama-3.2-3B-Instruct-GGUF}"
+LLM_URL="https://huggingface.co/${LLM_REPO}/resolve/main/${LLM_FILE}"
 
-# Default GGUF file names and repositories
-QWEN_GGUF_REPO="${QWEN_GGUF_REPO:-ggml-org/Qwen2.5-VL-7B-Instruct-GGUF}"
-LLM_FILE="${LLM_GGUF_FILE:-Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf}"
-LLM_URL="https://huggingface.co/${QWEN_GGUF_REPO}/resolve/main/${LLM_FILE}"
-MMPROJ_FILE="${LLM_MMPROJ_FILE:-mmproj-Qwen2.5-VL-7B-Instruct-f16.gguf}"
-MMPROJ_URL="https://huggingface.co/${QWEN_GGUF_REPO}/resolve/main/${MMPROJ_FILE}"
-
-NOMIC_GGUF_REPO="${NOMIC_GGUF_REPO:-nomic-ai/nomic-embed-text-v1.5-GGUF}"
 NOMIC_FILE="${EMBEDDING_GGUF_FILE:-nomic-embed-text-v1.5.Q4_K_M.gguf}"
-NOMIC_URL="https://huggingface.co/${NOMIC_GGUF_REPO}/resolve/main/${NOMIC_FILE}"
+NOMIC_REPO="${NOMIC_GGUF_REPO:-nomic-ai/nomic-embed-text-v1.5-GGUF}"
+NOMIC_URL="https://huggingface.co/${NOMIC_REPO}/resolve/main/${NOMIC_FILE}"
 
-echo "📋 Required models:"
-echo "  - LLM: $LLM_MODEL"
-echo "  - Embeddings: $EMBEDDING_MODEL"
-echo ""
-
-echo "STEP 1: Download GGUF files manually"
-echo "===================================="
-echo "Download these files:"
-echo ""
-echo "1. Qwen2.5-VL 7B GGUF:"
-echo "   URL: $LLM_URL"
-echo "   File: $LLM_FILE"
-echo ""
-echo "2. Qwen2.5-VL Vision Projector:"
-echo "   URL: $MMPROJ_URL"
-echo "   File: $MMPROJ_FILE"
-echo ""
-echo "3. Nomic Embed GGUF:"
-echo "   URL: $NOMIC_URL"
-echo "   File: $NOMIC_FILE"
-echo ""
-echo "� Starting automatic download..."
+echo "Required models:"
+echo "  LLM        : ${LLM_FILE}  (~2.0 GB)"
+echo "  Embeddings : ${NOMIC_FILE}  (~260 MB)"
 echo ""
 
-# Create directory
 mkdir -p gguf_models
 
-# Check if wget is available
-if ! command -v wget >/dev/null 2>&1; then
-    echo "❌ wget not found. Please install wget first:"
-    echo "   brew install wget  # macOS"
-    echo "   apt install wget   # Ubuntu/Debian"
+# ── Pick a downloader ────────────────────────────────────────────────
+DL=""
+if command -v wget  >/dev/null 2>&1; then DL="wget";  fi
+if command -v curl  >/dev/null 2>&1; then DL="curl";  fi
+
+if [[ -z "$DL" ]]; then
+    echo "❌  Neither curl nor wget found.  Install one and retry."
     echo ""
-    echo "Or download manually:"
-    echo "  curl -L -o \"gguf_models/$LLM_FILE\" \"$LLM_URL\""
-    echo "  curl -L -o \"gguf_models/$NOMIC_FILE\" \"$NOMIC_URL\""
+    echo "Manual download URLs:"
+    echo "  ${LLM_URL}"
+    echo "  ${NOMIC_URL}"
     exit 1
 fi
 
-# Download LLM file
-if [ -f "./gguf_models/$LLM_FILE" ]; then
-    echo "✅ LLM file already exists: $LLM_FILE"
-else
-    echo "📥 Downloading LLM model: $LLM_FILE"
-    echo "   From: $LLM_URL"
-    echo "   Size: ~4.6GB (this may take a while...)"
-    echo ""
-    
-    wget -P gguf_models/ --progress=bar:force:noscroll "$LLM_URL"
-    if [ $? -eq 0 ]; then
-        echo ""
-        echo "✅ Successfully downloaded $LLM_FILE"
+download() {
+    local url="$1" dest="$2"
+    if [[ "$DL" == "curl" ]]; then
+        curl -L --progress-bar -o "$dest" "$url"
     else
-        echo ""
-        echo "❌ Failed to download $LLM_FILE"
-        echo "💡 Check your internet connection and try again"
-        exit 1
+        wget --progress=bar:force:noscroll -O "$dest" "$url"
     fi
-fi
+}
 
-echo ""
-
-# Download mmproj file
-if [ -f "./gguf_models/$MMPROJ_FILE" ]; then
-    echo "✅ Vision projector file already exists: $MMPROJ_FILE"
+# ── LLM model ────────────────────────────────────────────────────────
+if [[ -f "gguf_models/${LLM_FILE}" ]]; then
+    echo "✅  LLM model already present: ${LLM_FILE}"
 else
-    echo "📥 Downloading vision projector: $MMPROJ_FILE"
-    echo "   From: $MMPROJ_URL"
-    echo "   Size: ~1.3GB"
+    echo "📥  Downloading LLM: ${LLM_FILE}"
+    echo "    From: ${LLM_URL}"
     echo ""
-    
-    wget -P gguf_models/ --progress=bar:force:noscroll "$MMPROJ_URL"
-    if [ $? -eq 0 ]; then
-        echo ""
-        echo "✅ Successfully downloaded $MMPROJ_FILE"
-    else
-        echo ""
-        echo "❌ Failed to download $MMPROJ_FILE"
-        exit 1
-    fi
+    download "${LLM_URL}" "gguf_models/${LLM_FILE}"
+    echo ""
+    echo "✅  Downloaded ${LLM_FILE}"
 fi
 
-echo ""
-
-# Download embedding file
-if [ -f "./gguf_models/$NOMIC_FILE" ]; then
-    echo "✅ Embedding file already exists: $NOMIC_FILE"
+# ── Embedding model ──────────────────────────────────────────────────
+if [[ -f "gguf_models/${NOMIC_FILE}" ]]; then
+    echo "✅  Embedding model already present: ${NOMIC_FILE}"
 else
-    echo "📥 Downloading embedding model: $NOMIC_FILE"
-    echo "   From: $NOMIC_URL"
-    echo "   Size: ~80MB"
+    echo "📥  Downloading embeddings: ${NOMIC_FILE}"
+    echo "    From: ${NOMIC_URL}"
     echo ""
-    
-    wget -P gguf_models/ --progress=bar:force:noscroll "$NOMIC_URL"
-    if [ $? -eq 0 ]; then
-        echo ""
-        echo "✅ Successfully downloaded $NOMIC_FILE"
-    else
-        echo ""
-        echo "❌ Failed to download $NOMIC_FILE"
-        exit 1
-    fi
+    download "${NOMIC_URL}" "gguf_models/${NOMIC_FILE}"
+    echo ""
+    echo "✅  Downloaded ${NOMIC_FILE}"
 fi
 
 echo ""
-
-echo "STEP 2: Verify downloads"
-echo "========================"
-if [ -f "./gguf_models/$LLM_FILE" ] && [ -f "./gguf_models/$MMPROJ_FILE" ] && [ -f "./gguf_models/$NOMIC_FILE" ]; then
-    echo "✅ All required files downloaded successfully!"
-    echo ""
-    echo "📦 Downloaded files:"
-    ls -lh ./gguf_models/$LLM_FILE ./gguf_models/$MMPROJ_FILE ./gguf_models/$NOMIC_FILE
-    echo ""
-    echo "🚀 Next steps:"
-    echo "   docker compose up --build"
-    echo ""
-    echo "💡 The C++ server will load the GGUF models directly from ./gguf_models/"
-    echo "💡 Vision models need both the main model and mmproj (vision projector) files"
-else
-    echo "❌ Some files are missing. Please check the download."
-fi
-
-echo ""
-echo "STEP 3: Run the system"
-echo "======================"
-echo "Start the system:"
-echo "  docker compose up --build"
-echo ""
-echo "Access the web interface:"
-echo "  http://localhost:8080"
-
-# Check if gguf_models directory exists
-if [ -d "./gguf_models" ]; then
-    echo ""
-    echo "📁 Found gguf_models directory. Contents:"
-    ls -la ./gguf_models/*.gguf 2>/dev/null || echo "  No .gguf files found yet"
-else
-    echo ""
-    echo "📁 No gguf_models directory found. Create it with: mkdir -p gguf_models"
-fi
+echo "═══════════════════════════════════════════"
+echo "  All models ready in ./gguf_models/"
+echo "  Run:  docker compose up --build"
+echo "═══════════════════════════════════════════"

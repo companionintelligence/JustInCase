@@ -1,246 +1,178 @@
+// ── JIC Ingestion Service ────────────────────────────────────────────
+//
+// Continuously scans public/sources/ for new PDFs and text files,
+// extracts text with MuPDF, splits into semantic chunks, generates
+// embeddings, and stores everything in SQLite (vec + FTS5).
+//
+// No external services required — Tika is gone, curl is gone.
+
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <set>
 #include <thread>
 #include <chrono>
-#include <curl/curl.h>
-#include "llama.h"
-#include "config.h"
-#include "text_utils.h"
-#include "embeddings.h"
-#include "simple_vector_index.h"
-#include "pg_vector_store.h"
+#include <filesystem>
 
-// Wait for Tika service to be ready
-bool wait_for_tika(int max_retries = 30) {
-    std::cout << "Waiting for Tika service..." << std::endl;
-    
-    for (int i = 0; i < max_retries; i++) {
-        CURL* curl = curl_easy_init();
-        if (!curl) continue;
-        
-        curl_easy_setopt(curl, CURLOPT_URL, "http://tika:9998");
-        curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 2L);
-        
-        CURLcode res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-        
-        if (res == CURLE_OK) {
-            std::cout << "Tika service is ready!" << std::endl;
-            return true;
-        }
-        
-        std::this_thread::sleep_for(std::chrono::seconds(2));
-    }
-    
-    std::cerr << "Tika service failed to start" << std::endl;
-    return false;
-}
+#include "llama.h"
+#include "nlohmann/json.hpp"
+#include "config.h"
+#include "types.h"
+#include "text_utils.h"
+#include "pdf_utils.h"
+#include "embeddings.h"
+#include "sqlite_vec_index.h"
+
+namespace fs = std::filesystem;
 
 int main() {
-    // Initialize CURL
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-    
-    // Wait for Tika
-    if (!wait_for_tika()) {
-        std::cerr << "Cannot proceed without Tika service" << std::endl;
-        return 1;
-    }
-    
-    // Initialize llama backend
+    std::cout << "═══════════════════════════════════════════" << std::endl;
+    std::cout << "  JIC Ingestion Service (MuPDF + SQLite)  " << std::endl;
+    std::cout << "═══════════════════════════════════════════" << std::endl;
+
+    // ── Initialise llama backend ─────────────────────────────────────
     llama_backend_init();
-    llama_log_set([](enum ggml_log_level level, const char * text, void *) {
-        if (level >= GGML_LOG_LEVEL_ERROR) {
-            fprintf(stderr, "%s", text);
-        }
+    llama_log_set([](enum ggml_log_level level, const char* text, void*) {
+        if (level >= GGML_LOG_LEVEL_ERROR) fprintf(stderr, "%s", text);
     }, nullptr);
-    
-    // Initialize embedding generator
+
+    // ── Embedding model ──────────────────────────────────────────────
     EmbeddingGenerator embeddings;
     if (!embeddings.init()) {
-        std::cerr << "Failed to initialize embeddings" << std::endl;
+        std::cerr << "Failed to initialise embedding model" << std::endl;
         return 1;
     }
-    
-    // Use SimpleVectorIndex for now
-    SimpleVectorIndex index(EMBEDDING_DIM);
-    std::vector<Document> documents;
-    
-    // Load existing index
-    if (fs::exists("data/index.bin") && fs::exists("data/metadata.jsonl")) {
-        index.load("data/index.bin");
-        
-        std::ifstream metadata_file("data/metadata.jsonl");
-        std::string line;
-        while (std::getline(metadata_file, line)) {
-            auto j = nlohmann::json::parse(line);
-            documents.push_back({j["filename"], j["text"]});
-        }
-        
-        std::cout << "Loaded " << documents.size() << " documents from index" << std::endl;
+
+    // ── SQLite index ─────────────────────────────────────────────────
+    fs::create_directories("data");
+    SQLiteVecIndex index;
+    if (!index.open(DB_PATH)) {
+        std::cerr << "Failed to open database: " << DB_PATH << std::endl;
+        return 1;
     }
-    
-    // Load processed files list
-    std::set<std::string> processed_files;
-    if (fs::exists("data/processed_files.txt")) {
-        std::ifstream pf("data/processed_files.txt");
-        std::string line;
-        while (std::getline(pf, line)) {
-            line.erase(0, line.find_first_not_of(" \t\r\n"));
-            line.erase(line.find_last_not_of(" \t\r\n") + 1);
-            if (!line.empty()) {
-                processed_files.insert(line);
-            }
-        }
-        pf.close();
-        std::cout << "Loaded " << processed_files.size() << " processed files from tracking" << std::endl;
-    }
-    
-    // Main ingestion loop
+
+    std::cout << "Existing index: " << index.chunk_count() << " chunks, "
+              << index.processed_file_count() << " files" << std::endl;
+
+    // ── Main ingestion loop ──────────────────────────────────────────
     while (true) {
         std::vector<std::pair<std::string, std::string>> files_to_process;
-        
-        // Find new files
+
+        // Discover new files
         if (fs::exists("public/sources")) {
             try {
                 for (const auto& entry : fs::recursive_directory_iterator("public/sources")) {
-                    if (entry.is_regular_file()) {
-                        std::string ext = entry.path().extension();
-                        if (ext == ".txt" || ext == ".pdf") {
-                            std::string rel_path = fs::relative(entry.path(), "public/sources").string();
-                            if (processed_files.find(rel_path) == processed_files.end()) {
-                                files_to_process.push_back({entry.path().string(), rel_path});
-                            }
+                    if (!entry.is_regular_file()) continue;
+
+                    std::string ext = entry.path().extension().string();
+                    // Convert extension to lower-case
+                    for (auto& c : ext) c = std::tolower(static_cast<unsigned char>(c));
+
+                    if (ext != ".pdf" && ext != ".txt") continue;
+
+                    std::string rel = fs::relative(entry.path(), "public/sources").string();
+                    if (!index.is_file_processed(rel)) {
+                        if (is_file_processable(entry.path().string())) {
+                            files_to_process.push_back({entry.path().string(), rel});
+                        } else {
+                            std::cerr << "Skipping (too large): " << rel << std::endl;
+                            index.mark_file_processed(rel, 0);
                         }
                     }
                 }
             } catch (const std::exception& e) {
-                std::cerr << "Error scanning public/sources directory: " << e.what() << std::endl;
+                std::cerr << "Error scanning sources: " << e.what() << std::endl;
             }
         }
-        
+
         if (!files_to_process.empty()) {
-            std::cout << "Found " << files_to_process.size() << " new files to process" << std::endl;
-            
+            std::cout << "\nFound " << files_to_process.size()
+                      << " new file(s) to process" << std::endl;
+
             for (const auto& [full_path, rel_path] : files_to_process) {
                 try {
-                    std::cout << "Processing: " << rel_path << std::endl;
-                    
+                    std::cout << "\n── Processing: " << rel_path << std::endl;
+
+                    // ── Extract text ─────────────────────────────────
                     std::string text;
-                    if (string_ends_with(full_path, ".txt")) {
-                        std::ifstream file(full_path);
-                        std::stringstream buffer;
-                        buffer << file.rdbuf();
-                        text = buffer.str();
-                    } else if (string_ends_with(full_path, ".pdf")) {
-                        text = extract_text_with_tika(full_path);
+                    if (string_ends_with(full_path, ".pdf")) {
+                        text = extract_pdf_text(full_path);
                         if (text.empty()) {
-                            std::cerr << "Failed to extract text from PDF: " << rel_path << std::endl;
-                            processed_files.insert(rel_path);
+                            std::cerr << "No text extracted from " << rel_path << std::endl;
+                            index.mark_file_processed(rel_path, 0);
                             continue;
                         }
-                        
-                        // Truncate very large texts
-                        const size_t MAX_TEXT_LENGTH = 500000;
-                        if (text.length() > MAX_TEXT_LENGTH) {
-                            std::cout << "Text too large, truncating from " << text.length() 
-                                      << " to " << MAX_TEXT_LENGTH << " characters" << std::endl;
-                            text = text.substr(0, MAX_TEXT_LENGTH);
-                        }
+                    } else {
+                        text = extract_text_file(full_path);
                     }
-                    
-                    // Split into chunks
+
+                    // Cap extremely large texts
+                    const size_t MAX_TEXT = 1000000;
+                    if (text.length() > MAX_TEXT) {
+                        std::cout << "Text truncated from " << text.length()
+                                  << " to " << MAX_TEXT << " chars" << std::endl;
+                        text.resize(MAX_TEXT);
+                    }
+
+                    // ── Chunk ────────────────────────────────────────
                     auto chunks = split_text(text);
-                    std::cout << "Split into " << chunks.size() << " chunks" << std::endl;
-                    
-                    // Process chunks in batches
-                    const int BATCH_SIZE = 50;
-                    std::vector<float> batch_embeddings;
+                    if (chunks.empty()) {
+                        index.mark_file_processed(rel_path, 0);
+                        continue;
+                    }
+
+                    // ── Embed & store in batches ─────────────────────
+                    const int BATCH = 50;
                     std::vector<Document> batch_docs;
-                    
-                    int chunk_count = 0;
-                    for (const auto& chunk : chunks) {
-                        if (chunk.length() > 100) {
-                            std::cout << "Processing chunk " << ++chunk_count << "/" << chunks.size() << std::endl;
-                            
-                            auto embedding = embeddings.get_embedding(chunk);
-                            if (embedding.size() == EMBEDDING_DIM) {
-                                batch_embeddings.insert(batch_embeddings.end(), embedding.begin(), embedding.end());
-                                batch_docs.push_back({rel_path, chunk});
-                                
-                                // Flush batch if full
-                                if (batch_docs.size() >= BATCH_SIZE) {
-                                    index.add_batch(batch_docs.size(), batch_embeddings.data());
-                                    documents.insert(documents.end(), batch_docs.begin(), batch_docs.end());
-                                    
-                                    batch_embeddings.clear();
-                                    batch_docs.clear();
-                                    
-                                    // Save periodically
-                                    fs::create_directories("data");
-                                    index.save("data/index.bin");
-                                    
-                                    std::ofstream metadata_file("data/metadata.jsonl");
-                                    for (const auto& doc : documents) {
-                                        nlohmann::json j;
-                                        j["filename"] = doc.filename;
-                                        j["text"] = doc.text;
-                                        metadata_file << j.dump() << std::endl;
-                                    }
-                                    
-                                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-                                }
-                            }
+                    std::vector<std::vector<float>> batch_embs;
+                    int total_stored = 0;
+
+                    for (int ci = 0; ci < static_cast<int>(chunks.size()); ci++) {
+                        auto emb = embeddings.get_embedding(chunks[ci]);
+                        if (static_cast<int>(emb.size()) != EMBEDDING_DIM) continue;
+
+                        batch_docs.push_back({rel_path, chunks[ci], -1, ci});
+                        batch_embs.push_back(std::move(emb));
+
+                        if (static_cast<int>(batch_docs.size()) >= BATCH) {
+                            index.add_batch(batch_docs, batch_embs);
+                            total_stored += batch_docs.size();
+                            batch_docs.clear();
+                            batch_embs.clear();
+
+                            std::cout << "  " << total_stored << "/"
+                                      << chunks.size() << " chunks stored" << std::endl;
+
+                            // Small pause to let the server breathe
+                            std::this_thread::sleep_for(std::chrono::milliseconds(200));
                         }
                     }
-                    
-                    // Flush remaining embeddings
-                    if (!batch_embeddings.empty()) {
-                        index.add_batch(batch_docs.size(), batch_embeddings.data());
-                        documents.insert(documents.end(), batch_docs.begin(), batch_docs.end());
+
+                    // Flush remainder
+                    if (!batch_docs.empty()) {
+                        index.add_batch(batch_docs, batch_embs);
+                        total_stored += batch_docs.size();
                     }
-                    
-                    processed_files.insert(rel_path);
-                    
-                    // Save progress
-                    std::ofstream pf("data/processed_files.txt");
-                    for (const auto& f : processed_files) {
-                        pf << f << std::endl;
-                    }
-                    pf.flush();
-                    pf.close();
-                    
-                    // Save index
-                    index.save("data/index.bin");
-                    std::ofstream metadata_file("data/metadata.jsonl");
-                    for (const auto& doc : documents) {
-                        nlohmann::json j;
-                        j["filename"] = doc.filename;
-                        j["text"] = doc.text;
-                        metadata_file << j.dump() << std::endl;
-                    }
-                    
-                    std::cout << "Completed processing: " << rel_path << std::endl;
-                    std::cout << "Total chunks indexed: " << documents.size() << std::endl;
-                    
+
+                    index.mark_file_processed(rel_path, total_stored);
+                    std::cout << "  ✓ " << rel_path << ": " << total_stored
+                              << " chunks indexed" << std::endl;
+
                 } catch (const std::exception& e) {
-                    std::cerr << "Error processing " << rel_path << ": " << e.what() << std::endl;
-                    processed_files.insert(rel_path);
+                    std::cerr << "Error processing " << rel_path << ": "
+                              << e.what() << std::endl;
+                    index.mark_file_processed(rel_path, 0);
                 }
             }
-            
-            std::cout << "Ingestion batch complete. Total chunks indexed: " << documents.size() << std::endl;
-            std::cout << "Files processed: " << processed_files.size() << std::endl;
+
+            std::cout << "\nIngestion batch complete.  Total chunks: "
+                      << index.chunk_count() << std::endl;
         }
-        
+
         // Sleep before next scan
         std::this_thread::sleep_for(std::chrono::seconds(30));
     }
-    
-    // Cleanup
+
     llama_backend_free();
-    curl_global_cleanup();
-    
     return 0;
 }

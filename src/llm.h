@@ -5,211 +5,179 @@
 #include <mutex>
 #include <iostream>
 #include <cstring>
-#include <algorithm>  // for std::string::find
+#include <algorithm>
 #include "llama.h"
 #include "config.h"
 
 class LLMGenerator {
 private:
-    llama_model* model = nullptr;
-    llama_context* ctx = nullptr;
-    std::mutex mutex;
-    
+    llama_model*   model = nullptr;
+    llama_context* ctx   = nullptr;
+    std::mutex     mutex;
+
 public:
     ~LLMGenerator() {
-        if (ctx) llama_free(ctx);
+        if (ctx)   llama_free(ctx);
         if (model) llama_model_free(model);
     }
-    
+
     bool init() {
         llama_model_params model_params = llama_model_default_params();
         model = llama_model_load_from_file(get_llm_model_path().c_str(), model_params);
         if (!model) {
-            std::cerr << "Failed to load LLM model" << std::endl;
+            std::cerr << "Failed to load LLM model from "
+                      << get_llm_model_path() << std::endl;
             return false;
         }
-        
+
         llama_context_params ctx_params = llama_context_default_params();
-        ctx_params.n_ctx = 2048;
-        ctx_params.n_batch = 512;
-        ctx_params.n_ubatch = 512;  // Set ubatch to match n_batch
-        ctx_params.n_threads = 4;
+        ctx_params.n_ctx          = LLM_CONTEXT_SIZE;
+        ctx_params.n_batch        = LLM_BATCH_SIZE;
+        ctx_params.n_ubatch       = LLM_BATCH_SIZE;
+        ctx_params.n_threads      = 4;
         ctx_params.n_threads_batch = 4;
-        
+
         ctx = llama_init_from_model(model, ctx_params);
         if (!ctx) {
             std::cerr << "Failed to create LLM context" << std::endl;
             return false;
         }
-        
         return true;
     }
-    
+
     std::string generate(const std::string& prompt) {
         std::lock_guard<std::mutex> lock(mutex);
-        
-        std::cout << "LLM: Starting generation" << std::endl;
-        
-        // Recreate context for each request
+
+        std::cout << "LLM: starting generation" << std::endl;
+
+        // Fresh context for each request
         llama_free(ctx);
         llama_context_params ctx_params = llama_context_default_params();
-        ctx_params.n_ctx = 2048;
-        ctx_params.n_batch = 512;
-        ctx_params.n_ubatch = 512;  // Set ubatch to match n_batch
-        ctx_params.n_threads = 4;
+        ctx_params.n_ctx          = LLM_CONTEXT_SIZE;
+        ctx_params.n_batch        = LLM_BATCH_SIZE;
+        ctx_params.n_ubatch       = LLM_BATCH_SIZE;
+        ctx_params.n_threads      = 4;
         ctx_params.n_threads_batch = 4;
         ctx = llama_init_from_model(model, ctx_params);
-        
+
         if (!ctx) {
-            std::cerr << "LLM: Failed to recreate context" << std::endl;
-            return "Error: Failed to recreate LLM context";
+            std::cerr << "LLM: failed to recreate context" << std::endl;
+            return "Error: failed to recreate LLM context";
         }
-        
-        std::cout << "LLM: Context recreated successfully" << std::endl;
-        
-        // Get vocab from model
+
+        // ── Vocab & chat template ────────────────────────────────────
         const llama_vocab* vocab = llama_model_get_vocab(model);
-        
-        // Get chat template
         const char* tmpl = llama_model_chat_template(model, nullptr);
-        
-        // Parse the prompt to extract conversation history if present
+
+        // Build chat messages
         std::vector<llama_chat_message> messages;
-        
-        // Create system message - check if we have reference materials
+
         const char* system_msg;
         if (prompt.find("REFERENCE MATERIALS:") != std::string::npos) {
-            system_msg = "You are a friendly emergency first aid expert. Provide clear, actionable advice based on the reference materials. Speak naturally and conversationally, as if helping a friend. Be concise and practical.";
+            system_msg =
+                "You are a knowledgeable emergency-preparedness assistant. "
+                "Answer clearly and practically using the reference materials "
+                "provided.  Cite the source document when possible.  If the "
+                "references don't cover the question, say so honestly.";
         } else {
-            system_msg = "You are a helpful AI assistant. Have a natural conversation and help with any questions. Be friendly, informative, and conversational.";
+            system_msg =
+                "You are a helpful AI assistant.  Be friendly, concise, "
+                "and informative.";
         }
         llama_chat_message sys_msg = {"system", system_msg};
         messages.push_back(sys_msg);
-        
-        // Check if prompt contains conversation history
-        if (prompt.find("Previous conversation:") != std::string::npos) {
-            // For now, just pass the whole prompt as a user message
-            // In a more sophisticated implementation, we'd parse the history
-            llama_chat_message user_msg = {"user", prompt.c_str()};
-            messages.push_back(user_msg);
-        } else {
-            llama_chat_message user_msg = {"user", prompt.c_str()};
-            messages.push_back(user_msg);
-        }
-        
+
+        llama_chat_message user_msg = {"user", prompt.c_str()};
+        messages.push_back(user_msg);
+
         // Apply chat template
-        std::vector<char> formatted(2048);
-        int formatted_len = llama_chat_apply_template(tmpl, messages.data(), messages.size(), true, formatted.data(), formatted.size());
-        if (formatted_len > (int)formatted.size()) {
-            formatted.resize(formatted_len);
-            formatted_len = llama_chat_apply_template(tmpl, messages.data(), messages.size(), true, formatted.data(), formatted.size());
+        std::vector<char> formatted(4096);
+        int flen = llama_chat_apply_template(
+                tmpl, messages.data(), messages.size(),
+                true, formatted.data(), formatted.size());
+        if (flen > static_cast<int>(formatted.size())) {
+            formatted.resize(flen);
+            flen = llama_chat_apply_template(
+                    tmpl, messages.data(), messages.size(),
+                    true, formatted.data(), formatted.size());
         }
-        if (formatted_len < 0) {
-            return "Error: Failed to apply chat template";
-        }
-        
-        std::string formatted_prompt(formatted.begin(), formatted.begin() + formatted_len);
-        
-        // Tokenize
-        std::cout << "LLM: Tokenizing prompt..." << std::endl;
-        int n_prompt = -llama_tokenize(vocab, formatted_prompt.c_str(), formatted_prompt.size(), NULL, 0, true, true);
-        std::cout << "LLM: Prompt will use " << n_prompt << " tokens" << std::endl;
-        
-        if (n_prompt <= 0) {
-            std::cerr << "LLM: Invalid token count: " << n_prompt << std::endl;
-            return "Error: Invalid prompt token count";
-        }
-        
+        if (flen < 0)
+            return "Error: failed to apply chat template";
+
+        std::string formatted_prompt(formatted.begin(), formatted.begin() + flen);
+
+        // ── Tokenize ─────────────────────────────────────────────────
+        int n_prompt = -llama_tokenize(
+                vocab, formatted_prompt.c_str(), formatted_prompt.size(),
+                NULL, 0, true, true);
+        if (n_prompt <= 0) return "Error: invalid prompt token count";
+
         std::vector<llama_token> prompt_tokens(n_prompt);
-        int actual_tokens = llama_tokenize(vocab, formatted_prompt.c_str(), formatted_prompt.size(), prompt_tokens.data(), prompt_tokens.size(), true, true);
-        if (actual_tokens < 0) {
-            std::cerr << "LLM: Tokenization failed with code: " << actual_tokens << std::endl;
-            return "Error: Failed to tokenize prompt";
-        }
-        prompt_tokens.resize(actual_tokens);
-        std::cout << "LLM: Actually tokenized " << actual_tokens << " tokens" << std::endl;
-        
-        // Check context size and batch limit more intelligently
+        int actual = llama_tokenize(
+                vocab, formatted_prompt.c_str(), formatted_prompt.size(),
+                prompt_tokens.data(), prompt_tokens.size(), true, true);
+        if (actual < 0) return "Error: tokenization failed";
+        prompt_tokens.resize(actual);
+
+        std::cout << "LLM: " << actual << " prompt tokens" << std::endl;
+
+        // Truncate if necessary, leaving room for the response
         int n_ctx = llama_n_ctx(ctx);
-        int max_prompt_tokens = std::min(n_ctx - 512, 800);  // Leave room for response, but allow more than 512
-        
-        if (prompt_tokens.size() > max_prompt_tokens) {
-            std::cerr << "LLM: Prompt too long (" << prompt_tokens.size() << " tokens), truncating to " << max_prompt_tokens << std::endl;
-            prompt_tokens.resize(max_prompt_tokens);
+        int max_prompt = n_ctx - LLM_MAX_TOKENS;
+        if (max_prompt < 256) max_prompt = 256;
+        if (static_cast<int>(prompt_tokens.size()) > max_prompt) {
+            std::cerr << "LLM: truncating prompt from "
+                      << prompt_tokens.size() << " to " << max_prompt << std::endl;
+            prompt_tokens.resize(max_prompt);
         }
-        
-        // Prepare batch
-        llama_batch batch = llama_batch_get_one(prompt_tokens.data(), prompt_tokens.size());
-        
-        // Evaluate prompt
-        std::cout << "LLM: Evaluating prompt..." << std::endl;
-        int decode_result = llama_decode(ctx, batch);
-        if (decode_result != 0) {
-            std::cerr << "LLM: Decode failed with code: " << decode_result << std::endl;
-            return "Error: Failed to process prompt";
-        }
-        std::cout << "LLM: Prompt evaluated successfully" << std::endl;
-        
-        // Initialize sampler
-        llama_sampler* smpl = llama_sampler_chain_init(llama_sampler_chain_default_params());
+
+        // ── Evaluate prompt ──────────────────────────────────────────
+        llama_batch batch = llama_batch_get_one(
+                prompt_tokens.data(), prompt_tokens.size());
+        if (llama_decode(ctx, batch) != 0)
+            return "Error: failed to process prompt";
+
+        // ── Sample tokens ────────────────────────────────────────────
+        llama_sampler* smpl = llama_sampler_chain_init(
+                llama_sampler_chain_default_params());
         llama_sampler_chain_add(smpl, llama_sampler_init_min_p(0.05f, 1));
-        llama_sampler_chain_add(smpl, llama_sampler_init_temp(0.8f));
+        llama_sampler_chain_add(smpl, llama_sampler_init_temp(0.7f));
         llama_sampler_chain_add(smpl, llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
-        
-        // Generate response with timeout protection
+
         std::string response;
         int n_decode = 0;
-        const int n_max_tokens = 512;  // Reduced from 1024 to be safer
-        
+
         try {
-            while (n_decode < n_max_tokens) {
-                llama_token new_token_id = llama_sampler_sample(smpl, ctx, -1);
-                
-                if (llama_vocab_is_eog(vocab, new_token_id)) {
-                    break;
-                }
-                
+            while (n_decode < LLM_MAX_TOKENS) {
+                llama_token tok = llama_sampler_sample(smpl, ctx, -1);
+
+                if (llama_vocab_is_eog(vocab, tok)) break;
+
                 char buf[256];
-                int n = llama_token_to_piece(vocab, new_token_id, buf, sizeof(buf), 0, true);
-                if (n < 0) {
-                    std::cerr << "LLM: Token to piece conversion failed" << std::endl;
-                    break;
-                }
+                int n = llama_token_to_piece(vocab, tok, buf, sizeof(buf), 0, true);
+                if (n < 0) break;
                 response.append(buf, n);
-                
-                batch = llama_batch_get_one(&new_token_id, 1);
-                
-                if (prompt_tokens.size() + n_decode + 1 >= n_ctx) {
-                    std::cerr << "LLM: Context limit reached" << std::endl;
+
+                batch = llama_batch_get_one(&tok, 1);
+                if (static_cast<int>(prompt_tokens.size()) + n_decode + 1 >= n_ctx)
                     break;
-                }
-                
-                if (llama_decode(ctx, batch) != 0) {
-                    std::cerr << "LLM: Decode failed during generation" << std::endl;
-                    break;
-                }
-                
+                if (llama_decode(ctx, batch) != 0) break;
+
                 n_decode++;
-                
-                // Safety check - if response is getting very long, stop
-                if (response.length() > 2000) {
-                    std::cerr << "LLM: Response length limit reached" << std::endl;
-                    break;
-                }
             }
         } catch (const std::exception& e) {
-            std::cerr << "LLM: Exception during generation: " << e.what() << std::endl;
+            std::cerr << "LLM: exception during generation: "
+                      << e.what() << std::endl;
             response = "Error occurred during response generation.";
         }
-        
+
         llama_sampler_free(smpl);
-        
-        if (response.empty()) {
-            std::cerr << "LLM: Generated empty response" << std::endl;
-            return "I apologize, but I'm having trouble generating a response right now. Please try again.";
-        }
-        
-        std::cout << "LLM: Generated response of " << response.length() << " characters" << std::endl;
+
+        if (response.empty())
+            return "I'm having trouble generating a response. Please try again.";
+
+        std::cout << "LLM: generated " << response.length()
+                  << " chars (" << n_decode << " tokens)" << std::endl;
         return response;
     }
 };

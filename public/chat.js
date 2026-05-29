@@ -3,6 +3,38 @@ let isProcessing = false;
 let conversationId = null;
 let useContext = true; // Toggle for using document context
 
+// Simple markdown → HTML renderer (no external deps)
+function renderMarkdown(text) {
+  let html = text
+    // Escape HTML entities first
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    // Code blocks (``` ... ```)
+    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+    // Inline code
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    // Bold
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // Italic
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    // Headings (### before ##)
+    .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+    .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+    // Unordered lists
+    .replace(/^[\-\*] (.+)$/gm, '<li>$1</li>')
+    // Numbered lists
+    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+    // Wrap consecutive <li> in <ul>
+    .replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>')
+    // Line breaks (double newline → paragraph break)
+    .replace(/\n\n/g, '</p><p>')
+    // Single newlines → <br>
+    .replace(/\n/g, '<br>');
+  return '<p>' + html + '</p>';
+}
+
 // Generate a unique conversation ID
 function generateConversationId() {
   return 'conv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -68,7 +100,7 @@ function addBotMessage(text) {
   const messagesContainer = document.getElementById('chat-messages');
   const messageDiv = document.createElement('div');
   messageDiv.className = 'message bot';
-  messageDiv.textContent = text;
+  messageDiv.innerHTML = renderMarkdown(text);
   messagesContainer.appendChild(messageDiv);
   scrollToBottom();
 }

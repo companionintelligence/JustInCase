@@ -1,34 +1,28 @@
-# First stage: Download and cache llama.cpp
-FROM ubuntu:24.04 AS llama-downloader
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    git \
-    ca-certificates \
-    --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
+# ══════════════════════════════════════════════════════════════════════
+# JIC Dockerfile — multi-stage build
+#
+# Stage 1: Download & build llama.cpp (pinned tag)
+# Stage 2: Build MuPDF
+# Stage 3: Build sqlite-vec + our application
+# Stage 4: Slim runtime image
+# ══════════════════════════════════════════════════════════════════════
 
-WORKDIR /build
-RUN git config --global http.sslverify false && \
-    git clone --depth 1 --branch master https://github.com/ggerganov/llama.cpp.git && \
-    git config --global http.sslverify true
+# ── Pinned versions ──────────────────────────────────────────────────
+ARG LLAMA_CPP_TAG=b8250
+ARG MUPDF_TAG=1.27.2
 
-# Second stage: Build llama.cpp library (cached separately)
+# ═══════════════════════ Stage 1: llama.cpp ══════════════════════════
 FROM ubuntu:24.04 AS llama-builder
 
-# Install build dependencies
+ARG LLAMA_CPP_TAG
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    build-essential \
-    cmake \
-    --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
+    build-essential cmake git ca-certificates \
+    --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
-
-# Copy llama.cpp from first stage
-COPY --from=llama-downloader /build/llama.cpp ./llama.cpp
-
-# Build ONLY llama.cpp as a static library
-# This layer will be cached unless llama.cpp source changes
-RUN cd llama.cpp && \
+RUN git clone --depth 1 --branch ${LLAMA_CPP_TAG} \
+        https://github.com/ggml-org/llama.cpp.git && \
+    cd llama.cpp && \
     cmake -B build \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
@@ -43,91 +37,101 @@ RUN cd llama.cpp && \
         -DGGML_CPU_BACKEND=ON \
         . && \
     cmake --build build -- -j$(nproc) && \
-    # Create a package of just what we need
     mkdir -p /llama-install/lib /llama-install/include && \
-    # Copy all static libraries
-    find build -name "*.a" -type f -exec cp {} /llama-install/lib/ \; && \
-    # Copy headers from various locations
+    find build -name "*.a" -exec cp {} /llama-install/lib/ \; && \
     cp -r include/* /llama-install/include/ 2>/dev/null || true && \
     cp -r ggml/include/* /llama-install/include/ 2>/dev/null || true && \
     cp -r common/*.h /llama-install/include/ 2>/dev/null || true && \
-    cp -r src/*.h /llama-install/include/ 2>/dev/null || true && \
-    # List what we copied for debugging
-    echo "=== Libraries copied ===" && ls -la /llama-install/lib/
+    cp -r src/*.h /llama-install/include/ 2>/dev/null || true
 
-# Third stage: Build our server (this is the only part that rebuilds when server.cpp changes)
+# ═══════════════════════ Stage 2: MuPDF ══════════════════════════════
+FROM ubuntu:24.04 AS mupdf-builder
+
+ARG MUPDF_TAG
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    build-essential git ca-certificates \
+    --no-install-recommends && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+RUN git clone --depth 1 --branch ${MUPDF_TAG} \
+        --recurse-submodules --shallow-submodules \
+        https://github.com/ArtifexSoftware/mupdf.git && \
+    cd mupdf && \
+    make -j$(nproc) \
+        HAVE_X11=no HAVE_GLUT=no HAVE_CURL=no \
+        HAVE_LEPTONICA=no HAVE_TESSERACT=no \
+        shared=no prefix=/mupdf-install install
+
+# ═══════════════════════ Stage 3: App build ══════════════════════════
 FROM ubuntu:24.04 AS app-builder
 
-# Install build dependencies
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    build-essential \
-    cmake \
-    git \
-    wget \
-    ca-certificates \
-    libopenblas-dev \
-    libcurl4-openssl-dev \
-    libssl-dev \
-    --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
+    build-essential cmake git wget ca-certificates \
+    libopenblas-dev libsqlite3-dev \
+    --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
 
-# Copy pre-built llama.cpp libraries and headers
+# Pre-built libraries from earlier stages
 COPY --from=llama-builder /llama-install /llama-install
 COPY --from=llama-builder /build/llama.cpp/ggml/src /build/llama.cpp/ggml/src
+COPY --from=mupdf-builder /mupdf-install /mupdf-install
 
-# Download nlohmann/json as a single header (much faster than git clone)
+# nlohmann/json (single header)
 RUN mkdir -p include/nlohmann && \
-    wget --no-check-certificate -O include/nlohmann/json.hpp \
-    https://github.com/nlohmann/json/releases/download/v3.11.2/json.hpp && \
-    echo "Downloaded nlohmann/json.hpp"
+    wget -O include/nlohmann/json.hpp \
+    https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp
 
-# Copy ONLY our application files
-COPY src/ ./src/
+# cpp-httplib (single header)
+RUN wget -O include/httplib.h \
+    https://github.com/yhirose/cpp-httplib/releases/download/v0.18.3/httplib.h
+
+# sqlite-vec amalgamation
+RUN mkdir -p vendor && \
+    wget -O /tmp/sqlite-vec.tar.gz \
+        https://github.com/asg017/sqlite-vec/releases/download/v0.1.6/sqlite-vec-0.1.6-amalgamation.tar.gz && \
+    tar xzf /tmp/sqlite-vec.tar.gz -C vendor --strip-components=1 && \
+    rm /tmp/sqlite-vec.tar.gz
+
+# SQLite amalgamation (with FTS5 enabled)
+RUN wget -O /tmp/sqlite.zip \
+        https://www.sqlite.org/2024/sqlite-amalgamation-3470200.zip && \
+    cd /tmp && unzip sqlite.zip && \
+    cp sqlite-amalgamation-3470200/sqlite3.c  /build/vendor/ && \
+    cp sqlite-amalgamation-3470200/sqlite3.h  /build/vendor/ && \
+    cp sqlite-amalgamation-3470200/sqlite3ext.h /build/vendor/ && \
+    rm -rf /tmp/sqlite*
+
+# Copy application source
+COPY src/  ./src/
 COPY CMakeLists.txt ./
 
-# Build our server using pre-built llama
-RUN echo "=== Starting server build ===" && \
-    echo "CPU cores available: $(nproc)" && \
-    echo "System info:" && \
-    uname -a && \
-    echo "Memory available:" && \
-    free -h && \
-    echo "=== Configuring CMake ===" && \
-    cmake -B build \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_FLAGS="-O3" \
-    -DCMAKE_VERBOSE_MAKEFILE=ON \
-    -DCMAKE_RULE_MESSAGES=ON \
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-    . && \
-    echo "=== CMake configuration complete, starting compilation ===" && \
-    echo "Building with $(nproc) parallel jobs" && \
-    cmake --build build --verbose -- -j$(nproc) VERBOSE=1 V=1
+# Build
+RUN cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_CXX_FLAGS="-O3" \
+        -DCMAKE_VERBOSE_MAKEFILE=ON \
+        . && \
+    cmake --build build -- -j$(nproc)
 
-# Runtime image
+# ═══════════════════════ Stage 4: Runtime ════════════════════════════
 FROM ubuntu:24.04
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    libopenblas0 \
-    libcurl4 \
-    libgomp1 \
-    --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
+    libopenblas0 libgomp1 \
+    --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy the built binaries
-COPY --from=app-builder /build/build/jic-server /app/
+COPY --from=app-builder /build/build/jic-server    /app/
 COPY --from=app-builder /build/build/jic-ingestion /app/
-
-# Copy web files from public directory
 COPY public/ ./public/
 
-# Create directories
 RUN mkdir -p data gguf_models
 
 EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD /bin/bash -c 'echo > /dev/tcp/localhost/8080' || exit 1
 
 CMD ["./jic-server"]
