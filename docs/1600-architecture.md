@@ -1,7 +1,5 @@
 # Just In Case (JIC) - System Architecture
 
-(Largely ChatGPT generated)
-
 ## Reviewing JIC
 
 Just In Case is an emergency knowledge assistant that provides conversational access to a collection of PDF documents through a modern AI-powered interface. The system is designed to be self-contained, efficient, and deployable in resource-constrained environments where internet connectivity may be limited or unavailable.
@@ -28,19 +26,15 @@ At the heart of the system is Apache Tika, running as a dedicated service for PD
 
 ### Embedding Generation
 
-The system uses Nomic Embed Text v1.5, a state-of-the-art embedding model optimized for semantic search. Running directly through llama.cpp with GGUF quantized models, it generates 768-dimensional vectors for each text chunk. These embeddings capture the semantic meaning of the text, enabling the system to find relevant passages based on meaning rather than just keyword matching.
+The system uses Nomic Embed Text v1.5, an embedding model optimized for semantic search. Running directly through llama.cpp with GGUF quantized models, it generates 768-dimensional vectors for each text chunk. These embeddings capture the semantic meaning of the text, enabling the system to find relevant passages based on meaning rather than just keyword matching.
 
 ### Vector Storage and Retrieval
 
-[ This may migrate to pgvector ]
-
-Rather than using external dependencies like FAISS, we implemented a custom in-memory vector index with brute-force nearest neighbor search. While this approach may seem simplistic, it provides several advantages: zero external dependencies, complete control over the implementation, and surprisingly good performance for moderate-sized document collections. The index is persisted to disk in a simple binary format, allowing for quick startup times and data persistence across container restarts. 
+Rather than using external dependencies like FAISS, we implemented a custom in-memory vector index with brute-force nearest neighbor search. While this approach may seem simplistic, it provides several advantages: zero external dependencies, complete control over the implementation, and surprisingly good performance for moderate-sized document collections. The index is persisted to disk in a simple binary format, allowing for quick startup times and data persistence across container restarts.
 
 ### Language Model Integration
 
-[ This may change to Qwen or other models ]
-
-The conversational interface is powered by Llama 3.2 1B Instruct, chosen for its balance of capability and resource efficiency. The model runs directly through llama.cpp, leveraging GGUF quantization to reduce memory requirements while maintaining quality. The integration includes careful prompt engineering to ensure the model synthesizes information from retrieved documents rather than simply regurgitating text.
+The conversational interface is powered by Qwen2.5-VL 7B Instruct, chosen for its balance of capability and resource efficiency. The model runs directly through llama.cpp, leveraging GGUF quantization to reduce memory requirements while maintaining quality. The integration includes careful prompt engineering to ensure the model synthesizes information from retrieved documents rather than simply regurgitating text.
 
 ### Web Interface
 
@@ -54,13 +48,11 @@ The decision to use C++ throughout the stack eliminates the overhead of language
 
 ### Custom Vector Store vs. FAISS
 
-[ This may change ]
-
 While FAISS offers sophisticated indexing algorithms, our custom implementation provides adequate performance for typical document collections while eliminating a complex dependency. The brute-force search is parallelized and optimized for cache locality, making it surprisingly efficient for collections up to tens of thousands of documents.
 
 ### PostgreSQL and pgvector Provisioning
 
-Although the current implementation uses our custom vector store, we've provisioned PostgreSQL with pgvector extension for future scalability. This forward-thinking approach allows for a smooth transition to a more sophisticated vector storage solution when document collections grow beyond the efficient range of our current implementation.
+Although the current implementation uses our custom vector store, the project can be extended to PostgreSQL with pgvector for future scalability. This approach allows for a smooth transition to a more sophisticated vector storage solution when document collections grow beyond the efficient range of our current implementation.
 
 ### Separation of Ingestion and Serving
 

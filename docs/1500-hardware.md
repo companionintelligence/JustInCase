@@ -14,4 +14,4 @@ Running the JIC tool at home requires performant hardware. Hardware itself has i
 
 6. “Server on a Stick”. Another approach is to store the data on an external HDD or SSD to use with any laptop or PC. This is the cheapest method to have JIC on hand, and running JIC from an external drive will be slower.
 
-8. We recommend using a CI server for optimal results. The full JIC experience is optional at check-out.
+7. Local backups: Keep multiple copies of the dataset and models in separate locations.

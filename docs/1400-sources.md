@@ -1,5 +1,7 @@
 ## Data Sources - Ideal
 
+Note: Verify licenses and redistribution rights before mirroring or bundling content.
+
 ### **1. Official Emergency Services & Alerts**
 - **Local & National Emergency Hotlines** (911, 112, etc.)
 - **Weather Alerts & Disaster Warnings** (NOAA, National Weather Service, Tsunami Warning Centers)
