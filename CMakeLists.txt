@@ -6,6 +6,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+# sqlite-vec is embedded statically and its header pulls in sqlite3ext.h; without
+# SQLITE_CORE that header routes every sqlite3_* call through an undeclared
+# `sqlite3_api` pointer. Both the sqlite-vec library AND the app sources
+# (server.cpp / ingestion.cpp include sqlite-vec.h) need it, so define it globally.
+add_compile_definitions(SQLITE_CORE)
+
 find_package(Threads REQUIRED)
 
 # ── llama.cpp build options ───────────────────────────────────────────
