@@ -66,7 +66,7 @@ RUN git clone --depth 1 --branch ${MUPDF_TAG} \
 FROM ubuntu:24.04 AS app-builder
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    build-essential cmake git wget ca-certificates \
+    build-essential cmake git wget unzip ca-certificates \
     libopenblas-dev libsqlite3-dev \
     --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
