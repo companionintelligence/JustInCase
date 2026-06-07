@@ -82,9 +82,11 @@ RUN mkdir -p include/nlohmann && \
     wget -O include/nlohmann/json.hpp \
     https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp
 
-# cpp-httplib (single header)
+# cpp-httplib (single header). Pull from the tagged raw tree, not the releases
+# asset — v0.18.3 has no httplib.h release asset (the download 404s); the raw
+# single-header at the same tag is the canonical source.
 RUN wget -O include/httplib.h \
-    https://github.com/yhirose/cpp-httplib/releases/download/v0.18.3/httplib.h
+    https://raw.githubusercontent.com/yhirose/cpp-httplib/v0.18.3/httplib.h
 
 # sqlite-vec amalgamation
 RUN mkdir -p vendor && \
