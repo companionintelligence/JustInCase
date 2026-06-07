@@ -88,11 +88,13 @@ RUN mkdir -p include/nlohmann && \
 RUN wget -O include/httplib.h \
     https://raw.githubusercontent.com/yhirose/cpp-httplib/v0.18.3/httplib.h
 
-# sqlite-vec amalgamation
+# sqlite-vec amalgamation. The tarball holds sqlite-vec.{c,h} at the root with no
+# top-level dir, so --strip-components=1 would strip the files themselves and
+# extract nothing (CMake then can't find vendor/sqlite-vec.c). Extract as-is.
 RUN mkdir -p vendor && \
     wget -O /tmp/sqlite-vec.tar.gz \
         https://github.com/asg017/sqlite-vec/releases/download/v0.1.6/sqlite-vec-0.1.6-amalgamation.tar.gz && \
-    tar xzf /tmp/sqlite-vec.tar.gz -C vendor --strip-components=1 && \
+    tar xzf /tmp/sqlite-vec.tar.gz -C vendor && \
     rm /tmp/sqlite-vec.tar.gz
 
 # SQLite amalgamation (with FTS5 enabled)
