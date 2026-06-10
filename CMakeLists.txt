@@ -6,6 +6,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+# sqlite-vec is embedded statically and its header pulls in sqlite3ext.h; without
+# SQLITE_CORE that header routes every sqlite3_* call through an undeclared
+# `sqlite3_api` pointer. Both the sqlite-vec library AND the app sources
+# (server.cpp / ingestion.cpp include sqlite-vec.h) need it, so define it globally.
+add_compile_definitions(SQLITE_CORE)
+
 find_package(Threads REQUIRED)
 
 # ── llama.cpp build options ───────────────────────────────────────────
@@ -44,6 +50,11 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/vendor/sqlite-vec.c")
     add_library(sqlite_vec STATIC vendor/sqlite-vec.c)
     target_include_directories(sqlite_vec PUBLIC vendor)
     target_link_libraries(sqlite_vec PUBLIC sqlite3)
+    # Statically linked (not a loadable extension), so compile against the core
+    # SQLite API directly. Without SQLITE_CORE, sqlite3ext.h routes every call
+    # through an undeclared `sqlite3_api` pointer and the build fails with
+    # "'sqlite3_api' was not declared in this scope".
+    target_compile_definitions(sqlite_vec PRIVATE SQLITE_CORE)
 else()
     message(WARNING "vendor/sqlite-vec.c not found — "
                     "sqlite-vec must be provided at build time")

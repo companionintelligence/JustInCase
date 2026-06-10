@@ -66,7 +66,7 @@ RUN git clone --depth 1 --branch ${MUPDF_TAG} \
 FROM ubuntu:24.04 AS app-builder
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    build-essential cmake git wget ca-certificates \
+    build-essential cmake git wget unzip ca-certificates \
     libopenblas-dev libsqlite3-dev \
     --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
@@ -82,15 +82,19 @@ RUN mkdir -p include/nlohmann && \
     wget -O include/nlohmann/json.hpp \
     https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp
 
-# cpp-httplib (single header)
+# cpp-httplib (single header). Pull from the tagged raw tree, not the releases
+# asset — v0.18.3 has no httplib.h release asset (the download 404s); the raw
+# single-header at the same tag is the canonical source.
 RUN wget -O include/httplib.h \
-    https://github.com/yhirose/cpp-httplib/releases/download/v0.18.3/httplib.h
+    https://raw.githubusercontent.com/yhirose/cpp-httplib/v0.18.3/httplib.h
 
-# sqlite-vec amalgamation
+# sqlite-vec amalgamation. The tarball holds sqlite-vec.{c,h} at the root with no
+# top-level dir, so --strip-components=1 would strip the files themselves and
+# extract nothing (CMake then can't find vendor/sqlite-vec.c). Extract as-is.
 RUN mkdir -p vendor && \
     wget -O /tmp/sqlite-vec.tar.gz \
         https://github.com/asg017/sqlite-vec/releases/download/v0.1.6/sqlite-vec-0.1.6-amalgamation.tar.gz && \
-    tar xzf /tmp/sqlite-vec.tar.gz -C vendor --strip-components=1 && \
+    tar xzf /tmp/sqlite-vec.tar.gz -C vendor && \
     rm /tmp/sqlite-vec.tar.gz
 
 # SQLite amalgamation (with FTS5 enabled)
