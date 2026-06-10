@@ -63,6 +63,17 @@ static std::mutex g_conv_mutex;
 // ═════════════════════════════════════════════════════════════════════
 
 static void handle_query(const httplib::Request& req, httplib::Response& res) {
+    // Degraded mode: the server runs without GGUF models so the UI and
+    // /status stay reachable, but /query needs the LLM.
+    if (!g_llm) {
+        res.status = 503;
+        res.set_content(json({
+            {"error", "LLM model not loaded. Place the GGUF models in "
+                      "gguf_models/ and restart the container."}
+        }).dump(), "application/json");
+        return;
+    }
+
     try {
         auto rj = json::parse(req.body);
         std::string query = rj["query"];
@@ -98,7 +109,7 @@ static void handle_query(const httplib::Request& req, httplib::Response& res) {
         std::string context;
         json matches = json::array();
 
-        if (use_context && g_chunk_count.load() > 0) {
+        if (use_context && g_embeddings && g_chunk_count.load() > 0) {
             auto q_emb = g_embeddings->get_embedding(query);
 
             auto results = g_index->hybrid_search(
@@ -176,8 +187,10 @@ static void handle_query(const httplib::Request& req, httplib::Response& res) {
 
 static void handle_status(const httplib::Request&, httplib::Response& res) {
     json status;
-    status["documents_indexed"] = g_chunk_count.load();
-    status["files_processed"]   = g_file_count.load();
+    status["documents_indexed"]  = g_chunk_count.load();
+    status["files_processed"]    = g_file_count.load();
+    status["llm_loaded"]         = (g_llm != nullptr);
+    status["embeddings_loaded"]  = (g_embeddings != nullptr);
     res.set_content(status.dump(), "application/json");
 }
 
@@ -213,11 +226,25 @@ int main() {
     // ── Models ───────────────────────────────────────────────────────
     std::cout << "Loading models..." << std::endl;
 
+    // Missing GGUF models must not kill the server: the CI publish gate (and
+    // a fresh install before models are provisioned) runs the container with
+    // an empty gguf_models/. Serve the UI and /status regardless; /query
+    // answers 503 until the models are in place.
     g_embeddings = new EmbeddingGenerator();
-    if (!g_embeddings->init()) { std::cerr << "Embeddings init failed" << std::endl; return 1; }
+    if (!g_embeddings->init()) {
+        std::cerr << "Embeddings init failed — continuing in degraded mode "
+                     "(semantic search disabled)" << std::endl;
+        delete g_embeddings;
+        g_embeddings = nullptr;
+    }
 
     g_llm = new LLMGenerator();
-    if (!g_llm->init()) { std::cerr << "LLM init failed" << std::endl; return 1; }
+    if (!g_llm->init()) {
+        std::cerr << "LLM init failed — continuing in degraded mode "
+                     "(/query returns 503)" << std::endl;
+        delete g_llm;
+        g_llm = nullptr;
+    }
 
     // ── SQLite index ─────────────────────────────────────────────────
     fs::create_directories("data");

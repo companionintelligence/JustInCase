@@ -3,6 +3,15 @@ let isProcessing = false;
 let conversationId = null;
 let useContext = true; // Toggle for using document context
 
+// Escape text destined for innerHTML interpolation
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 // Simple markdown → HTML renderer (no external deps)
 function renderMarkdown(text) {
   let html = text
@@ -71,29 +80,48 @@ function initializeChat() {
   setInterval(checkSystemStatus, 5000);
 }
 
+let statusErrorLogged = false;
+
+function ensureStatusDiv() {
+  let statusDiv = document.getElementById('system-status');
+  if (!statusDiv) {
+    statusDiv = document.createElement('div');
+    statusDiv.id = 'system-status';
+    statusDiv.setAttribute('role', 'status');
+    statusDiv.style.cssText = 'position: fixed; bottom: 10px; right: 10px; background: #333; color: white; padding: 10px; border-radius: 5px; font-size: 12px; display: flex; align-items: center; gap: 10px; z-index: 1000;';
+    document.body.appendChild(statusDiv);
+  }
+  return statusDiv;
+}
+
 function checkSystemStatus() {
   fetch('/status')
-    .then(response => response.json())
+    .then(response => {
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      return response.json();
+    })
     .then(data => {
-      const statusDiv = document.getElementById('system-status');
-      if (!statusDiv) {
-        const div = document.createElement('div');
-        div.id = 'system-status';
-        div.style.cssText = 'position: fixed; bottom: 10px; right: 10px; background: #333; color: white; padding: 10px; border-radius: 5px; font-size: 12px; display: flex; align-items: center; gap: 10px; z-index: 1000;';
-        document.body.appendChild(div);
-      }
-      
+      const statusDiv = ensureStatusDiv();
       let statusHTML = `<span>📚 ${data.documents_indexed} documents indexed</span>`;
-      
-      if (data.documents_indexed === 0) {
+
+      if (data.llm_loaded === false) {
+        statusHTML += `<span style="color: #ff9800;">⚠️ LLM model missing — answers unavailable</span>`;
+      } else if (data.documents_indexed === 0) {
         statusHTML += `<span style="color: #ff9800;">⚠️ Loading knowledge base...</span>`;
       } else {
         statusHTML += `<span style="color: #4CAF50;">✓ Ready</span>`;
       }
-      
-      document.getElementById('system-status').innerHTML = statusHTML;
+
+      statusDiv.innerHTML = statusHTML;
+      statusErrorLogged = false;
     })
-    .catch(err => console.error('Failed to check status:', err));
+    .catch(err => {
+      ensureStatusDiv().innerHTML = `<span style="color: #ff9800;">⚠️ Server unreachable</span>`;
+      if (!statusErrorLogged) {
+        console.warn('Failed to check status:', err.message);
+        statusErrorLogged = true;
+      }
+    });
 }
 
 function addBotMessage(text) {
@@ -123,12 +151,12 @@ function addSourcesMessage(sources) {
   
   let html = '<strong>📚 Sources Used:</strong>';
   sources.forEach(source => {
-    const fileUrl = '/sources/' + source.filename;
+    const fileUrl = '/sources/' + encodeURI(source.filename);
     const score = source.score ? ` (${Math.round(source.score * 100)}% relevant)` : '';
     html += `
       <div class="source-item">
-        <a href="${fileUrl}" target="_blank" title="Click to view PDF">📄 ${source.filename}</a>${score}
-        <p style="margin: 0.25rem 0 0 0; color: var(--text-secondary); font-size: 0.85em;">${source.text}</p>
+        <a href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener" title="Click to view PDF">📄 ${escapeHtml(source.filename)}</a>${score}
+        <p style="margin: 0.25rem 0 0 0; color: var(--text-secondary); font-size: 0.85em;">${escapeHtml(source.text)}</p>
       </div>
     `;
   });

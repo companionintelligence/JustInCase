@@ -148,7 +148,7 @@ set(COMMON_LIBS
     nlohmann_json
     httplib
     Threads::Threads
-    m dl stdc++ pthread
+    m dl stdc++ pthread gomp
 )
 
 # ── jic-server ───────────────────────────────────────────────────────

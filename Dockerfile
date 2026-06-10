@@ -8,7 +8,14 @@
 # ══════════════════════════════════════════════════════════════════════
 
 # ── Pinned versions ──────────────────────────────────────────────────
-ARG LLAMA_CPP_TAG=b8250
+# llama.cpp is pinned to b6591: the newest tag BEFORE common/ grew a
+# cpp-httplib model downloader (b6593 = PR #16185, made unconditional when
+# libcurl support was removed in PR #18828). JIC links libcommon.a with
+# --whole-archive and bundles GGUF models locally, so any in-tree HTTP
+# downloader becomes an undefined-reference at the final static link
+# (httplib::Client / curl_easy_*). At b6591 the downloader is curl-only and
+# compiles out entirely with -DLLAMA_CURL=OFF. See issue #10.
+ARG LLAMA_CPP_TAG=b6591
 ARG MUPDF_TAG=1.27.2
 
 # ═══════════════════════ Stage 1: llama.cpp ══════════════════════════
@@ -20,7 +27,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
-RUN git clone --depth 1 --branch ${LLAMA_CPP_TAG} \
+RUN git clone --depth 1 --recurse-submodules --shallow-submodules --branch ${LLAMA_CPP_TAG} \
         https://github.com/ggml-org/llama.cpp.git && \
     cd llama.cpp && \
     cmake -B build \
@@ -32,7 +39,7 @@ RUN git clone --depth 1 --branch ${LLAMA_CPP_TAG} \
         -DLLAMA_STATIC=ON \
         -DBUILD_SHARED_LIBS=OFF \
         -DGGML_CCACHE=OFF \
-        -DLLAMA_CURL=ON \
+        -DLLAMA_CURL=OFF \
         -DGGML_STATIC=ON \
         -DGGML_CPU_BACKEND=ON \
         . && \
@@ -53,7 +60,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
-RUN git clone --depth 1 --branch ${MUPDF_TAG} \
+RUN git clone --depth 1 --recurse-submodules --shallow-submodules --branch ${MUPDF_TAG} \
         --recurse-submodules --shallow-submodules \
         https://github.com/ArtifexSoftware/mupdf.git && \
     cd mupdf && \
