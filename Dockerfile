@@ -16,7 +16,7 @@ FROM ubuntu:24.04 AS llama-builder
 
 ARG LLAMA_CPP_TAG
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    build-essential cmake git ca-certificates \
+    build-essential cmake git ca-certificates libcurl4-openssl-dev \
     --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
@@ -32,7 +32,7 @@ RUN git clone --depth 1 --branch ${LLAMA_CPP_TAG} \
         -DLLAMA_STATIC=ON \
         -DBUILD_SHARED_LIBS=OFF \
         -DGGML_CCACHE=OFF \
-        -DLLAMA_CURL=OFF \
+        -DLLAMA_CURL=ON \
         -DGGML_STATIC=ON \
         -DGGML_CPU_BACKEND=ON \
         . && \
@@ -122,7 +122,7 @@ RUN cmake -B build \
 FROM ubuntu:24.04
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    libopenblas0 libgomp1 \
+    libopenblas0 libgomp1 libcurl4 \
     --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
