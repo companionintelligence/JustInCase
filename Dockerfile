@@ -20,7 +20,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
-RUN git clone --depth 1 --branch ${LLAMA_CPP_TAG} \
+RUN git clone --depth 1 --recurse-submodules --shallow-submodules --branch ${LLAMA_CPP_TAG} \
         https://github.com/ggml-org/llama.cpp.git && \
     cd llama.cpp && \
     cmake -B build \
@@ -53,7 +53,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
-RUN git clone --depth 1 --branch ${MUPDF_TAG} \
+RUN git clone --depth 1 --recurse-submodules --shallow-submodules --branch ${MUPDF_TAG} \
         --recurse-submodules --shallow-submodules \
         https://github.com/ArtifexSoftware/mupdf.git && \
     cd mupdf && \
