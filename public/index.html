@@ -3,245 +3,99 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Just In Case — offline emergency knowledge assistant. Search bundled survival, first-aid, and preparedness references with a local LLM. No internet required.">
-  <title>Just In Case - Emergency Knowledge Assistant</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%AD%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Just In Case — offline emergency knowledge assistant. Ask survival, first-aid, and preparedness questions against a local reference library with a local LLM. No internet required.">
+  <meta name="color-scheme" content="dark light">
+  <title>Just In Case — Offline Emergency Knowledge</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="stylesheet" href="style.css">
-  <style>
-    .chat-container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 2rem 1rem;
-      height: calc(100vh - 80px);
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .chat-window {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-lg);
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      box-shadow: var(--shadow-md);
-    }
-    
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-    
-    .message {
-      max-width: 80%;
-      padding: 0.75rem 1rem;
-      border-radius: var(--radius-md);
-      line-height: 1.5;
-    }
-    
-    .message.bot {
-      background: var(--primary-light);
-      color: var(--text-primary);
-      align-self: flex-start;
-      border-bottom-left-radius: 0.25rem;
-    }
-    
-    .message.user {
-      background: var(--primary);
-      color: white;
-      align-self: flex-end;
-      border-bottom-right-radius: 0.25rem;
-    }
-    
-    .message.sources {
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border-color);
-      color: var(--text-secondary);
-      font-size: 0.875rem;
-      align-self: flex-start;
-      max-width: 90%;
-    }
-    
-    .source-item {
-      margin: 0.5rem 0;
-      padding: 0.5rem;
-      background: var(--bg-primary);
-      border-radius: var(--radius-sm);
-    }
-    
-    .source-item a {
-      color: var(--primary);
-      text-decoration: none;
-      font-weight: 500;
-    }
-    
-    .source-item a:hover {
-      text-decoration: underline;
-    }
-    
-    .chat-input-container {
-      border-top: 1px solid var(--border-color);
-      padding: 1rem;
-      background: var(--bg-primary);
-    }
-    
-    .chat-input-wrapper {
-      display: flex;
-      gap: 0.5rem;
-    }
-    
-    .chat-input {
-      flex: 1;
-      padding: 0.75rem 1rem;
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
-      background: var(--bg-secondary);
-      color: var(--text-primary);
-      font-size: 1rem;
-      outline: none;
-      transition: border-color 0.2s ease;
-    }
-    
-    .chat-input:focus {
-      border-color: var(--primary);
-    }
-    
-    .send-button {
-      padding: 0.75rem 1.5rem;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      font-weight: 500;
-      transition: background-color 0.2s ease;
-    }
-    
-    .send-button:hover {
-      background: var(--primary-hover);
-    }
-    
-    .send-button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    
-    .suggested-prompts {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-top: 0.75rem;
-    }
-    
-    .suggested-prompt {
-      padding: 0.5rem 1rem;
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      transition: all 0.2s ease;
-    }
-    
-    .suggested-prompt:hover {
-      background: var(--border-color);
-      color: var(--text-primary);
-    }
-    
-    .typing-indicator {
-      display: none;
-      align-self: flex-start;
-      padding: 0.75rem 1rem;
-      background: var(--primary-light);
-      border-radius: var(--radius-md);
-      border-bottom-left-radius: 0.25rem;
-    }
-    
-    .typing-indicator span {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--text-secondary);
-      margin: 0 2px;
-      animation: typing 1.4s infinite;
-    }
-    
-    .typing-indicator span:nth-child(2) {
-      animation-delay: 0.2s;
-    }
-    
-    .typing-indicator span:nth-child(3) {
-      animation-delay: 0.4s;
-    }
-    
-    @keyframes typing {
-      0%, 60%, 100% {
-        opacity: 0.3;
-      }
-      30% {
-        opacity: 1;
-      }
-    }
-  </style>
 </head>
 <body>
   <div class="app">
-    <!-- Header with theme toggle -->
-    <header class="header">
-      <div class="header-content">
-        <h1 class="logo">🧭 Just In Case</h1>
-        <div style="display: flex; align-items: center; gap: 1rem;">
-          <label class="context-toggle-label" style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary); font-size: 0.9rem; cursor: pointer;">
-            <input type="checkbox" id="header-context-toggle" checked style="cursor: pointer;">
-            <span>Document Context</span>
+
+    <!-- ── Sidebar: brand, system status, field library ─────────── -->
+    <aside class="sidebar" id="sidebar" aria-label="System and library panel">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
+          <g fill="none" stroke-linecap="round">
+            <circle cx="32" cy="32" r="21" stroke="currentColor" stroke-width="4"/>
+            <path d="M32 3v6M32 55v6M3 32h6M55 32h6" stroke="currentColor" stroke-width="4"/>
+            <path class="brand-mark-accent" d="M32 22v20M22 32h20" stroke-width="7"/>
+          </g>
+        </svg>
+        <div class="brand-text">
+          <span class="brand-name">Just in Case</span>
+          <span class="brand-sub">Offline field knowledge</span>
+        </div>
+      </div>
+
+      <section class="panel" aria-label="System status">
+        <h2 class="panel-title">System</h2>
+        <dl class="status-grid" id="status-grid">
+          <div><dt>Engine</dt><dd id="st-engine">—</dd></div>
+          <div><dt>Index</dt><dd id="st-index">—</dd></div>
+          <div><dt>Model</dt><dd id="st-model">—</dd></div>
+          <div><dt>Uptime</dt><dd id="st-uptime">—</dd></div>
+        </dl>
+      </section>
+
+      <section class="panel panel-grow" aria-label="Field library">
+        <h2 class="panel-title">Field library <span class="badge" id="library-count">0</span></h2>
+        <div class="library" id="library-list">
+          <p class="library-empty">No documents indexed yet. Run the content
+          fetcher or drop PDFs into the sources volume — they are indexed
+          automatically.</p>
+        </div>
+      </section>
+
+      <footer class="sidebar-footer">
+        <span class="offline-dot" aria-hidden="true"></span>
+        <span>Runs 100% offline · <span id="st-version">v—</span></span>
+      </footer>
+    </aside>
+    <div class="backdrop" id="backdrop" hidden></div>
+
+    <!-- ── Main: topbar, chat, composer ─────────────────────────── -->
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-btn" id="sidebar-toggle" aria-label="Toggle library panel" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+        </button>
+        <div class="status-pill" id="status-pill" role="status">
+          <span class="pill-dot"></span><span class="pill-text">Connecting…</span>
+        </div>
+        <div class="topbar-actions">
+          <label class="toggle" title="Ground answers in the document library">
+            <input type="checkbox" id="context-toggle" checked>
+            <span>Use library</span>
           </label>
-          <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
-            <span class="sun-icon">☀️</span>
-            <span class="moon-icon">🌙</span>
+          <button class="ghost-btn" id="new-chat-btn">New chat</button>
+          <button class="icon-btn" id="theme-toggle" aria-label="Toggle light/dark theme">
+            <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z" fill="currentColor"/></svg>
           </button>
         </div>
-      </div>
-    </header>
+      </header>
 
-    <div class="chat-container">
-      <div class="chat-window">
-        <div class="chat-messages" id="chat-messages" role="log" aria-live="polite" aria-label="Conversation">
-          <!-- Welcome message will be added by JavaScript -->
-        </div>
-        <div class="typing-indicator" id="typing-indicator" aria-hidden="true">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-        <div class="chat-input-container">
-          <div class="chat-input-wrapper">
-            <input 
-              type="text" 
-              class="chat-input" 
-              id="user-input" 
-              placeholder="Ask any emergency or survival question..."
-              aria-label="Ask any emergency or survival question"
-              onkeydown="if(event.key==='Enter' && !event.shiftKey) sendMessage()"
-            >
-            <button class="send-button" id="send-button" onclick="sendMessage()">Send</button>
-          </div>
-          <div class="suggested-prompts" id="suggested-prompts">
-            <!-- Suggested prompts will be added by JavaScript -->
-          </div>
-        </div>
+      <div class="banner" id="banner" hidden></div>
+
+      <div class="chat" id="chat" role="log" aria-live="polite" aria-label="Conversation"></div>
+
+      <div class="composer">
+        <div class="chips" id="chips" aria-label="Suggested questions"></div>
+        <form class="composer-form" id="composer-form">
+          <input type="text" id="user-input" class="composer-input" autocomplete="off"
+                 placeholder="Ask an emergency or survival question…"
+                 aria-label="Ask an emergency or survival question">
+          <button type="submit" class="send-btn" id="send-button">
+            <span>Send</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12l18-9-6 9 6 9-18-9z" fill="currentColor"/></svg>
+          </button>
+        </form>
+        <p class="disclaimer">Research project — verify critical guidance against the cited source documents.</p>
       </div>
-    </div>
+    </main>
   </div>
-  
-  <script src="code.js"></script>
-  <script src="chat.js"></script>
+
+  <script src="app.js"></script>
 </body>
 </html>
-

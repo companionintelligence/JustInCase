@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Just In Case logo">
+  <!-- JIC mark: compass ring + aid cross. Derived from the Companion
+       Intelligence circular iris mark; amber = field-equipment accent. -->
+  <g fill="none" stroke-linecap="round">
+    <circle cx="32" cy="32" r="21" stroke="#8b939e" stroke-width="4"/>
+    <path d="M32 3v6M32 55v6M3 32h6M55 32h6" stroke="#8b939e" stroke-width="4"/>
+    <path d="M32 22v20M22 32h20" stroke="#ffb224" stroke-width="7"/>
+  </g>
+</svg>

@@ -20,9 +20,11 @@ Background thinking on the problem space is in the [docs/](docs/) folder: [typic
 
 ## How it works
 
-The system is written in C++17 and compiles to two binaries: a server and an ingestion worker. Both link against [llama.cpp](https://github.com/ggml-org/llama.cpp) (pinned to `b8250`) for LLM inference and embeddings, [MuPDF](https://github.com/ArtifexSoftware/mupdf) (`1.27.2`) for PDF text extraction, and SQLite with [sqlite-vec](https://github.com/asg017/sqlite-vec) and FTS5 for hybrid search. The server uses [cpp-httplib](https://github.com/yhirose/cpp-httplib) for HTTP. The default LLM is Llama 3.2 3B Instruct (Q4_K_M, ~2 GB); embeddings use nomic-embed-text-v1.5 (768-dimensional, ~260 MB).
+The system is written in C++17 and compiles to two binaries: a server and an ingestion worker. Both link against [llama.cpp](https://github.com/ggml-org/llama.cpp) for LLM inference and embeddings, [MuPDF](https://github.com/ArtifexSoftware/mupdf) for PDF text extraction, and SQLite with [sqlite-vec](https://github.com/asg017/sqlite-vec) and FTS5 for hybrid search. The server uses [cpp-httplib](https://github.com/yhirose/cpp-httplib) for HTTP. The default LLM is Llama 3.2 3B Instruct (Q4_K_M, ~2 GB); embeddings use nomic-embed-text-v1.5 (768-dimensional, ~260 MB).
 
 During ingestion, each PDF is parsed with MuPDF, split into chunks using a recursive paragraph → sentence → word splitter, embedded, and stored in a single SQLite database. At query time the user's question is embedded and run against both the vector index (sqlite-vec, approximate nearest neighbours) and the full-text index (FTS5 / BM25). Results are merged with Reciprocal Rank Fusion, and the top chunks are passed as context to the LLM, which produces an answer grounded in the source material.
+
+**Content lives in volumes, not in the image.** The container image holds only the binaries and the web UI; the document library (`jic-sources` volume), the search index (`jic-data` volume), and the GGUF models (`./gguf_models` bind mount) are all provisioned at runtime. That keeps the image small, lets you update the library without rebuilding, and means a `docker compose down -v` is the only thing that can delete your data.
 
 Docker is used only for packaging — there is no runtime dependency on it. You can build and run natively if you prefer.
 
@@ -30,13 +32,9 @@ Docker is used only for packaging — there is no runtime dependency on it. You 
 
 ## Quickstart
 
-You need [Docker and Docker Compose](https://docs.docker.com/get-docker/), roughly 4 GB of disk for models, and whatever space your PDF library requires.
+You need [Docker and Docker Compose](https://docs.docker.com/get-docker/), roughly 4 GB of disk for models, and whatever space your library requires (the full curated catalog is ~350 MB).
 
-### 1. Get source data
-
-JIC does not ship with data. Place `.pdf` or `.txt` files into `public/sources/` — the ingestion service scans recursively, so organise them however you like. A curated manifest of public-domain emergency documents is listed in [sources.yaml](sources.yaml); a companion data repository is available at [github.com/companionintelligence/JustInCase](https://github.com/companionintelligence/JustInCase/tree/main/public/sources). You may also find the community [Survival-Data](https://github.com/PR0M3TH3AN/Survival-Data) repo useful.
-
-### 2. Download models
+### 1. Download models
 
 Models must be present before starting Docker — they are not fetched at runtime.
 
@@ -46,13 +44,33 @@ Models must be present before starting Docker — they are not fetched at runtim
 
 This places two GGUF files in `./gguf_models/`: `Llama-3.2-3B-Instruct-Q4_K_M.gguf` (~2.0 GB, the LLM) and `nomic-embed-text-v1.5.Q4_K_M.gguf` (~260 MB, the embedding model).
 
-### 3. Build and run
+### 2. Build and run
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
-The multi-stage Docker build compiles everything from source, then starts the server on port 8080 and the ingestion worker alongside it. Once models and sources are loaded, no internet connection is required.
+The multi-stage Docker build compiles everything from source, then starts the server on port 8080 and the ingestion worker alongside it.
+
+### 3. Load the library
+
+JIC does not bake data into the image. A curated, URL-verified manifest of public-domain and freely-redistributable emergency documents lives in [sources.yaml](sources.yaml) — survival manuals, austere medicine, food preservation, water/power engineering, emergency comms, open textbooks. Download it into the content volume:
+
+```bash
+docker compose --profile fetch run --rm content-fetch
+```
+
+The fetcher seeds the volume with any repo-committed starter documents, then downloads the manifest (atomically — the ingester never sees partial files). The ingestion worker picks up new files within ~30 seconds and indexes them; progress is visible in the web UI's library panel.
+
+To add your own documents:
+
+```bash
+docker compose cp my-manual.pdf jic-server:/app/public/sources/100_Survival/
+```
+
+Once models and sources are loaded, no internet connection is required.
+
+### 4. Ask questions
 
 The web UI is at [http://localhost:8080](http://localhost:8080). You can also query the API directly:
 
@@ -61,6 +79,13 @@ curl -s -X POST http://localhost:8080/query \
   -H "Content-Type: application/json" \
   -d '{"query": "How do I purify water in the wild?"}'
 ```
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/query` | POST | RAG question answering (`query`, optional `conversation_id`, `use_context`) |
+| `/status` | GET | Version, uptime, model/index state |
+| `/api/library` | GET | Indexed documents with category and chunk counts |
+| `/sources/<path>` | GET | The source documents themselves |
 
 ---
 
@@ -75,6 +100,30 @@ To swap the LLM, set `LLM_GGUF_FILE` in the environment or edit `docker-compose.
 | Gemma 3 4B | 4B | ~4 GB | Broad general knowledge |
 | Llama 3.1 8B | 8B | ~6 GB | Better answers, needs ≥16 GB RAM |
 
+Additional environment knobs (all optional):
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `JIC_SOURCES_DIR` | `public/sources` | Library location |
+| `JIC_DB_PATH` | `data/jic.db` | SQLite index location |
+| `JIC_SCAN_INTERVAL_SEC` | `30` | Ingestion scan cadence |
+| `JIC_CORS_ORIGIN` | _(unset — CORS disabled)_ | Allow cross-origin API access for a specific origin |
+
+## Security posture
+
+The appliance is hardened by default: containers run as a non-root user with a read-only root filesystem, all capabilities dropped, and `no-new-privileges` set. The server sends a strict Content-Security-Policy on HTML, rejects oversized request bodies (1 MB) and queries (8 000 chars), validates all input (client errors are 400s, never 500s), and ships with CORS disabled — same-origin only — unless `JIC_CORS_ORIGIN` is set. If the GGUF models are missing the server degrades gracefully: the UI and library stay reachable and `/query` answers 503.
+
+## Testing
+
+```bash
+make -C tests/unit                 # chunker unit tests (no deps)
+./helper-scripts/test-config.sh    # static config/consistency lint
+./helper-scripts/test-server.sh    # runtime tests against a live server
+helper-scripts/fetch-source-data.sh --validate   # manifest lint
+```
+
+CI runs all of the above plus a Playwright screenshot gate before publishing the container image.
+
 ---
 
 ## Screenshot
@@ -85,7 +134,7 @@ To swap the LLM, set `LLM_GGUF_FILE` in the environment or edit `docker-compose.
 
 ## Contributing
 
-Work in progress — contributions welcome. See the [Discord](https://discord.gg/companion) for discussion.
+Work in progress — contributions welcome. See the [Discord](https://discord.gg/companion) for discussion. Content additions to [sources.yaml](sources.yaml) must be public-domain or explicitly redistributable, with the license recorded — see [docs/1400-sources.md](docs/1400-sources.md) for the research backlog (Project NOMAD, PrepperDisk, Kiwix and friends).
 
 ## License
 

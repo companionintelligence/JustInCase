@@ -132,10 +132,19 @@ public:
         }
 
         // ── Evaluate prompt ──────────────────────────────────────────
-        llama_batch batch = llama_batch_get_one(
-                prompt_tokens.data(), prompt_tokens.size());
-        if (llama_decode(ctx, batch) != 0)
-            return "Error: failed to process prompt";
+        // Feed the prompt in n_batch-sized slices: passing more tokens
+        // than n_batch to llama_decode trips a GGML_ASSERT and aborts
+        // the whole process (any RAG prompt with retrieved context is
+        // longer than one batch).
+        for (int i = 0; i < static_cast<int>(prompt_tokens.size());
+             i += LLM_BATCH_SIZE) {
+            int n_eval = std::min(LLM_BATCH_SIZE,
+                                  static_cast<int>(prompt_tokens.size()) - i);
+            llama_batch batch = llama_batch_get_one(
+                    prompt_tokens.data() + i, n_eval);
+            if (llama_decode(ctx, batch) != 0)
+                return "Error: failed to process prompt";
+        }
 
         // ── Sample tokens ────────────────────────────────────────────
         llama_sampler* smpl = llama_sampler_chain_init(
@@ -158,7 +167,7 @@ public:
                 if (n < 0) break;
                 response.append(buf, n);
 
-                batch = llama_batch_get_one(&tok, 1);
+                llama_batch batch = llama_batch_get_one(&tok, 1);
                 if (static_cast<int>(prompt_tokens.size()) + n_decode + 1 >= n_ctx)
                     break;
                 if (llama_decode(ctx, batch) != 0) break;

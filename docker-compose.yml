@@ -1,38 +1,73 @@
+# ══════════════════════════════════════════════════════════════════════
+# JIC — Just In Case (offline emergency knowledge assistant)
+#
+# Content lives in named volumes, NOT in the container image:
+#   jic-sources → /app/public/sources   document library (PDF/TXT)
+#   jic-data    → /app/data             SQLite hybrid-search index
+# GGUF models are large host-managed files, bind-mounted read-only
+# from ./gguf_models (see helper-scripts/fetch-models.sh).
+#
+# First run:
+#   ./helper-scripts/fetch-models.sh                        # models
+#   docker compose up --build -d                            # services
+#   docker compose --profile fetch run --rm content-fetch   # library
+#   → http://localhost:8080  (ingestion indexes new files within ~30 s)
+#
+# Add your own documents:
+#   docker compose cp my-manual.pdf jic-server:/app/public/sources/100_Survival/
+# ══════════════════════════════════════════════════════════════════════
+
+x-jic-env: &jic-env
+  LLM_MODEL: llama3.2:3b
+  EMBEDDING_MODEL: nomic-embed-text
+  LLM_GGUF_FILE: Llama-3.2-3B-Instruct-Q4_K_M.gguf
+  EMBEDDING_GGUF_FILE: nomic-embed-text-v1.5.Q4_K_M.gguf
+
+x-jic-hardening: &jic-hardening
+  init: true
+  read_only: true            # rootfs immutable; only the volumes are writable
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  tmpfs:
+    - /tmp
+
 services:
-  # ── Shared build (both server and ingestion use the same image) ────
+  # ── Server: web UI + /query + /status + /api/library ───────────────
   jic:
     build:
       context: .
       dockerfile: Dockerfile
     image: jic:latest
     container_name: jic-server
+    <<: *jic-hardening
+    restart: unless-stopped
     deploy:
       resources:
         limits:
-          cpus: '0'       # no CPU limit — use all available cores
           memory: 8G
     volumes:
-      - ./public:/app/public
-      - ./data:/app/data
+      - jic-sources:/app/public/sources
+      - jic-data:/app/data
       - ./gguf_models:/app/gguf_models:ro
     ports:
       - "8080:8080"
-    environment:
-      - LLM_MODEL=llama3.2:3b
-      - EMBEDDING_MODEL=nomic-embed-text
-      - LLM_GGUF_FILE=Llama-3.2-3B-Instruct-Q4_K_M.gguf
-      - EMBEDDING_GGUF_FILE=nomic-embed-text-v1.5.Q4_K_M.gguf
+    environment: *jic-env
     command: ["./jic-server"]
     healthcheck:
-      test: ["CMD-SHELL", "echo > /dev/tcp/localhost/8080 || exit 1"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/status"]
       interval: 30s
       timeout: 5s
       start_period: 60s
       retries: 3
 
+  # ── Ingestion: watches the sources volume, builds the index ────────
   ingestion:
     image: jic:latest          # reuses the image built by the jic service
     container_name: jic-ingestion
+    <<: *jic-hardening
+    restart: unless-stopped
     depends_on:
       jic:
         condition: service_started
@@ -42,12 +77,30 @@ services:
           cpus: '2'
           memory: 4G
     volumes:
-      - ./public:/app/public
-      - ./data:/app/data
+      - jic-sources:/app/public/sources
+      - jic-data:/app/data
       - ./gguf_models:/app/gguf_models:ro
-    environment:
-      - LLM_MODEL=llama3.2:3b
-      - EMBEDDING_MODEL=nomic-embed-text
-      - LLM_GGUF_FILE=Llama-3.2-3B-Instruct-Q4_K_M.gguf
-      - EMBEDDING_GGUF_FILE=nomic-embed-text-v1.5.Q4_K_M.gguf
+    environment: *jic-env
     command: ["./jic-ingestion"]
+
+  # ── One-shot library downloader (opt-in, needs internet) ───────────
+  # Seeds the sources volume with any repo-committed starter documents,
+  # then downloads everything in sources.yaml that is not already there.
+  # Run:  docker compose --profile fetch run --rm content-fetch
+  content-fetch:
+    image: jic:latest
+    container_name: jic-content-fetch
+    profiles: ["fetch"]
+    <<: *jic-hardening
+    volumes:
+      - jic-sources:/app/public/sources
+      - ./sources.yaml:/app/sources.yaml:ro
+      - ./public/sources:/app/seed-sources:ro
+    command: ["/app/bin/fetch-sources",
+              "--manifest", "/app/sources.yaml",
+              "--dest", "/app/public/sources",
+              "--seed", "/app/seed-sources"]
+
+volumes:
+  jic-sources:
+  jic-data:

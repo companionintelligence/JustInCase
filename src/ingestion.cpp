@@ -1,6 +1,6 @@
 // ── JIC Ingestion Service ────────────────────────────────────────────
 //
-// Continuously scans public/sources/ for new PDFs and text files,
+// Continuously scans the sources directory for new PDFs and text files,
 // extracts text with MuPDF, splits into semantic chunks, generates
 // embeddings, and stores everything in SQLite (vec + FTS5).
 //
@@ -12,6 +12,8 @@
 #include <set>
 #include <thread>
 #include <chrono>
+#include <atomic>
+#include <csignal>
 #include <filesystem>
 
 #include "llama.h"
@@ -25,10 +27,35 @@
 
 namespace fs = std::filesystem;
 
+static std::atomic<bool> g_running{true};
+
+static void handle_shutdown_signal(int) { g_running.store(false); }
+
+// Files that were modified moments ago may still be mid-download (the
+// content fetcher writes *.part then renames, but users also copy files
+// straight into the volume) — let them settle before ingesting.
+static bool file_is_settled(const fs::path& p) {
+    std::error_code ec;
+    auto mtime = fs::last_write_time(p, ec);
+    if (ec) return false;
+    auto age = fs::file_time_type::clock::now() - mtime;
+    return age > std::chrono::seconds(FILE_SETTLE_SECONDS);
+}
+
+// Sleep in short slices so SIGTERM interrupts promptly.
+static void interruptible_sleep(int seconds) {
+    for (int i = 0; i < seconds * 4 && g_running.load(); i++)
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+}
+
 int main() {
     std::cout << "═══════════════════════════════════════════" << std::endl;
-    std::cout << "  JIC Ingestion Service (MuPDF + SQLite)  " << std::endl;
+    std::cout << "  JIC Ingestion " << JIC_VERSION
+              << " (MuPDF + SQLite)" << std::endl;
     std::cout << "═══════════════════════════════════════════" << std::endl;
+
+    std::signal(SIGINT,  handle_shutdown_signal);
+    std::signal(SIGTERM, handle_shutdown_signal);
 
     // ── Initialise llama backend ─────────────────────────────────────
     llama_backend_init();
@@ -44,40 +71,50 @@ int main() {
     }
 
     // ── SQLite index ─────────────────────────────────────────────────
-    fs::create_directories("data");
+    const std::string db_path = get_db_path();
+    fs::create_directories(fs::path(db_path).parent_path());
     SQLiteVecIndex index;
-    if (!index.open(DB_PATH)) {
-        std::cerr << "Failed to open database: " << DB_PATH << std::endl;
+    if (!index.open(db_path)) {
+        std::cerr << "Failed to open database: " << db_path << std::endl;
         return 1;
     }
 
+    const std::string sources_dir = get_sources_dir();
+    const int scan_interval = get_scan_interval_sec();
+
     std::cout << "Existing index: " << index.chunk_count() << " chunks, "
               << index.processed_file_count() << " files" << std::endl;
+    std::cout << "Watching " << sources_dir << " every "
+              << scan_interval << "s" << std::endl;
 
     // ── Main ingestion loop ──────────────────────────────────────────
-    while (true) {
+    while (g_running.load()) {
         std::vector<std::pair<std::string, std::string>> files_to_process;
 
         // Discover new files
-        if (fs::exists("public/sources")) {
+        if (fs::exists(sources_dir)) {
             try {
-                for (const auto& entry : fs::recursive_directory_iterator("public/sources")) {
+                for (const auto& entry : fs::recursive_directory_iterator(sources_dir)) {
                     if (!entry.is_regular_file()) continue;
 
-                    std::string ext = entry.path().extension().string();
-                    // Convert extension to lower-case
-                    for (auto& c : ext) c = std::tolower(static_cast<unsigned char>(c));
+                    // Skip hidden files and in-flight downloads
+                    std::string name = entry.path().filename().string();
+                    if (!name.empty() && name[0] == '.') continue;
 
+                    std::string ext = entry.path().extension().string();
+                    for (auto& c : ext) c = std::tolower(static_cast<unsigned char>(c));
                     if (ext != ".pdf" && ext != ".txt") continue;
 
-                    std::string rel = fs::relative(entry.path(), "public/sources").string();
-                    if (!index.is_file_processed(rel)) {
-                        if (is_file_processable(entry.path().string())) {
-                            files_to_process.push_back({entry.path().string(), rel});
-                        } else {
-                            std::cerr << "Skipping (too large): " << rel << std::endl;
-                            index.mark_file_processed(rel, 0);
-                        }
+                    std::string rel = fs::relative(entry.path(), sources_dir).string();
+                    if (index.is_file_processed(rel)) continue;
+
+                    if (!file_is_settled(entry.path())) continue; // retry next scan
+
+                    if (is_file_processable(entry.path().string())) {
+                        files_to_process.push_back({entry.path().string(), rel});
+                    } else {
+                        std::cerr << "Skipping (too large): " << rel << std::endl;
+                        index.mark_file_processed(rel, 0);
                     }
                 }
             } catch (const std::exception& e) {
@@ -90,6 +127,7 @@ int main() {
                       << " new file(s) to process" << std::endl;
 
             for (const auto& [full_path, rel_path] : files_to_process) {
+                if (!g_running.load()) break;
                 try {
                     std::cout << "\n── Processing: " << rel_path << std::endl;
 
@@ -107,11 +145,10 @@ int main() {
                     }
 
                     // Cap extremely large texts
-                    const size_t MAX_TEXT = 1000000;
-                    if (text.length() > MAX_TEXT) {
+                    if (text.length() > MAX_DOCUMENT_CHARS) {
                         std::cout << "Text truncated from " << text.length()
-                                  << " to " << MAX_TEXT << " chars" << std::endl;
-                        text.resize(MAX_TEXT);
+                                  << " to " << MAX_DOCUMENT_CHARS << " chars" << std::endl;
+                        text.resize(MAX_DOCUMENT_CHARS);
                     }
 
                     // ── Chunk ────────────────────────────────────────
@@ -128,6 +165,7 @@ int main() {
                     int total_stored = 0;
 
                     for (int ci = 0; ci < static_cast<int>(chunks.size()); ci++) {
+                        if (!g_running.load()) break;
                         auto emb = embeddings.get_embedding(chunks[ci]);
                         if (static_cast<int>(emb.size()) != EMBEDDING_DIM) continue;
 
@@ -154,6 +192,15 @@ int main() {
                         total_stored += batch_docs.size();
                     }
 
+                    // Interrupted mid-document: leave it unmarked so the
+                    // next run re-ingests it completely.
+                    if (!g_running.load() &&
+                        total_stored < static_cast<int>(chunks.size())) {
+                        std::cout << "  Interrupted — " << rel_path
+                                  << " will be re-processed on restart" << std::endl;
+                        break;
+                    }
+
                     index.mark_file_processed(rel_path, total_stored);
                     std::cout << "  ✓ " << rel_path << ": " << total_stored
                               << " chunks indexed" << std::endl;
@@ -170,9 +217,10 @@ int main() {
         }
 
         // Sleep before next scan
-        std::this_thread::sleep_for(std::chrono::seconds(30));
+        interruptible_sleep(scan_interval);
     }
 
+    std::cout << "Ingestion service stopped." << std::endl;
     llama_backend_free();
     return 0;
 }

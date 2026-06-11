@@ -9,13 +9,13 @@ Roadmap: `CI-Engineering/architecture/roadmap.md`
 
 ## Purpose
 
-Offline emergency knowledge assistant. C++ server with llama.cpp backend, Tika document parsing, and a vector index. Runs via Docker Compose.
+Offline emergency knowledge assistant. C++ server with llama.cpp backend, MuPDF document parsing, and a SQLite hybrid search index (sqlite-vec + FTS5). Runs via Docker Compose; content lives in named volumes, not the image.
 
 ## Stack
 
 - C++ / llama.cpp (server + ingestion)
-- Apache Tika (document parsing)
-- Docker Compose (jic + tika + ingestion services)
+- MuPDF (document parsing)
+- Docker Compose (jic + ingestion services, content-fetch profile)
 - GGUF model files (in gguf_models/)
 
 ## Commands
