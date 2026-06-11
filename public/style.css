@@ -1,49 +1,70 @@
 /* ════════════════════════════════════════════════════════════════════
    JIC — Just In Case · UI theme
-   Brand: Companion Intelligence monochrome base + safety-amber accent.
+   Brand: matches ci.computer (Companion Intelligence) — teal-black
+   base, mint lightAccent, Abel display + Source Code Pro mono.
    Dark theme is the default (night / low-power field use).
    ════════════════════════════════════════════════════════════════════ */
 
+/* Bundled fonts (OFL) — offline, no CDN. See assets/fonts/LICENSE.txt */
+@font-face {
+  font-family: 'Abel';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('assets/fonts/Abel-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Source Code Pro';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('assets/fonts/SourceCodePro.woff2') format('woff2');
+}
+
 :root {
-  --bg0: #101216;            /* page                                    */
-  --bg1: #16191f;            /* panels / sidebar                        */
-  --bg2: #1d212a;            /* cards, bubbles                          */
-  --bg3: #252a35;            /* hover                                   */
-  --line: #2a303c;
-  --fg: #e8e6e1;
-  --fg-dim: #9aa3ad;
-  --fg-faint: #6b7480;
-  --accent: #ffb224;         /* safety amber                            */
-  --accent-soft: rgba(255, 178, 36, 0.12);
-  --accent-ink: #1a1409;     /* text on amber                           */
-  --ok: #4cc38a;
-  --warn: #ffb224;
+  /* ci.computer site palette:
+     black hsl(184,88%,3%) · darkAccent hsl(182,83%,14%)
+     lightAccent hsl(166,100%,75%) · white hsl(180,3%,94%)          */
+  --bg0: #021011;            /* page                                    */
+  --bg1: #04181a;            /* panels / sidebar                        */
+  --bg2: #062123;            /* cards, bubbles                          */
+  --bg3: #0a2d2f;            /* hover                                   */
+  --line: #0e3a3c;
+  --fg: #eff1f1;
+  --fg-dim: #93b1ae;
+  --fg-faint: #5f7d7a;
+  --accent: #80ffe1;         /* CI mint lightAccent                     */
+  --accent-soft: rgba(128, 255, 225, 0.10);
+  --accent-ink: #021a14;     /* text on mint                            */
+  --ok: #58ebbf;
+  --warn: #ffcb6b;
   --err: #ff6369;
-  --user-bubble: #2b3242;
-  --shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --user-bubble: #0b3335;
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   --radius: 10px;
   --radius-lg: 14px;
-  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --mono: 'Source Code Pro', ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans: 'Abel', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
 }
 
 [data-theme="light"] {
-  --bg0: #f3f1ea;            /* warm paper                              */
-  --bg1: #faf8f3;
+  --bg0: #eff1f1;            /* CI white                                */
+  --bg1: #f8fafa;
   --bg2: #ffffff;
-  --bg3: #edeae1;
-  --line: #ddd8cc;
-  --fg: #1b1e24;
-  --fg-dim: #5b636e;
-  --fg-faint: #8a9099;
-  --accent: #b97800;
-  --accent-soft: rgba(185, 120, 0, 0.10);
-  --accent-ink: #ffffff;
-  --ok: #1a7f4e;
+  --bg3: #e2e8e8;
+  --line: #ccd9d8;
+  --fg: #04181a;
+  --fg-dim: #3f5a58;
+  --fg-faint: #7d908e;
+  --accent: #063f41;         /* CI darkAccent — mint lacks contrast on white */
+  --accent-soft: rgba(6, 63, 65, 0.08);
+  --accent-ink: #eff1f1;
+  --ok: #0b8a63;
   --warn: #9a6700;
   --err: #c93c40;
-  --user-bubble: #e6e2d6;
-  --shadow: 0 8px 24px rgba(40, 35, 20, 0.10);
+  --user-bubble: #dcebe8;
+  --shadow: 0 8px 24px rgba(4, 24, 26, 0.10);
 }
 
 * { box-sizing: border-box; }
@@ -111,7 +132,7 @@ body {
 .brand-text { display: flex; flex-direction: column; }
 
 .brand-name {
-  font-size: 1.06rem;
+  font-size: 1.18rem;
   font-weight: 750;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -179,7 +200,7 @@ body {
 
 .status-grid dd {
   margin: 1px 0 0;
-  font-size: 0.82rem;
+  font-size: 0.92rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -230,7 +251,7 @@ body {
   border-radius: 7px;
   background: transparent;
   color: var(--fg);
-  font-size: 0.8rem;
+  font-size: 0.88rem;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
@@ -412,7 +433,7 @@ body {
 .msg-bubble {
   border-radius: var(--radius-lg);
   padding: 12px 16px;
-  font-size: 0.93rem;
+  font-size: 1.04rem;
   overflow-wrap: break-word;
 }
 
@@ -542,7 +563,7 @@ body {
 
 .welcome h1 {
   margin: 0 0 6px;
-  font-size: 1.35rem;
+  font-size: 1.55rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
@@ -551,7 +572,7 @@ body {
   margin: 0 auto;
   max-width: 560px;
   color: var(--fg-dim);
-  font-size: 0.9rem;
+  font-size: 1.02rem;
 }
 
 /* ── Composer ───────────────────────────────────────────────────── */
@@ -577,7 +598,7 @@ body {
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--fg-dim);
-  font-size: 0.76rem;
+  font-size: 0.86rem;
   padding: 5px 12px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -602,7 +623,7 @@ body {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   color: var(--fg);
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-family: var(--sans);
   padding: 11px 14px;
   outline: none;
@@ -632,6 +653,8 @@ body {
 }
 
 .send-btn svg { width: 14px; height: 14px; }
+
+.send-btn span { font-family: var(--mono); font-weight: 600; }
 
 .send-btn:hover:not(:disabled) { filter: brightness(1.08); }
 
