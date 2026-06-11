@@ -22,9 +22,36 @@ Background thinking on the problem space is in the [docs/](docs/) folder: [typic
 
 The system is written in C++17 and compiles to two binaries: a server and an ingestion worker. Both link against [llama.cpp](https://github.com/ggml-org/llama.cpp) for LLM inference and embeddings, [MuPDF](https://github.com/ArtifexSoftware/mupdf) for PDF text extraction, and SQLite with [sqlite-vec](https://github.com/asg017/sqlite-vec) and FTS5 for hybrid search. The server uses [cpp-httplib](https://github.com/yhirose/cpp-httplib) for HTTP. The default LLM is Llama 3.2 3B Instruct (Q4_K_M, ~2 GB); embeddings use nomic-embed-text-v1.5 (768-dimensional, ~260 MB).
 
-During ingestion, each PDF is parsed with MuPDF, split into chunks using a recursive paragraph → sentence → word splitter, embedded, and stored in a single SQLite database. At query time the user's question is embedded and run against both the vector index (sqlite-vec, approximate nearest neighbours) and the full-text index (FTS5 / BM25). Results are merged with Reciprocal Rank Fusion, and the top chunks are passed as context to the LLM, which produces an answer grounded in the source material.
-
 **Content lives in volumes, not in the image.** The container image holds only the binaries and the web UI; the document library (`jic-sources` volume), the search index (`jic-data` volume), and the GGUF models (`./gguf_models` bind mount) are all provisioned at runtime. That keeps the image small, lets you update the library without rebuilding, and means a `docker compose down -v` is the only thing that can delete your data.
+
+```mermaid
+flowchart LR
+    B["Browser"] -->|":8080"| S["jic-server\nUI · /query · /status · /api/library"]
+    S <--> DB[("jic-data volume\nSQLite: vec0 + FTS5")]
+    S --> V[("jic-sources volume\nPDF/TXT library")]
+    I["jic-ingestion\nMuPDF → chunk → embed"] --> V
+    I --> DB
+    F["content-fetch\n(opt-in profile)"] -->|"sources.yaml,\nverified downloads"| V
+    M[("./gguf_models\nread-only")] -.-> S & I
+```
+
+| Component | What it does | Where |
+|---|---|---|
+| `jic-server` | Hybrid retrieval (vector + BM25 → RRF), grounded generation, web UI, library API | `src/server.cpp` |
+| `jic-ingestion` | Watches the library, extracts text in-process with MuPDF, chunks (~1500 chars, 200 overlap), embeds, indexes | `src/ingestion.cpp` |
+| `content-fetch` | One-shot library downloader: seeds starter docs, fetches the curated manifest with checksum/magic-byte verification and atomic writes | `helper-scripts/fetch-source-data.sh` |
+| Web UI | Dependency-free vanilla JS matching the [ci.computer](https://ci.computer) brand; live library panel, citations, dark/light | `public/` |
+
+**Schema at a glance** — one SQLite file (`data/jic.db`, WAL) holds the entire index:
+
+| Object | Type | Purpose |
+|---|---|---|
+| `chunks` | table | Chunk text + provenance (filename, order) |
+| `vec_chunks` | sqlite-vec `vec0` | 768-d embeddings, ANN search |
+| `chunks_fts` | FTS5 | BM25 lexical index (trigger-synced) |
+| `processed_files` | table | Ingestion bookkeeping → `/api/library` |
+
+The full implementation reference — query/ingestion pipelines, ER diagram, API contract, security model, failure modes, all as diagrams and tables — is in **[architecture.md](architecture.md)**.
 
 Docker is used only for packaging — there is no runtime dependency on it. You can build and run natively if you prefer.
 
@@ -73,6 +100,18 @@ Once models and sources are loaded, no internet connection is required.
 ### 4. Ask questions
 
 The web UI is at [http://localhost:8080](http://localhost:8080). You can also query the API directly:
+
+### User flow at a glance
+
+| # | You do | JIC does |
+|---|---|---|
+| 1 | `fetch-models.sh` | GGUF models land in `./gguf_models/` |
+| 2 | `docker compose up --build -d` | Server + ingestion start; UI live (degraded until models present) |
+| 3 | `--profile fetch run content-fetch` | Library volume seeded + verified catalog downloaded |
+| 4 | wait ≤ 30 s | New documents are discovered, chunked, embedded, indexed — watch the library panel fill |
+| 5 | ask a question | Hybrid search grounds the LLM; answer cites its sources |
+| 6 | click a citation | Original document opens from `/sources/...` |
+| 7 | `docker compose cp my.pdf jic-server:/app/public/sources/<category>/` | Your own documents join the index on the next scan |
 
 ```bash
 curl -s -X POST http://localhost:8080/query \
@@ -126,9 +165,17 @@ CI runs all of the above plus a Playwright screenshot gate before publishing the
 
 ---
 
-## Screenshot
+## Screenshots
 
-![screenshot](screenshot.png?raw=true "screenshot")
+UI theme matches the [ci.computer](https://ci.computer) brand — teal-black base, mint accent, Abel + Source Code Pro (bundled, offline).
+
+| Dark (default) | Light |
+|---|---|
+| ![Dark welcome screen with field library](docs/images/ui-dark.png) | ![Light theme](docs/images/ui-light.png) |
+
+| Grounded answer with citations | Mobile · library drawer |
+|---|---|
+| ![Answer with sources accordion](docs/images/ui-answer.png) | ![Mobile drawer](docs/images/ui-mobile.png) |
 
 ---
 

@@ -1,5 +1,9 @@
 # Just In Case (JIC) - System Architecture
 
+> The canonical, diagrammed implementation reference is
+> [architecture.md](../architecture.md) at the repo root. This document keeps
+> the design narrative and rationale.
+
 ## Reviewing JIC
 
 Just In Case is an emergency knowledge assistant that provides conversational access to a collection of PDF documents through a modern AI-powered interface. The system is designed to be self-contained, efficient, and deployable in resource-constrained environments where internet connectivity may be limited or unavailable.
