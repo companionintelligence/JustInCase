@@ -325,6 +325,32 @@ public:
         sqlite3_finalize(s);
     }
 
+    // One row per file the ingestion worker has seen, for the library view.
+    struct LibraryEntry {
+        std::string filename;
+        int         num_chunks;
+        std::string processed_at;
+    };
+
+    std::vector<LibraryEntry> list_processed_files() {
+        std::lock_guard<std::mutex> lock(mu_);
+        std::vector<LibraryEntry> entries;
+        sqlite3_stmt* s = nullptr;
+        sqlite3_prepare_v2(db_,
+            "SELECT filename, num_chunks, processed_at "
+            "FROM processed_files ORDER BY filename",
+            -1, &s, nullptr);
+        while (sqlite3_step(s) == SQLITE_ROW) {
+            const char* fn = reinterpret_cast<const char*>(sqlite3_column_text(s, 0));
+            const char* at = reinterpret_cast<const char*>(sqlite3_column_text(s, 2));
+            entries.push_back({fn ? fn : "",
+                               sqlite3_column_int(s, 1),
+                               at ? at : ""});
+        }
+        sqlite3_finalize(s);
+        return entries;
+    }
+
     int chunk_count() {
         sqlite3_stmt* s = nullptr;
         sqlite3_prepare_v2(db_, "SELECT COUNT(*) FROM chunks", -1, &s, nullptr);
