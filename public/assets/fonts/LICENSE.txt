@@ -1,0 +1,11 @@
+Bundled web fonts
+=================
+
+Abel-Regular.woff2       — Abel, by MADType (Matthew Desmond)
+SourceCodePro.woff2      — Source Code Pro, by Paul D. Hunt (Adobe)
+
+Both are licensed under the SIL Open Font License 1.1, which permits
+bundling and redistribution: https://openfontlicense.org
+
+They are bundled (latin subset) so the UI renders the Companion
+Intelligence brand typography fully offline — no font CDN at runtime.
