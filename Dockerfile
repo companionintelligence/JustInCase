@@ -128,21 +128,40 @@ RUN cmake -B build \
 # ═══════════════════════ Stage 4: Runtime ════════════════════════════
 FROM ubuntu:24.04
 
+LABEL org.opencontainers.image.title="JIC — Just In Case" \
+      org.opencontainers.image.description="Offline emergency knowledge assistant (RAG over local PDFs with llama.cpp)" \
+      org.opencontainers.image.source="https://github.com/companionintelligence/JustInCase"
+
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    libopenblas0 libgomp1 libcurl4 \
+    libopenblas0 libgomp1 libcurl4 curl ca-certificates \
     --no-install-recommends && rm -rf /var/lib/apt/lists/*
+
+# Non-root runtime user — the appliance never needs root
+RUN groupadd -g 10001 jic && \
+    useradd -r -u 10001 -g jic -d /app -s /usr/sbin/nologin jic
 
 WORKDIR /app
 
 COPY --from=app-builder /build/build/jic-server    /app/
 COPY --from=app-builder /build/build/jic-ingestion /app/
+
+# Web UI only. Knowledge content is NOT baked into the image — it lives
+# in the jic-sources volume (.dockerignore excludes public/sources/).
 COPY public/ ./public/
 
-RUN mkdir -p data gguf_models
+# Content fetcher + curated manifest, used by the compose "fetch" profile
+COPY helper-scripts/fetch-source-data.sh /app/bin/fetch-sources
+COPY sources.yaml /app/sources.yaml
+
+RUN chmod 755 /app/bin/fetch-sources && \
+    mkdir -p data gguf_models public/sources && \
+    chown -R jic:jic /app
+
+USER jic
 
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-    CMD /bin/bash -c 'echo > /dev/tcp/localhost/8080' || exit 1
+    CMD curl -fsS http://localhost:8080/status >/dev/null || exit 1
 
 CMD ["./jic-server"]

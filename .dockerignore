@@ -3,6 +3,18 @@
 .gitignore
 .gitattributes
 
+# ── Knowledge content lives in volumes, never in the image ──────────
+# (the content-fetch service downloads the sources.yaml manifest into
+# the jic-sources volume; repo-committed PDFs are seeded via a bind
+# mount at runtime)
+public/sources/
+
+# Data files (mounted as volumes)
+data/
+sources/
+pdfs/
+gguf_models/
+
 # Python cache (no longer needed for C++ version)
 __pycache__
 *.pyc
@@ -13,17 +25,12 @@ __pycache__
 venv/
 ENV/
 
-# Data files (these are mounted as volumes)
-data/
-sources/
-pdfs/
-gguf_models/
-
 # Documentation
 docs/
 *.md
 LICENSE
 TODO.md
+build-notes/
 
 # IDE files
 .vscode/
@@ -37,14 +44,15 @@ TODO.md
 Thumbs.db
 desktop.ini
 
-# Test files
+# Tests
+tests/
 test.sh
 *.test
 
-# Helper scripts (not needed in container)
+# Helper scripts (host-side only), except the content fetcher which is
+# baked into the image for the compose "fetch" profile
 helper-scripts/
-check-prebuilt.sh
-fast-build.sh
+!helper-scripts/fetch-source-data.sh
 
 # Build artifacts
 build/
@@ -94,3 +102,8 @@ screenshot.png
 
 # Aider
 .aider*
+
+# Agent configs
+.claude/
+.github/
+opencode.json

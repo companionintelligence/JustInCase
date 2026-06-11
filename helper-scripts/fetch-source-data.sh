@@ -1,269 +1,232 @@
 #!/usr/bin/env bash
-# fetch-freebooks.sh
-# Simple helper to fetch public-domain resources from popular free sources.
-# USAGE examples:
-#   ./fetch-freebooks.sh gutenberg 1342        # download Pride & Prejudice (id 1342) plain text/epub links
-#   ./fetch-freebooks.sh archive some-archive-id
-#   ./fetch-freebooks.sh standardebooks 2024-08-collection
-#   ./fetch-freebooks.sh librivox 12345
-#   ./fetch-freebooks.sh torrent /path/to/file.torrent
+# ══════════════════════════════════════════════════════════════════════
+# JIC content fetcher — downloads the curated manifest (sources.yaml)
+# into the content library.
 #
-# REQUIREMENTS: curl or wget, aria2c preferred, and optionally "ia" (Internet Archive CLI) for archive.org convenience.
+# Runs in two places:
+#   • on the host:        ./helper-scripts/fetch-source-data.sh
+#                         (downloads into ./public/sources)
+#   • inside the image:   /app/bin/fetch-sources --dest /app/public/sources
+#                         (the docker compose "fetch" profile, writing
+#                          into the jic-sources volume)
+#
+# Usage:
+#   fetch-source-data.sh [options]
+#     --manifest FILE   manifest to read           (default: ./sources.yaml)
+#     --dest DIR        library directory          (default: ./public/sources)
+#     --seed DIR        copy DIR/* into the library first (no clobber)
+#     --category CAT    only fetch one category    (e.g. 200_Medical)
+#     --list            print the manifest and exit
+#     --validate        lint the manifest (no network) and exit
+#     --force           re-download files that already exist
+#     --strict          exit non-zero if any download failed
+#
+# Downloads are atomic (written to *.part, then renamed) so the JIC
+# ingestion worker never sees a half-written document.
+# ══════════════════════════════════════════════════════════════════════
 
 set -euo pipefail
-IFS=$'\n\t'
 
-# helpers
-HAS() { command -v "$1" >/dev/null 2>&1; }
-DL_DIR="${PWD}/downloads"
+MANIFEST="sources.yaml"
+DEST="public/sources"
+SEED=""
+ONLY_CATEGORY=""
+MODE="fetch"
+FORCE=0
+STRICT=0
 
-mkdir -p "$DL_DIR"
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --manifest) MANIFEST="$2"; shift 2 ;;
+        --dest)     DEST="$2";     shift 2 ;;
+        --seed)     SEED="$2";     shift 2 ;;
+        --category) ONLY_CATEGORY="$2"; shift 2 ;;
+        --list)     MODE="list";     shift ;;
+        --validate) MODE="validate"; shift ;;
+        --force)    FORCE=1;  shift ;;
+        --strict)   STRICT=1; shift ;;
+        -h|--help)  grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) echo "Unknown option: $1 (try --help)" >&2; exit 2 ;;
+    esac
+done
 
-# use aria2c if present for parallel downloads; fallback to curl/wget single-threaded
-download_file() {
-  url="$1"
-  dest="$2"
-  mkdir -p "$(dirname "$dest")"
-  if HAS aria2c; then
-    aria2c -x 4 -s 4 -k 1M -o "$(basename "$dest")" -d "$(dirname "$dest")" "$url"
-  elif HAS curl; then
-    curl -L -o "$dest" "$url"
-  elif HAS wget; then
-    wget -O "$dest" "$url"
-  else
-    echo "Error: no downloader (aria2c / curl / wget) found." >&2
+if [[ ! -f "$MANIFEST" ]]; then
+    echo "❌  Manifest not found: $MANIFEST" >&2
     exit 1
-  fi
+fi
+
+# ── Parse the manifest ───────────────────────────────────────────────
+# Emits one record per entry, fields joined by the ASCII unit separator
+# (\037 — unlike tabs, bash `read` does not collapse empty fields on it):
+#   url \037 category \037 filename \037 sha256 \037 title
+# Only the simple flat schema used by sources.yaml is supported.
+US=$'\037'
+parse_manifest() {
+    awk '
+        function val(line) {
+            sub(/^[^:]*:[[:space:]]*/, "", line)   # strip "key: "
+            sub(/[[:space:]]+#.*$/, "", line)      # strip trailing comment
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+            gsub(/^"|"$/, "", line)                # strip surrounding quotes
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+            return line
+        }
+        function emit() {
+            if (url != "")
+                printf "%s\037%s\037%s\037%s\037%s\n", url, cat, fn, sha, title
+            url = cat = fn = sha = title = ""
+        }
+        /^[[:space:]]*#/ { next }
+        /^[[:space:]]*-[[:space:]]*url:/      { emit(); url   = val($0); next }
+        /^[[:space:]]+filename:/              { fn    = val($0); next }
+        /^[[:space:]]+category:/              { cat   = val($0); next }
+        /^[[:space:]]+sha256:/                { sha   = val($0); next }
+        /^[[:space:]]+title:/                 { title = val($0); next }
+        END { emit() }
+    ' "$MANIFEST"
 }
 
-# 1) Project Gutenberg
-# id = numeric ebook id. This will try common file patterns:
-#  - plain text utf-8: https://www.gutenberg.org/ebooks/<id>.txt.utf-8
-#  - cache path: https://www.gutenberg.org/cache/epub/<id>/pg<id>.txt
-fetch_gutenberg() {
-  id="$1"
-  outdir="$DL_DIR/gutenberg/$id"
-  mkdir -p "$outdir"
-  echo "Fetching Project Gutenberg id=$id -> $outdir"
+# ── Validate ─────────────────────────────────────────────────────────
+validate_manifest() {
+    local errors=0 count=0
+    declare -A seen
+    while IFS="$US" read -r url cat fn sha title; do
+        count=$((count + 1))
+        local where="entry #$count (${fn:-$url})"
+        if [[ ! "$url" =~ ^https?:// ]]; then
+            echo "  ✗ $where: url must be http(s):// — got '$url'"; errors=$((errors+1))
+        fi
+        if [[ "$url" =~ ^http:// ]]; then
+            echo "  ⚠ $where: plain http URL (no TLS)"
+        fi
+        if [[ -z "$fn" || "$fn" == */* ]]; then
+            echo "  ✗ $where: filename missing or contains '/'"; errors=$((errors+1))
+        fi
+        if [[ ! "$fn" =~ \.(pdf|txt)$ ]]; then
+            echo "  ✗ $where: filename must end in .pdf or .txt (ingestible types)"; errors=$((errors+1))
+        fi
+        if [[ ! "$cat" =~ ^[0-9]{3}_[A-Za-z]+$ ]]; then
+            echo "  ✗ $where: category '$cat' must look like 100_Survival"; errors=$((errors+1))
+        fi
+        if [[ -z "$title" ]]; then
+            echo "  ✗ $where: missing title"; errors=$((errors+1))
+        fi
+        if [[ -n "$sha" && ! "$sha" =~ ^[0-9a-fA-F]{64}$ ]]; then
+            echo "  ✗ $where: sha256 must be 64 hex chars"; errors=$((errors+1))
+        fi
+        local key="$cat/$fn"
+        if [[ -n "${seen[$key]:-}" ]]; then
+            echo "  ✗ $where: duplicate target $key"; errors=$((errors+1))
+        fi
+        seen[$key]=1
+    done < <(parse_manifest)
 
-  urls=(
-    "https://www.gutenberg.org/ebooks/${id}.txt.utf-8"
-    "https://www.gutenberg.org/cache/epub/${id}/pg${id}.txt"
-    "https://www.gutenberg.org/cache/epub/${id}/pg${id}.txt.utf-8"
-    "https://www.gutenberg.org/ebooks/${id}.epub.images"
-    "https://www.gutenberg.org/ebooks/${id}.epub.noimages"
-    "https://www.gutenberg.org/files/${id}/${id}-0.txt"
-    "https://www.gutenberg.org/files/${id}/${id}.txt"
-  )
-
-  success=0
-  for u in "${urls[@]}"; do
-    echo "  trying: $u"
-    # test availability
-    if HAS curl; then
-      code=$(curl -s -o /dev/null -w "%{http_code}" "$u" || echo 000)
-      if [ "$code" = "200" ]; then
-        filename=$(basename "$u")
-        download_file "$u" "$outdir/$filename"
-        success=1
-        break
-      fi
-    else
-      if wget --spider -q "$u"; then
-        filename=$(basename "$u")
-        download_file "$u" "$outdir/$filename"
-        success=1
-        break
-      fi
-    fi
-  done
-
-  if [ "$success" -eq 0 ]; then
-    echo "Could not find an obvious direct file for Gutenberg id=${id}. Opening landing page instead."
-    echo "Landing page: https://www.gutenberg.org/ebooks/${id}"
-    echo "You can inspect that page for available formats, or pass a direct file URL to the script."
-  else
-    echo "Saved into $outdir"
-  fi
+    echo ""
+    echo "Manifest: $count entries, $errors error(s)"
+    [[ $errors -eq 0 ]]
 }
 
-# 2) Internet Archive (archive.org)
-# item = archive identifier (e.g., 'pride-and-prejudice_2006_librivox' or 'exampleitem')
-fetch_archive() {
-  item="$1"
-  outdir="$DL_DIR/archive/$item"
-  mkdir -p "$outdir"
-  echo "Fetching Internet Archive item=$item -> $outdir"
-
-  if HAS ia; then
-    # use ia CLI for convenience (it will download primary files)
-    echo "Using 'ia' CLI to download item (ia download $item)"
-    ia download "$item" --dest="$outdir" || {
-      echo "ia CLI failed, falling back to wget/curl downloads"
-    }
-  fi
-
-  # Best-effort: try to download common zip or torrent endpoints if present
-  base="https://archive.org/download/${item}"
-  # try RSS / listing - we will attempt some common file endings
-  candidates=(
-    "${base}/${item}_archive.zip"
-    "${base}/${item}.zip"
-    "${base}/${item}.tar"
-    "${base}/${item}.pdf"
-  )
-  found=0
-  for c in "${candidates[@]}"; do
-    echo "  trying $c"
-    if HAS curl; then
-      code=$(curl -s -o /dev/null -w "%{http_code}" "$c" || echo 000)
-      if [ "$code" = "200" ]; then
-        download_file "$c" "$outdir/$(basename "$c")"
-        found=1
-        break
-      fi
-    else
-      if wget --spider -q "$c"; then
-        download_file "$c" "$outdir/$(basename "$c")"
-        found=1
-        break
-      fi
-    fi
-  done
-
-  if [ "$found" -eq 0 ]; then
-    echo "No obvious archive file found at $base — try visiting: https://archive.org/details/$item"
-    echo "If you know the file path under that item, pass a full URL to the script or install 'ia' CLI."
-  else
-    echo "Saved into $outdir"
-  fi
+# ── List ─────────────────────────────────────────────────────────────
+list_manifest() {
+    printf '%-18s %-52s %s\n' "CATEGORY" "FILENAME" "TITLE"
+    while IFS="$US" read -r url cat fn sha title; do
+        printf '%-18s %-52s %s\n' "$cat" "$fn" "$title"
+    done < <(parse_manifest | sort)
 }
 
-# 3) LibriVox (audiobooks)
-# supports direct zip downloads from librivox or via archive.org mirror.
-fetch_librivox() {
-  id="$1" # could be librivox book id or archive.org item
-  outdir="$DL_DIR/librivox/$id"
-  mkdir -p "$outdir"
-  echo "Fetching LibriVox id=$id -> $outdir"
-  # Try librivox zip (many books have a 'Whole book (zip)' link):
-  librivox_zip="https://librivox.org/${id}/download?format=zip"  # not always predictable
-  # Safer to try archive.org item with same slug
-  arch="https://archive.org/download/${id}/${id}_64kb.mp3.zip"
-  echo "Trying common archive.org paths..."
-  if HAS curl; then
-    code=$(curl -s -o /dev/null -w "%{http_code}" "$arch" || echo 000)
-    if [ "$code" = "200" ]; then
-      download_file "$arch" "$outdir/$(basename "$arch")"
-      echo "Saved into $outdir"
-      return
-    fi
-  else
-    if wget --spider -q "$arch"; then
-      download_file "$arch" "$outdir/$(basename "$arch")"
-      echo "Saved into $outdir"
-      return
-    fi
-  fi
-
-  echo "Could not auto-find a zip for $id — visit https://librivox.org/ and search, or check https://archive.org for a mirror."
-  echo "If you have a torrent for a LibriVox book (public domain), you can use the 'torrent' mode below."
-}
-
-# 4) Standard Ebooks
-# They offer monthly bulk zips and per-book downloads. Example bulk: https://standardebooks.org/bulk-downloads
-fetch_standardebooks() {
-  slug="$1" # could be 'bulk' or a specific file slug
-  outdir="$DL_DIR/standardebooks"
-  mkdir -p "$outdir"
-  echo "Fetching Standard Ebooks collection / slug=$slug -> $outdir"
-  if [ "$slug" = "bulk" ]; then
-    # try to fetch the bulk collection index (they publish zips)
-    # we attempt to download the monthly collections page programmatically is fragile;
-    echo "Please visit https://standardebooks.org/bulk-downloads to pick a bulk zip. This script can fetch a direct URL if you pass it."
-    echo "Example: ./fetch-freebooks.sh url https://standardebooks.org/ebooks/collection-2024-08.zip"
-    return
-  fi
-  echo "If you know the direct .zip/.epub url on standardebooks.org, use the 'url' verb to fetch it."
-}
-
-# 5) Generic URL fetch
-fetch_url() {
-  url="$1"
-  outdir="$DL_DIR/other"
-  mkdir -p "$outdir"
-  fname="$(basename "$url" | sed 's/[^a-zA-Z0-9._-]/_/g')"
-  echo "Downloading $url -> $outdir/$fname"
-  download_file "$url" "$outdir/$fname"
-}
-
-# 6) Torrent / magnet download (ONLY for legal/public-domain torrents)
-# accepts: path/to/file.torrent  OR magnet:?...
-fetch_torrent() {
-  t="$1"
-  outdir="$DL_DIR/torrents"
-  mkdir -p "$outdir"
-  if ! HAS aria2c; then
-    echo "Torrent download requires aria2c (or another bittorrent client). Install aria2c and retry." >&2
-    exit 1
-  fi
-  echo "Starting torrent/magnet download (aria2c) -> $outdir"
-  aria2c -d "$outdir" "$t"
-  echo "aria2c exit status: $?"
-  echo "Files saved into: $outdir"
-}
-
-# parse CLI
-verb="${1:-}"
-arg="${2:-}"
-
-case "$verb" in
-  gutenberg)
-    if [ -z "$arg" ]; then
-      echo "Usage: $0 gutenberg <id>"
-      exit 1
-    fi
-    fetch_gutenberg "$arg"
-    ;;
-  archive)
-    if [ -z "$arg" ]; then
-      echo "Usage: $0 archive <archive-item-id>"
-      exit 1
-    fi
-    fetch_archive "$arg"
-    ;;
-  librivox)
-    if [ -z "$arg" ]; then
-      echo "Usage: $0 librivox <slug-or-archive-id>"
-      exit 1
-    fi
-    fetch_librivox "$arg"
-    ;;
-  standardebooks)
-    fetch_standardebooks "${arg:-bulk}"
-    ;;
-  url)
-    if [ -z "$arg" ]; then
-      echo "Usage: $0 url <full-url>"
-      exit 1
-    fi
-    fetch_url "$arg"
-    ;;
-  torrent)
-    if [ -z "$arg" ]; then
-      echo "Usage: $0 torrent <path-to-.torrent | magnet:?…>"
-      exit 1
-    fi
-    fetch_torrent "$arg"
-    ;;
-  *)
-    echo "Usage:"
-    echo "  $0 gutenberg <id>        # try common Gutenberg file URLs for ebook id"
-    echo "  $0 archive <item-id>    # download archive.org item (ia CLI recommended)"
-    echo "  $0 librivox <slug>      # try to find librivox/IA zip"
-    echo "  $0 standardebooks bulk  # hint: check https://standardebooks.org/bulk-downloads"
-    echo "  $0 url <full-url>       # fetch any direct url"
-    echo "  $0 torrent <file|magnet> # aria2c download (only for public domain content)"
-    exit 1
-    ;;
+case "$MODE" in
+    validate) echo "Validating $MANIFEST ..."; validate_manifest; exit $? ;;
+    list)     list_manifest; exit 0 ;;
 esac
+
+# ── Fetch ────────────────────────────────────────────────────────────
+command -v curl >/dev/null 2>&1 || { echo "❌  curl is required" >&2; exit 1; }
+
+mkdir -p "$DEST"
+
+# Seed: copy starter documents into the library without clobbering
+if [[ -n "$SEED" && -d "$SEED" ]]; then
+    echo "── Seeding library from $SEED"
+    seeded=0
+    while IFS= read -r -d '' f; do
+        rel="${f#"$SEED"/}"
+        tgt="$DEST/$rel"
+        if [[ ! -f "$tgt" ]]; then
+            mkdir -p "$(dirname "$tgt")"
+            cp "$f" "$tgt" && seeded=$((seeded + 1))
+        fi
+    done < <(find "$SEED" -type f \( -iname '*.pdf' -o -iname '*.txt' \) -print0)
+    echo "   $seeded file(s) seeded"
+fi
+
+echo "── Fetching manifest: $MANIFEST → $DEST"
+ok=0; skipped=0; failed=0
+failed_list=""
+
+while IFS="$US" read -r url cat fn sha title; do
+    [[ -n "$ONLY_CATEGORY" && "$cat" != "$ONLY_CATEGORY" ]] && continue
+
+    dir="$DEST/$cat"
+    out="$dir/$fn"
+    part="$out.part"
+
+    if [[ -s "$out" && $FORCE -eq 0 ]]; then
+        skipped=$((skipped + 1))
+        continue
+    fi
+
+    mkdir -p "$dir"
+    echo ""
+    echo "📥  $title"
+    echo "    $url"
+
+    if ! curl -fL --retry 3 --retry-delay 2 --connect-timeout 20 --max-time 900 \
+              -A "JIC-content-fetch/1.0 (+https://github.com/companionintelligence/JustInCase)" \
+              -o "$part" "$url"; then
+        echo "    ✗ download failed"
+        rm -f "$part"
+        failed=$((failed + 1)); failed_list+="    $cat/$fn — $url"$'\n'
+        continue
+    fi
+
+    # Sanity checks before the file becomes visible to the ingester
+    if [[ ! -s "$part" ]]; then
+        echo "    ✗ empty download"
+        rm -f "$part"; failed=$((failed + 1)); failed_list+="    $cat/$fn — empty"$'\n'
+        continue
+    fi
+    if [[ "$fn" == *.pdf ]] && [[ "$(head -c 4 "$part")" != "%PDF" ]]; then
+        echo "    ✗ not a PDF (server returned an HTML page?)"
+        rm -f "$part"; failed=$((failed + 1)); failed_list+="    $cat/$fn — not a PDF"$'\n'
+        continue
+    fi
+    if [[ -n "$sha" ]]; then
+        actual=$(sha256sum "$part" | awk '{print $1}')
+        if [[ "${actual,,}" != "${sha,,}" ]]; then
+            echo "    ✗ sha256 mismatch (expected $sha, got $actual)"
+            rm -f "$part"; failed=$((failed + 1)); failed_list+="    $cat/$fn — sha256 mismatch"$'\n'
+            continue
+        fi
+    fi
+
+    mv "$part" "$out"   # atomic: the ingester never sees partial files
+    echo "    ✓ $(du -h "$out" | cut -f1) → $cat/$fn"
+    ok=$((ok + 1))
+done < <(parse_manifest)
+
+echo ""
+echo "══════════════════════════════════════════════"
+echo "  Library fetch complete"
+echo "    downloaded : $ok"
+echo "    skipped    : $skipped (already present)"
+echo "    failed     : $failed"
+if [[ -n "$failed_list" ]]; then
+    echo ""
+    echo "  Failed downloads:"
+    printf '%s' "$failed_list"
+fi
+echo "══════════════════════════════════════════════"
+
+if [[ $STRICT -eq 1 && $failed -gt 0 ]]; then
+    exit 1
+fi
