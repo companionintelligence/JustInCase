@@ -14,13 +14,13 @@ Full architecture and ADRs live in `CI-Engineering/architecture/`.
 
 ## This repo
 
-Offline emergency knowledge assistant. C++ server with llama.cpp backend, Tika document parsing, and a vector index. Runs via Docker Compose.
+Offline emergency knowledge assistant. C++ server with llama.cpp backend, MuPDF document parsing, and a SQLite hybrid search index (sqlite-vec + FTS5). Runs via Docker Compose; content lives in named volumes, not the image.
 
 ## Tech stack
 
 - C++ / llama.cpp (server + ingestion)
-- Apache Tika (document parsing)
-- Docker Compose (jic + tika + ingestion services)
+- MuPDF (document parsing)
+- Docker Compose (jic + ingestion services, content-fetch profile)
 - GGUF model files (in gguf_models/)
 
 ## Development

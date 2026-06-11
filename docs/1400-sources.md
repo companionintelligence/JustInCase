@@ -71,7 +71,9 @@ Existing efforts include:
 
 10. See also https://github.com/PR0M3TH3AN/Survival-Data
 
-11. And also https://prepperdisk.com/compare-models#cb13c8cb-17a1-4be1-afc0-d8ce2a41ed4b
+11. And also https://prepperdisk.com/compare-models#cb13c8cb-17a1-4be1-afc0-d8ce2a41ed4b ... PrepperDisk ships: English Wikipedia, Project Gutenberg (60k ebooks), WikiHow (90k guides), Ready.gov/FEMA documents, medical wikis (NLM/MedlinePlus, surgical and first-aid guides), military survival manuals, hunting/trapping/foraging guides, ham radio RepeaterBook, street + national park maps, and iFixit repair guides. JIC's `sources.yaml` mirrors the PDF-able, license-clear part of that scope.
+
+11b. https://www.projectnomad.us ... Project NOMAD (Node for Offline Media, Archives, and Data) — free, Apache-2.0 licensed offline server combining Kiwix (Wikipedia, Gutenberg, medical references, repair guides), Ollama for local LLMs, OpenStreetMap offline maps, and Kolibri/Khan Academy. The closest open-source analogue to JIC's mission; their content bundle is a good benchmark for ours.
 
 12. https://www.openstreetmaps.org - Openstreetmaps
 
