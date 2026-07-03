@@ -10,6 +10,14 @@ JIC is a self-contained, LLM-powered conversational search engine that runs enti
 
 ---
 
+## Interface
+
+A single-page, fully-offline UI on the [Companion Intelligence design system](https://github.com/companionintelligence/CI-Common/tree/main/style) — CI teal accent, self-hosted fonts (no CDN), light + dark themes.
+
+| Dark | Light |
+| --- | --- |
+| ![Just In Case — dark theme](docs/ui/justincase-dark.png) | ![Just In Case — light theme](docs/ui/justincase-light.png) |
+
 ## Why
 
 We lean heavily on ChatGPT, Claude, Google, and similar services for even simple practical questions — _how do I wire batteries to a solar panel_, _what causes lower-right abdominal pain_. During a prolonged crisis those services may not be available. JIC bridges that gap: an offline conversational interface to actionable emergency knowledge that fits on a single machine.

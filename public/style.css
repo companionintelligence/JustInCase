@@ -1,7 +1,7 @@
 /* ════════════════════════════════════════════════════════════════════
    JIC — Just In Case · UI theme
-   Brand: matches ci.computer (Companion Intelligence) — teal-black
-   base, mint lightAccent, Abel display + Source Code Pro mono.
+   Brand: matches Companion Intelligence canonical tokens — teal-black
+   base, canonical teal accent, Abel display + Source Code Pro mono.
    Dark theme is the default (night / low-power field use).
    ════════════════════════════════════════════════════════════════════ */
 
@@ -34,12 +34,12 @@
   --fg: #eff1f1;
   --fg-dim: #93b1ae;
   --fg-faint: #5f7d7a;
-  --accent: #80ffe1;         /* CI mint lightAccent                     */
-  --accent-soft: rgba(128, 255, 225, 0.10);
-  --accent-ink: #021a14;     /* text on mint                            */
+  --accent: #abd4d8;         /* CI canonical teal (primary, dark)       */
+  --accent-soft: rgba(171, 212, 216, 0.10);
+  --accent-ink: #041620;     /* text on teal (primary-foreground, dark) */
   --ok: #58ebbf;
   --warn: #ffcb6b;
-  --err: #ff6369;
+  --err: #ef7070;            /* CI canonical destructive (dark)         */
   --user-bubble: #0b3335;
   --shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   --radius: 10px;
