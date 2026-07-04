@@ -12,11 +12,43 @@ JIC is a self-contained, LLM-powered conversational search engine that runs enti
 
 ## Interface
 
-A single-page, fully-offline UI on the [Companion Intelligence design system](https://github.com/companionintelligence/CI-Common/tree/main/style) — CI teal accent, self-hosted fonts (no CDN), light + dark themes.
+A single-page, fully-offline UI on the [Companion Intelligence design system](https://github.com/companionintelligence/CI-Common/tree/main/style) — CI teal accent (`--primary` `#0f717a` / `#abd4d8`), self-hosted fonts (no CDN), and a light + dark theme toggle persisted to `localStorage`. The whole front end is dependency-free vanilla JS in [`public/`](public/) (`index.html`, `app.js`, `style.css`); it talks to the C++ server over three endpoints — `GET /status`, `GET /api/library`, `POST /query`.
+
+Every screen below is a real headless render of `public/index.html` captured in **both themes**. Screens marked _(needs backend)_ are driven by the native `jic-server` responses (`/status`, `/api/library`, `/query`); their captures use representative response payloads so the genuine client render path is exercised — the layout, tokens, and formatting are real, the document counts and answer text are illustrative.
+
+### Welcome · empty state
+
+First load, no conversation yet: the brand hero, suggested-question chips, and the system/library panels. This is exactly what renders before any backend responds — the status pill reads "Server unreachable" until `jic-server` is up.
 
 | Dark | Light |
 | --- | --- |
-| ![Just In Case — dark theme](docs/ui/justincase-dark.png) | ![Just In Case — light theme](docs/ui/justincase-light.png) |
+| ![Welcome screen, dark theme](docs/ui/justincase-dark.png) | ![Welcome screen, light theme](docs/ui/justincase-light.png) |
+
+### Conversation · grounded answer with citations _(needs backend)_
+
+A question answered from the field library: the user bubble, the markdown-formatted grounded answer, the expandable **Sources** accordion with per-document match scores, and the sidebar showing live system status (engine online, index size, model, uptime) and the category-grouped document library.
+
+| Dark | Light |
+| --- | --- |
+| ![Grounded answer with sources, dark theme](docs/ui/justincase-conversation-dark.png) | ![Grounded answer with sources, light theme](docs/ui/justincase-conversation-light.png) |
+
+### Degraded · language model missing _(needs backend)_
+
+Graceful degradation when the GGUF models aren't present. The warning banner explains how to fix it, the status pill reads "LLM missing", and the engine shows "degraded" — but the library stays browsable and `/query` answers `503` rather than erroring. This is the `llm_loaded: false` branch of `/status`.
+
+| Dark | Light |
+| --- | --- |
+| ![LLM-missing degraded state, dark theme](docs/ui/justincase-degraded-dark.png) | ![LLM-missing degraded state, light theme](docs/ui/justincase-degraded-light.png) |
+
+### Mobile · library drawer _(needs backend)_
+
+Narrow-viewport layout (≤ 920 px): the field library collapses into an off-canvas drawer toggled from the top bar, sliding in over a dimmed backdrop.
+
+| Dark | Light |
+| --- | --- |
+| ![Mobile library drawer, dark theme](docs/ui/justincase-mobile-dark.png) | ![Mobile library drawer, light theme](docs/ui/justincase-mobile-light.png) |
+
+> The theme toggle, suggested-question chips, sidebar drawer, and welcome/empty state render with no backend — they are pure client-side UI. The populated system status, indexed document library, grounded answers, and citations require the native `jic-server` (C++ + llama.cpp); the captures above exercise the real render path with representative server payloads. Token/theme conformance is enforced in CI by [`scripts/lint-canon.mjs`](scripts/lint-canon.mjs) (the canon lint gate), so the teal `--primary` and dark/light contracts stay honest.
 
 ## Why
 
@@ -170,20 +202,6 @@ helper-scripts/fetch-source-data.sh --validate   # manifest lint
 ```
 
 CI runs all of the above plus a Playwright screenshot gate before publishing the container image.
-
----
-
-## Screenshots
-
-UI theme matches the [ci.computer](https://ci.computer) brand — teal-black base, mint accent, Abel + Source Code Pro (bundled, offline).
-
-| Dark (default) | Light |
-|---|---|
-| ![Dark welcome screen with field library](docs/images/ui-dark.png) | ![Light theme](docs/images/ui-light.png) |
-
-| Grounded answer with citations | Mobile · library drawer |
-|---|---|
-| ![Answer with sources accordion](docs/images/ui-answer.png) | ![Mobile drawer](docs/images/ui-mobile.png) |
 
 ---
 
