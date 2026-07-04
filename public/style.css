@@ -76,6 +76,8 @@
   --warning-foreground: #422006;
   --info: #38bdf8;
   --info-foreground: #082f49;
+  --gradient-brand: linear-gradient(135deg, #0f717a, #00a9a7);
+  --gradient-hero: linear-gradient(135deg, #041620, #0e4a52);
   --gradient-aurora: radial-gradient(120% 90% at 50% -10%, rgba(64, 155, 155, 0.28), transparent 60%);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
