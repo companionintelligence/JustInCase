@@ -64,11 +64,34 @@ int main() {
     }, nullptr);
 
     // ── Embedding model ──────────────────────────────────────────────
+    // The model is host-provisioned and may not be present yet (fresh install,
+    // or files dropped in later). Instead of crash-looping under the restart
+    // policy, wait for it: retry until it loads or we're asked to stop. The
+    // index then starts building the moment the model appears — no restart.
     EmbeddingGenerator embeddings;
-    if (!embeddings.init()) {
-        std::cerr << "Failed to initialise embedding model" << std::endl;
-        return 1;
+    bool warned = false;
+    while (g_running.load()) {
+        // Only attempt to load once the file exists and has stopped changing
+        // (file_is_settled → false for a missing file, and for one still being
+        // copied in): don't mmap a half-written model, which could SIGBUS.
+        if (file_is_settled(get_embedding_model_path()) && embeddings.init())
+            break;
+        if (!warned) {
+            std::cerr << "Embedding model not available yet — "
+                      << describe_model_path(get_embedding_model_path()) << std::endl;
+            std::cerr << "Ingestion will wait and retry every "
+                      << get_scan_interval_sec() << "s." << std::endl;
+            warned = true;
+        }
+        interruptible_sleep(get_scan_interval_sec());
     }
+    if (!g_running.load()) {
+        std::cout << "Stopped before the embedding model became available."
+                  << std::endl;
+        llama_backend_free();
+        return 0;
+    }
+    std::cout << "Embedding model loaded." << std::endl;
 
     // ── SQLite index ─────────────────────────────────────────────────
     const std::string db_path = get_db_path();
@@ -162,12 +185,20 @@ int main() {
                     const int BATCH = 50;
                     std::vector<Document> batch_docs;
                     std::vector<std::vector<float>> batch_embs;
-                    int total_stored = 0;
+                    int total_stored  = 0;
+                    int failed_chunks = 0;
 
                     for (int ci = 0; ci < static_cast<int>(chunks.size()); ci++) {
                         if (!g_running.load()) break;
                         auto emb = embeddings.get_embedding(chunks[ci]);
-                        if (static_cast<int>(emb.size()) != EMBEDDING_DIM) continue;
+                        // Empty = the model failed to embed this chunk. Skip it
+                        // (never store a zero vector — that poisons search) and
+                        // remember the failure so we don't prematurely mark the
+                        // whole file done.
+                        if (static_cast<int>(emb.size()) != EMBEDDING_DIM) {
+                            failed_chunks++;
+                            continue;
+                        }
 
                         batch_docs.push_back({rel_path, chunks[ci], -1, ci});
                         batch_embs.push_back(std::move(emb));
@@ -199,6 +230,29 @@ int main() {
                         std::cout << "  Interrupted — " << rel_path
                                   << " will be re-processed on restart" << std::endl;
                         break;
+                    }
+
+                    // Every chunk failed to embed → the model is unhealthy, not
+                    // the document. Do NOT mark it processed (that would be
+                    // permanent); leave it for the next scan once the model
+                    // recovers. A partial success still commits what stored.
+                    if (total_stored == 0 && failed_chunks > 0) {
+                        std::cerr << "  ⚠ " << rel_path << ": all "
+                                  << failed_chunks << " chunk(s) failed to embed"
+                                  << " — leaving unmarked to retry next scan"
+                                  << std::endl;
+                        continue;
+                    }
+
+                    // Partial failure: commit what stored (re-ingesting would
+                    // duplicate rows — add_batch is INSERT, not upsert), but
+                    // surface it so a half-indexed document is observable
+                    // instead of silently missing content.
+                    if (failed_chunks > 0) {
+                        std::cerr << "  ⚠ " << rel_path << ": " << failed_chunks
+                                  << " of " << chunks.size()
+                                  << " chunk(s) failed to embed and were dropped"
+                                  << std::endl;
                     }
 
                     index.mark_file_processed(rel_path, total_stored);

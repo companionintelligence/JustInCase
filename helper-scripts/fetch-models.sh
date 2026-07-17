@@ -40,12 +40,19 @@ if [[ -z "$DL" ]]; then
 fi
 
 download() {
-    local url="$1" dest="$2"
+    # Download to a temporary name and atomically rename into place. A running
+    # container bind-mounts this directory read-only and mmaps the GGUF files;
+    # writing straight to the final name would let it map a half-written file
+    # (and later fault with SIGBUS), and an interrupted download would leave a
+    # partial file that looks complete. set -e aborts before the rename if the
+    # transfer fails, so a broken download never lands at the real path.
+    local url="$1" dest="$2" tmp="$2.part"
     if [[ "$DL" == "curl" ]]; then
-        curl -L --progress-bar -o "$dest" "$url"
+        curl -L --fail --progress-bar -o "$tmp" "$url"
     else
-        wget --progress=bar:force:noscroll -O "$dest" "$url"
+        wget --progress=bar:force:noscroll -O "$tmp" "$url"
     fi
+    mv -f "$tmp" "$dest"
 }
 
 # ── LLM model ────────────────────────────────────────────────────────

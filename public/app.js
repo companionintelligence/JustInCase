@@ -219,8 +219,10 @@
 
       if (!s.llm_loaded) {
         setPill('err', 'LLM missing');
-        setBanner('Language model not loaded — place the GGUF files in gguf_models/ and ' +
-                  'restart. The library stays browsable; answers are unavailable.');
+        const where = s.gguf_dir || 'gguf_models/';
+        setBanner('Language model not loaded — drop the GGUF files into ' + where +
+                  ' and they load automatically within ~30s (no restart needed). ' +
+                  'The library stays browsable; answers are unavailable.');
       } else if (s.documents_indexed === 0) {
         setPill('warn', 'Index empty');
         setBanner('');
