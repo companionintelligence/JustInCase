@@ -24,12 +24,43 @@
 # Validate after editing:  helper-scripts/fetch-source-data.sh --validate
 # ══════════════════════════════════════════════════════════════════════
 
+# ── Collections ───────────────────────────────────────────────────────
+# Named bundles a user can import as a unit (see GET /api/catalog and
+# `fetch-source-data.sh --collection <id>`). Every item below tags exactly
+# one collection via its `collection:` field.
+collections:
+  - id: core-survival
+    name: "Core Survival & Preparedness"
+    description: "Field survival, shelter, navigation, weather, and disaster-readiness checklists."
+  - id: austere-medicine
+    name: "Austere & Emergency Medicine"
+    description: "First aid, field surgery, dentistry, and health care where there is no doctor."
+  - id: food-and-water
+    name: "Food & Water"
+    description: "Growing, canning, and preserving food; safe water, gravity-flow systems, solar disinfection."
+  - id: power-and-engineering
+    name: "Power & Engineering"
+    description: "Off-grid solar power and appropriate-technology village engineering."
+  - id: comms-and-radio
+    name: "Communications & Radio"
+    description: "Amateur/emergency radio and interoperable field communications."
+  - id: education
+    name: "Education & Textbooks"
+    description: "Open textbooks and foundational learning material."
+  - id: civics-and-culture
+    name: "Civics & Culture"
+    description: "Founding civic documents and enduring public-domain texts."
+  - id: software-and-tech
+    name: "Software & Technical Reference"
+    description: "Programming, operating systems, and version control references."
+
 sources:
 
   # ── 100 Survival & Preparedness ───────────────────────────────────
   - url: https://www.ready.gov/sites/default/files/2021-02/ready_checklist.pdf
     filename: FEMA-Emergency-Checklist.pdf
     category: 100_Survival
+    collection: core-survival
     title: "FEMA — Emergency Supply Checklist"
     license: PD (US Government)
     size: ~150 KB
@@ -37,6 +68,7 @@ sources:
   - url: https://www.ready.gov/sites/default/files/2020-03/ready_emergency-financial-first-aid-toolkit.pdf
     filename: FEMA-Financial-First-Aid-Kit.pdf
     category: 100_Survival
+    collection: core-survival
     title: "FEMA — Emergency Financial First Aid Kit"
     license: PD (US Government)
     size: ~1.7 MB
@@ -44,6 +76,7 @@ sources:
   - url: https://archive.org/download/Fm21-76SurvivalManual/FM21-76_SurvivalManual.pdf
     filename: FM21-76-US-Army-Survival.pdf
     category: 100_Survival
+    collection: core-survival
     title: "US Army Survival Manual FM 21-76 (shelter, water, foraging, trapping)"
     license: PD (US Government)
     size: ~3 MB
@@ -51,6 +84,7 @@ sources:
   - url: https://archive.org/download/milmanual-fm-3-25.26-map-reading-and-land-navigation/fm_3-25.26_map_reading_and_land_navigation.pdf
     filename: FM3-25-26-Map-Reading-Land-Navigation.pdf
     category: 100_Survival
+    collection: core-survival
     title: "US Army FM 3-25.26 — Map Reading and Land Navigation"
     license: PD (US Government)
     size: ~24 MB
@@ -58,6 +92,7 @@ sources:
   - url: https://archive.org/download/pdfy-ULdTVDxCZR1mXh25/Nuclear%20War%20Survival%20Skills%20-%20Cresson%20H%20Kearney.pdf
     filename: NuclearWarSurvivalSkills-CressonHKearney.pdf
     category: 100_Survival
+    collection: core-survival
     title: "Nuclear War Survival Skills (Kearney, Oak Ridge National Laboratory)"
     license: PD (US Government research; author authorized free reproduction)
     size: ~6.4 MB
@@ -65,6 +100,7 @@ sources:
   - url: https://www.weather.gov/media/owlie/SGJune6-11.pdf
     filename: NWS-Weather-Spotters-Field-Guide.pdf
     category: 100_Survival
+    collection: core-survival
     title: "NOAA/NWS — Weather Spotter's Field Guide"
     license: PD (US Government)
     size: ~28 MB
@@ -72,21 +108,24 @@ sources:
   - url: https://www.gutenberg.org/cache/epub/17093/pg17093.txt
     filename: Camp-Life-In-The-Woods-Trapping.txt
     category: 100_Survival
+    collection: core-survival
     title: "Camp Life in the Woods and the Tricks of Trapping (Gibson, 1881)"
-    license: PD (Project Gutenberg #17093)
+    license: "PD (Project Gutenberg #17093)"
     size: ~500 KB
 
   - url: https://www.gutenberg.org/cache/epub/28255/pg28255.txt
     filename: Shelters-Shacks-And-Shanties.txt
     category: 100_Survival
+    collection: core-survival
     title: "Shelters, Shacks and Shanties (D.C. Beard, 1914)"
-    license: PD (Project Gutenberg #28255)
+    license: "PD (Project Gutenberg #28255)"
     size: ~400 KB
 
   # ── 200 Medical ───────────────────────────────────────────────────
   - url: https://archive.org/download/where-there-is-no-doctor/Where%20There%20Is%20No%20Doctor.pdf
     filename: Where-There-Is-No-Doctor.pdf
     category: 200_Medical
+    collection: austere-medicine
     title: "Where There Is No Doctor (Hesperian)"
     license: Hesperian open copyright (free non-commercial reproduction)
     size: ~8.7 MB
@@ -94,6 +133,7 @@ sources:
   - url: https://archive.org/download/where-there-is-no-dentist-hesperian-2010/Where_there_is_no_dentist_-_Hesperian_2010.pdf
     filename: Where-There-Is-No-Dentist.pdf
     category: 200_Medical
+    collection: austere-medicine
     title: "Where There Is No Dentist (Hesperian)"
     license: Hesperian open copyright (free non-commercial reproduction)
     size: ~6.8 MB
@@ -101,6 +141,7 @@ sources:
   - url: https://archive.org/download/WhereWomenHaveNoDoctor/18.HersperianFoundation-WhereWomenHaveNoDoctor.pdf
     filename: Where-Women-Have-No-Doctor.pdf
     category: 200_Medical
+    collection: austere-medicine
     title: "Where Women Have No Doctor (Hesperian)"
     license: Hesperian open copyright (free non-commercial reproduction)
     size: ~12 MB
@@ -108,6 +149,7 @@ sources:
   - url: https://archive.org/download/UsArmyFirstAidManualFm4-25.11/UsArmyFirstAidManual.pdf
     filename: FM4-25-11-First-Aid.pdf
     category: 200_Medical
+    collection: austere-medicine
     title: "US Army FM 4-25.11 — First Aid"
     license: PD (US Government)
     size: ~2.6 MB
@@ -115,6 +157,7 @@ sources:
   - url: https://archive.org/download/emergency-war-surgery-5th-edition/Emergency%20War%20Surgery%205th%20Edition.pdf
     filename: Emergency-War-Surgery-5th-Edition.pdf
     category: 200_Medical
+    collection: austere-medicine
     title: "Emergency War Surgery, 5th Edition (Borden Institute)"
     license: PD (US Government)
     size: ~30 MB
@@ -122,6 +165,7 @@ sources:
   - url: https://archive.org/download/survival-and-austere-medicine-3rd-ed-2017/Survival%20and%20Austere%20Medicine%203rd%20Ed%20%282017%29.pdf
     filename: Survival-And-Austere-Medicine-3rd-Ed.pdf
     category: 200_Medical
+    collection: austere-medicine
     title: "Survival and Austere Medicine: An Introduction (3rd ed., 2017)"
     license: Free distribution (authors permit non-commercial copying)
     size: ~23 MB
@@ -129,6 +173,7 @@ sources:
   - url: https://www.nctsn.org/sites/default/files/resources/pfa_field_operations_guide.pdf
     filename: PFA-Field-Operations-Guide.pdf
     category: 200_Medical
+    collection: austere-medicine
     title: "Psychological First Aid — Field Operations Guide (NCTSN/NCPTSD)"
     license: Free distribution (US Government funded)
     size: ~3.4 MB
@@ -137,6 +182,7 @@ sources:
   - url: https://archive.org/download/usda-guide-home-canning/USDA-Complete-Guide-to-Home-Canning-2015-revision.pdf
     filename: USDA-Complete-Guide-Home-Canning.pdf
     category: 300_Food
+    collection: food-and-water
     title: "USDA Complete Guide to Home Canning (2015 revision, all 7 guides)"
     license: PD (US Government)
     size: ~17 MB
@@ -144,14 +190,16 @@ sources:
   - url: https://www.gutenberg.org/cache/epub/9550/pg9550.txt
     filename: Manual-Of-Gardening-Bailey.txt
     category: 300_Food
+    collection: food-and-water
     title: "Manual of Gardening, 2nd ed. (L.H. Bailey)"
-    license: PD (Project Gutenberg #9550)
+    license: "PD (Project Gutenberg #9550)"
     size: ~900 KB
 
   # ── 400 Engineering, Water & Power ────────────────────────────────
   - url: https://www.nrel.gov/docs/fy04osti/36178.pdf
     filename: NREL-PV-Solar-Systems.pdf
     category: 400_Engineering
+    collection: power-and-engineering
     title: "NREL — Photovoltaic Solar Resource of the United States"
     license: PD (US Government)
     size: ~1 MB
@@ -159,6 +207,7 @@ sources:
   - url: https://archive.org/download/VillageTechnologyHandbook/Village%20Technology%20Handbook.pdf
     filename: VITA-Village-Technology-Handbook.pdf
     category: 400_Engineering
+    collection: power-and-engineering
     title: "VITA — Village Technology Handbook (water, agriculture, construction)"
     license: PD / freely distributed (USAID-funded)
     size: ~15 MB
@@ -166,6 +215,7 @@ sources:
   - url: https://archive.org/download/fa_Handbook_of_Gravity-Flow_Water_Systems/Handbook_of_Gravity-Flow_Water_Systems.pdf
     filename: Handbook-Of-Gravity-Flow-Water-Systems.pdf
     category: 400_Engineering
+    collection: food-and-water
     title: "A Handbook of Gravity-Flow Water Systems (Jordan)"
     license: Freely distributed (Appropriate Technology Library)
     size: ~18 MB
@@ -173,6 +223,7 @@ sources:
   - url: https://archive.org/download/fa_Solar_Disinfection_of_Water/Solar_Disinfection_of_Water.pdf
     filename: Solar-Disinfection-Of-Water.pdf
     category: 400_Engineering
+    collection: food-and-water
     title: "Solar Disinfection of Water (SODIS)"
     license: Freely distributed (Appropriate Technology Library)
     size: ~13 MB
@@ -181,6 +232,7 @@ sources:
   - url: https://www.arrl.org/files/file/Technology/tis/info/pdf/0209038.pdf
     filename: ARRL-Emergency-Comms.pdf
     category: 500_Comms
+    collection: comms-and-radio
     title: "ARRL — Emergency Communications"
     license: Freely distributed (ARRL)
     size: ~540 KB
@@ -188,6 +240,7 @@ sources:
   - url: https://archive.org/download/national-interoperability-field-operations-guide-nifog-version-2.02/National%20Interoperability%20Field%20Operations%20Guide%20%28NIFOG%29%20Version%202.02.pdf
     filename: CISA-NIFOG-2.02.pdf
     category: 500_Comms
+    collection: comms-and-radio
     title: "CISA — National Interoperability Field Operations Guide (NIFOG) v2.02"
     license: PD (US Government)
     size: ~6.7 MB
@@ -196,6 +249,7 @@ sources:
   - url: https://assets.openstax.org/oscms-prodcms/media/documents/ElementaryAlgebra2e-WEB.pdf
     filename: OpenStax-Elementary-Algebra-2e.pdf
     category: 600_Education
+    collection: education
     title: "OpenStax — Elementary Algebra 2e"
     license: CC BY 4.0
     size: ~45 MB
@@ -204,6 +258,7 @@ sources:
   - url: https://www.un.org/sites/un2.un.org/files/2021/03/udhr.pdf
     filename: UN-Universal-Declaration-Human-Rights.pdf
     category: 700_Social
+    collection: civics-and-culture
     title: "Universal Declaration of Human Rights"
     license: PD (United Nations)
     size: ~100 KB
@@ -211,6 +266,7 @@ sources:
   - url: https://www.govinfo.gov/content/pkg/CDOC-110hdoc50/pdf/CDOC-110hdoc50.pdf
     filename: US-Constitution.pdf
     category: 700_Social
+    collection: civics-and-culture
     title: "The Constitution of the United States (pocket edition)"
     license: PD (US Government)
     size: ~4 MB
@@ -218,21 +274,24 @@ sources:
   - url: https://www.gutenberg.org/cache/epub/1404/pg1404.txt
     filename: Federalist-Papers.txt
     category: 700_Social
+    collection: civics-and-culture
     title: "The Federalist Papers"
-    license: PD (Project Gutenberg #1404)
+    license: "PD (Project Gutenberg #1404)"
     size: ~1.2 MB
 
   - url: https://www.gutenberg.org/cache/epub/10/pg10.txt
     filename: KJV-Bible.txt
     category: 700_Social
+    collection: civics-and-culture
     title: "King James Bible"
-    license: PD (Project Gutenberg #10)
+    license: "PD (Project Gutenberg #10)"
     size: ~4.4 MB
 
   # ── 800 Software / Technical Reference ────────────────────────────
   - url: https://greenteapress.com/thinkpython2/thinkpython2.pdf
     filename: ThinkPython2.pdf
     category: 800_Software
+    collection: software-and-tech
     title: "Think Python, 2nd Edition (Downey)"
     license: CC BY-NC
     size: ~920 KB
@@ -240,6 +299,7 @@ sources:
   - url: https://greenteapress.com/thinkos/thinkos.pdf
     filename: ThinkOS.pdf
     category: 800_Software
+    collection: software-and-tech
     title: "Think OS: A Brief Introduction to Operating Systems (Downey)"
     license: CC BY-NC
     size: ~370 KB
@@ -247,6 +307,7 @@ sources:
   - url: https://eloquentjavascript.net/Eloquent_JavaScript.pdf
     filename: Eloquent-JavaScript.pdf
     category: 800_Software
+    collection: software-and-tech
     title: "Eloquent JavaScript, 3rd Edition (Haverbeke)"
     license: CC BY-NC
     size: ~2 MB
@@ -254,6 +315,7 @@ sources:
   - url: https://github.com/progit/progit2/releases/download/2.1.426/progit.pdf
     filename: Pro-Git-2.pdf
     category: 800_Software
+    collection: software-and-tech
     title: "Pro Git, 2nd Edition (Chacon & Straub)"
     license: CC BY-NC-SA
     size: ~19 MB

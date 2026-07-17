@@ -294,6 +294,149 @@
     }
   }
 
+  // ── Add-content modal (catalog import + upload) ─────────────────────
+
+  let importPoll = null;
+
+  function openLibraryModal() {
+    $('library-modal').hidden = false;
+    populateUploadCategories();
+    loadCatalog();
+  }
+
+  function closeLibraryModal() {
+    $('library-modal').hidden = true;
+  }
+
+  async function loadCatalog() {
+    const list = $('catalog-list');
+    list.textContent = 'Loading…';
+    try {
+      const res = await fetch('/api/catalog');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      renderCatalog(await res.json());
+    } catch (e) {
+      list.textContent = 'Could not load the catalog.';
+    }
+  }
+
+  function renderCatalog(data) {
+    const list = $('catalog-list');
+    list.innerHTML = '';
+    (data.collections || []).forEach((c) => {
+      const done = c.count > 0 && c.installed >= c.count;
+      const row = document.createElement('div');
+      row.className = 'catalog-row';
+
+      const meta = document.createElement('div');
+      meta.className = 'catalog-meta';
+      meta.innerHTML =
+        `<span class="catalog-name">${escapeHtml(c.name)}</span>` +
+        `<span class="catalog-desc">${escapeHtml(c.description)}</span>` +
+        `<span class="catalog-count">${c.installed}/${c.count} installed</span>`;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ghost-btn catalog-install' + (done ? ' is-done' : '');
+      btn.textContent = done ? 'Installed' : (data.importing ? 'Working…' : 'Install');
+      btn.disabled = done || data.importing || !data.import_enabled;
+      btn.addEventListener('click', () => importCollection(c.id, btn));
+
+      row.appendChild(meta);
+      row.appendChild(btn);
+      list.appendChild(row);
+    });
+
+    if (!data.import_enabled) {
+      const note = document.createElement('p');
+      note.className = 'modal-note';
+      note.textContent = 'Network import is disabled on this deployment — you can still upload your own files below.';
+      list.appendChild(note);
+    }
+  }
+
+  async function importCollection(id, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Starting…';
+    try {
+      const res = await fetch('/api/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collection: id }),
+      });
+      if (res.status === 202) {
+        pollImport();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        btn.textContent = 'Retry';
+        btn.disabled = false;
+        if (res.status === 409) pollImport();
+        console.warn('import:', d.error || res.status);
+      }
+    } catch (e) {
+      btn.textContent = 'Retry';
+      btn.disabled = false;
+    }
+  }
+
+  // While an import runs, refresh the catalog (install progress) and the
+  // sidebar library (docs appear as they download + index), until done.
+  function pollImport() {
+    if (importPoll) return;
+    importPoll = setInterval(async () => {
+      try {
+        const res = await fetch('/api/catalog');
+        if (res.ok) {
+          const data = await res.json();
+          renderCatalog(data);
+          refreshLibrary();
+          if (!data.importing) { clearInterval(importPoll); importPoll = null; }
+        }
+      } catch (e) { /* keep polling */ }
+    }, 3000);
+  }
+
+  function populateUploadCategories() {
+    const sel = $('upload-category');
+    if (sel.options.length) return;
+    Object.keys(CATEGORY_LABELS).forEach((cat) => {
+      const o = document.createElement('option');
+      o.value = cat;
+      o.textContent = CATEGORY_LABELS[cat];
+      sel.appendChild(o);
+    });
+  }
+
+  async function uploadFile(file) {
+    const status = $('upload-status');
+    status.hidden = false;
+    status.className = 'modal-status';
+    status.textContent = 'Uploading ' + file.name + '…';
+    const fd = new FormData();
+    fd.append('category', $('upload-category').value);
+    fd.append('file', file);
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) {
+        status.textContent = 'Uploaded ' + (d.filename || file.name) + ' — indexing shortly.';
+        resetUploadPicker();
+        refreshLibrary();
+      } else {
+        status.className = 'modal-status is-error';
+        status.textContent = 'Upload failed: ' + (d.error || ('HTTP ' + res.status));
+      }
+    } catch (e) {
+      status.className = 'modal-status is-error';
+      status.textContent = 'Upload failed.';
+    }
+  }
+
+  function resetUploadPicker() {
+    $('upload-file').value = '';
+    $('upload-drop-text').textContent = 'Choose a PDF or TXT file, or drop it here…';
+  }
+
   // ── Query flow ─────────────────────────────────────────────────────
 
   function setBusy(busy) {
@@ -409,6 +552,44 @@
 
     $('sidebar-toggle').addEventListener('click', () => toggleSidebar());
     $('backdrop').addEventListener('click', () => toggleSidebar(false));
+
+    // ── Add-content modal wiring ──────────────────────────────────
+    $('library-add-btn').addEventListener('click', openLibraryModal);
+    $('library-modal-close').addEventListener('click', closeLibraryModal);
+    $('library-modal-backdrop').addEventListener('click', closeLibraryModal);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !$('library-modal').hidden) closeLibraryModal();
+    });
+
+    const fileInput = $('upload-file');
+    const drop = $('upload-drop');
+    drop.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) $('upload-drop-text').textContent = fileInput.files[0].name;
+    });
+    ['dragover', 'dragenter'].forEach((ev) =>
+      drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('dragover'); }));
+    ['dragleave', 'dragend'].forEach((ev) =>
+      drop.addEventListener(ev, () => drop.classList.remove('dragover')));
+    drop.addEventListener('drop', (e) => {
+      e.preventDefault();
+      drop.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        $('upload-drop-text').textContent = e.dataTransfer.files[0].name;
+      }
+    });
+    $('upload-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (fileInput.files.length) {
+        uploadFile(fileInput.files[0]);
+      } else {
+        const s = $('upload-status');
+        s.hidden = false;
+        s.className = 'modal-status';
+        s.textContent = 'Pick a file first.';
+      }
+    });
 
     $('user-input').focus();
 

@@ -765,3 +765,121 @@ body {
 
   .toggle span { display: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   Add-content: Field-library action + import/upload modal
+   ══════════════════════════════════════════════════════════════════════ */
+
+.panel-action {
+  margin-left: auto;
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+
+.modal[hidden] { display: none; }
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 16, 17, 0.72);
+  backdrop-filter: blur(2px);
+}
+.modal-card {
+  position: relative;
+  width: min(640px, 100%);
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--bg1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 20px 22px 24px;
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.modal-head h2 { margin: 0; font-size: 1.05rem; }
+.modal-sub {
+  margin: 8px 0 4px;
+  color: var(--fg-dim);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.modal-section { margin-top: 20px; }
+.modal-h3 {
+  margin: 0 0 10px;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+.modal-note   { margin: 10px 2px 0; font-size: 0.78rem; color: var(--warning); }
+.modal-status { margin: 10px 2px 0; font-size: 0.82rem; color: var(--fg-dim); }
+.modal-status.is-error { color: var(--err); }
+
+.catalog-list { display: flex; flex-direction: column; gap: 8px; }
+.catalog-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+}
+.catalog-meta { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.catalog-name  { font-weight: 600; font-size: 0.9rem; }
+.catalog-desc  { color: var(--fg-dim); font-size: 0.78rem; line-height: 1.4; }
+.catalog-count { color: var(--fg-faint); font-size: 0.72rem; font-family: var(--mono); }
+.catalog-install { flex-shrink: 0; }
+.catalog-install.is-done { color: var(--success); border-color: transparent; }
+
+.upload-form { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.upload-cat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--fg-dim);
+}
+.upload-cat select {
+  flex: 1;
+  background: var(--bg2);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 0.82rem;
+}
+.upload-drop {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 18px;
+  background: var(--bg2);
+  border: 1px dashed var(--fg-faint);
+  border-radius: var(--radius-md);
+  color: var(--fg-dim);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.upload-drop.dragover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--fg);
+}
