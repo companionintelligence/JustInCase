@@ -3,6 +3,8 @@
 #include <string>
 #include <cstdlib>
 #include <iostream>
+#include <filesystem>
+#include <system_error>
 
 // ── Version ──────────────────────────────────────────────────────────
 #define JIC_VERSION "0.3.0"
@@ -70,14 +72,88 @@ inline std::string get_cors_origin() {
 }
 
 // ── Model paths (overridable via environment) ────────────────────────
+// The directory that holds the GGUF model files. Overridable so a deploy
+// whose bind mount lands somewhere other than ./gguf_models can point the
+// server at the real location instead of silently running degraded.
+inline std::string get_gguf_dir() {
+    return env_or("JIC_GGUF_DIR", "./gguf_models");
+}
+
 inline std::string get_llm_model_path() {
-    return std::string("./gguf_models/") +
+    return get_gguf_dir() + "/" +
            env_or("LLM_GGUF_FILE", "Llama-3.2-3B-Instruct-Q4_K_M.gguf");
 }
 
 inline std::string get_embedding_model_path() {
-    return std::string("./gguf_models/") +
+    return get_gguf_dir() + "/" +
            env_or("EMBEDDING_GGUF_FILE", "nomic-embed-text-v1.5.Q4_K_M.gguf");
+}
+
+// Absolute, resolved form of the model directory — computed once (cwd is
+// stable at /app in the container). Never throws: a missing directory is a
+// normal state (the whole point of degraded mode), so this must be safe to
+// call from the /status handler on every poll.
+inline std::string resolved_gguf_dir() {
+    static const std::string cached = [] {
+        std::error_code ec;
+        auto abs = std::filesystem::weakly_canonical(get_gguf_dir(), ec);
+        return ec ? get_gguf_dir() : abs.string();
+    }();
+    return cached;
+}
+
+// Human-readable diagnostic for logs when a model fails to load: the exact
+// resolved path, whether the file is actually there (and its size), and if
+// not, what the directory *does* contain — so "LLM missing" stops being a
+// mystery. Error-code-safe throughout; never throws.
+inline std::string describe_model_path(const std::string& path) {
+    namespace fs = std::filesystem;
+    std::error_code ec;
+    const fs::path p(path);
+
+    auto abs = fs::weakly_canonical(p, ec);
+    std::string out = "resolved='" + (ec ? path : abs.string()) + "'";
+    ec.clear();
+
+    if (fs::exists(p, ec) && !ec) {
+        auto sz = fs::file_size(p, ec);
+        out += ec ? " [present, size unknown]"
+                  : " [present, " + std::to_string(sz) + " bytes]";
+        return out;
+    }
+
+    out += " [MISSING]";
+    const fs::path dir = p.parent_path();
+    ec.clear();
+    auto dir_abs = fs::weakly_canonical(dir, ec);
+    const std::string dir_shown = ec ? dir.string() : dir_abs.string();
+    ec.clear();
+
+    if (fs::is_directory(dir, ec) && !ec) {
+        out += "; dir '" + dir_shown + "' contains: ";
+        std::error_code it_ec;
+        // Iterate with the error_code increment(): directory_iterator's
+        // operator++ (used by range-for) THROWS on a mid-scan failure, which
+        // would break this helper's never-throws contract and, in the loader
+        // thread, terminate the process. increment(ec) reports instead.
+        fs::directory_iterator it(dir, it_ec), end;
+        if (it_ec) {
+            // e.g. the dir exists but is not readable by this uid — exactly
+            // the kind of thing that looks like "no models" but isn't.
+            out += "(unreadable: " + it_ec.message() + ")";
+        } else {
+            int n = 0;
+            for (; !it_ec && it != end; it.increment(it_ec)) {
+                if (n++) out += ", ";
+                out += it->path().filename().string();
+                if (n >= 20) { out += ", …"; break; }
+            }
+            if (n == 0) out += "(empty)";
+        }
+    } else {
+        out += "; dir '" + dir_shown + "' does not exist";
+    }
+    return out;
 }
 
 inline std::string get_llm_model_name() {

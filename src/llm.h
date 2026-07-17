@@ -22,6 +22,12 @@ public:
     }
 
     bool init() {
+        // Idempotent: the background loader retries this until it succeeds,
+        // so free any partially-initialised state from a prior failed attempt
+        // before reloading — otherwise a reload would leak a model/context.
+        if (ctx)   { llama_free(ctx);         ctx   = nullptr; }
+        if (model) { llama_model_free(model); model = nullptr; }
+
         llama_model_params model_params = llama_model_default_params();
         model = llama_model_load_from_file(get_llm_model_path().c_str(), model_params);
         if (!model) {

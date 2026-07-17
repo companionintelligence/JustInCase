@@ -36,9 +36,15 @@ using json = nlohmann::json;
 // Global state
 // ═════════════════════════════════════════════════════════════════════
 
-static SQLiteVecIndex*      g_index      = nullptr;
-static EmbeddingGenerator*  g_embeddings = nullptr;
-static LLMGenerator*        g_llm        = nullptr;
+static SQLiteVecIndex*      g_index      = nullptr;   // set once before listen()
+
+// The models are loaded by a background thread (see model_loader) while request
+// handlers may already be running on cpp-httplib's worker pool. These pointers
+// only ever transition null → loaded exactly once and never revert, so plain
+// acquire/release atomics are a correct, lock-free way to publish them: a reader
+// sees either null (→ 503 / no context) or a fully-constructed object.
+static std::atomic<EmbeddingGenerator*> g_embeddings{nullptr};
+static std::atomic<LLMGenerator*>       g_llm{nullptr};
 
 static httplib::Server*     g_server     = nullptr;
 static std::atomic<bool>    g_running{true};
@@ -106,11 +112,15 @@ static void send_error(httplib::Response& res, int status, const std::string& ms
 
 static void handle_query(const httplib::Request& req, httplib::Response& res) {
     // Degraded mode: the server runs without GGUF models so the UI and
-    // /status stay reachable, but /query needs the LLM.
-    if (!g_llm) {
+    // /status stay reachable, but /query needs the LLM. Load the pointer
+    // once here and use that local for the rest of the request (it cannot
+    // revert to null), so there is no check-then-use race with the loader.
+    LLMGenerator* llm = g_llm.load(std::memory_order_acquire);
+    if (!llm) {
         send_error(res, 503,
-                   "LLM model not loaded. Place the GGUF models in "
-                   "gguf_models/ and restart the container.");
+                   "Language model not loaded yet — it loads automatically once "
+                   "the GGUF files are present in gguf_models/. The document "
+                   "library stays browsable in the meantime.");
         return;
     }
 
@@ -165,26 +175,32 @@ static void handle_query(const httplib::Request& req, httplib::Response& res) {
         std::string context;
         json matches = json::array();
 
-        if (use_context && g_embeddings && g_chunk_count.load() > 0) {
-            auto q_emb = g_embeddings->get_embedding(query);
+        EmbeddingGenerator* emb = g_embeddings.load(std::memory_order_acquire);
+        if (use_context && emb && g_chunk_count.load() > 0) {
+            auto q_emb = emb->get_embedding(query);
 
-            auto results = g_index->hybrid_search(
-                    q_emb, query, MAX_CONTEXT_CHUNKS, SEARCH_CANDIDATES);
+            // Empty = the query could not be embedded; skip vector search
+            // rather than feeding a bad vector into the index (answer the
+            // question without retrieved context).
+            if (!q_emb.empty()) {
+                auto results = g_index->hybrid_search(
+                        q_emb, query, MAX_CONTEXT_CHUNKS, SEARCH_CANDIDATES);
 
-            std::set<std::string> seen_files;
-            for (int i = 0; i < static_cast<int>(results.size()); i++) {
-                auto& r = results[i];
-                context += "[REFERENCE " + std::to_string(i + 1)
-                        + " from " + r.filename + "]\n"
-                        + r.text + "\n"
-                        + "[END REFERENCE " + std::to_string(i + 1) + "]\n\n";
+                std::set<std::string> seen_files;
+                for (int i = 0; i < static_cast<int>(results.size()); i++) {
+                    auto& r = results[i];
+                    context += "[REFERENCE " + std::to_string(i + 1)
+                            + " from " + r.filename + "]\n"
+                            + r.text + "\n"
+                            + "[END REFERENCE " + std::to_string(i + 1) + "]\n\n";
 
-                if (seen_files.insert(r.filename).second) {
-                    matches.push_back({
-                        {"filename", r.filename},
-                        {"text", r.text.substr(0, 250) + "..."},
-                        {"score", r.score}
-                    });
+                    if (seen_files.insert(r.filename).second) {
+                        matches.push_back({
+                            {"filename", r.filename},
+                            {"text", r.text.substr(0, 250) + "..."},
+                            {"score", r.score}
+                        });
+                    }
                 }
             }
         }
@@ -212,7 +228,7 @@ static void handle_query(const httplib::Request& req, httplib::Response& res) {
         prompt += "User: " + query + "\n\nAssistant:";
 
         // ── Generate ────────────────────────────────────────────────
-        std::string answer = g_llm->generate(prompt);
+        std::string answer = llm->generate(prompt);
 
         // ── Update conversation history ─────────────────────────────
         {
@@ -240,6 +256,13 @@ static void handle_query(const httplib::Request& req, httplib::Response& res) {
 // /status handler (uses cached counts)
 // ═════════════════════════════════════════════════════════════════════
 
+// Cheap, never-throwing existence check for /status (the file may sit on a
+// missing or read-only mount; error_code overload keeps this safe to poll).
+static bool model_file_present(const std::string& path) {
+    std::error_code ec;
+    return fs::exists(path, ec) && !ec;
+}
+
 static void handle_status(const httplib::Request&, httplib::Response& res) {
     auto uptime = std::chrono::duration_cast<std::chrono::seconds>(
             std::chrono::steady_clock::now() - g_start_time).count();
@@ -249,10 +272,16 @@ static void handle_status(const httplib::Request&, httplib::Response& res) {
     status["uptime_seconds"]     = uptime;
     status["documents_indexed"]  = g_chunk_count.load();
     status["files_processed"]    = g_file_count.load();
-    status["llm_loaded"]         = (g_llm != nullptr);
-    status["embeddings_loaded"]  = (g_embeddings != nullptr);
+    status["llm_loaded"]         = (g_llm.load() != nullptr);
+    status["embeddings_loaded"]  = (g_embeddings.load() != nullptr);
     status["llm_model"]          = get_llm_model_name();
     status["embedding_model"]    = get_embedding_model_name();
+    // Diagnostics: where the server is actually looking for models, and
+    // whether the GGUF files are present there — so "LLM missing" is
+    // self-explanatory (wrong mount path vs. files not yet provisioned).
+    status["gguf_dir"]               = resolved_gguf_dir();
+    status["llm_gguf_present"]       = model_file_present(get_llm_model_path());
+    status["embedding_gguf_present"] = model_file_present(get_embedding_model_path());
     res.set_content(status.dump(), "application/json");
 }
 
@@ -309,6 +338,108 @@ static void count_refresher() {
 }
 
 // ═════════════════════════════════════════════════════════════════════
+// Background thread: load the GGUF models as soon as they are available
+//
+// Models are large, host-provisioned files that may not be present when the
+// container starts (fresh install, the CI publish gate's empty gguf_models/,
+// or files dropped into the volume later). Rather than fail or block startup,
+// the server comes up immediately in degraded mode and this thread keeps
+// trying to load each model until it succeeds — so provisioning the GGUF
+// files "just works" without a restart, exactly as the ingestion service
+// auto-indexes new documents.
+// ═════════════════════════════════════════════════════════════════════
+
+// A model is safe to load only once its file exists AND has stopped changing
+// (mtime older than the settle window): this avoids mmap-ing a file that is
+// still being copied in, which could later fault with SIGBUS on access.
+static bool model_file_ready(const std::string& path) {
+    std::error_code ec;
+    if (!fs::exists(path, ec) || ec) return false;
+    auto mtime = fs::last_write_time(path, ec);
+    if (ec) return false;
+    return (fs::file_time_type::clock::now() - mtime)
+               > std::chrono::seconds(FILE_SETTLE_SECONDS);
+}
+
+static void model_loader() {
+    bool warned_emb = false,      warned_llm = false;       // "waiting for file"
+    bool warned_emb_fail = false, warned_llm_fail = false;  // "present but won't load"
+
+    while (g_running.load()) {
+        // Load each model independently and only into an *empty* slot — never
+        // reload over an already-loaded pointer (that would leak a multi-GB
+        // model on every scan). Publish with a release store so a concurrent
+        // handler that acquire-loads a non-null pointer sees a fully-built
+        // object. On failure, delete the local and leave the slot null.
+        if (g_running.load() &&
+            g_embeddings.load(std::memory_order_acquire) == nullptr) {
+            const std::string path = get_embedding_model_path();
+            if (model_file_ready(path)) {
+                auto* e = new EmbeddingGenerator();
+                if (e->init()) {
+                    g_embeddings.store(e, std::memory_order_release);
+                    std::cout << "Embedding model loaded — semantic search enabled ("
+                              << describe_model_path(path) << ")" << std::endl;
+                } else {
+                    delete e;   // frees any partial state; retry next scan
+                    if (!warned_emb_fail) {   // don't re-log every scan
+                        std::cerr << "Embedding model present but failed to load "
+                                     "(corrupt or incompatible?) — "
+                                  << describe_model_path(path)
+                                  << "; will keep retrying" << std::endl;
+                        warned_emb_fail = true;
+                    }
+                }
+            } else if (!warned_emb) {
+                std::cout << "Waiting for embedding model — "
+                          << describe_model_path(path) << std::endl;
+                warned_emb = true;
+            }
+        }
+
+        // Re-check g_running between the two loads: a model load can take
+        // seconds and cannot be interrupted mid-flight, so a SIGTERM that
+        // arrives during the embedding load must not then kick off the (much
+        // larger) LLM load and blow past Docker's stop grace.
+        if (g_running.load() &&
+            g_llm.load(std::memory_order_acquire) == nullptr) {
+            const std::string path = get_llm_model_path();
+            if (model_file_ready(path)) {
+                auto* l = new LLMGenerator();
+                if (l->init()) {
+                    g_llm.store(l, std::memory_order_release);
+                    std::cout << "LLM loaded — /query now available ("
+                              << describe_model_path(path) << ")" << std::endl;
+                } else {
+                    delete l;
+                    if (!warned_llm_fail) {   // don't re-log every scan
+                        std::cerr << "LLM present but failed to load "
+                                     "(corrupt or incompatible?) — "
+                                  << describe_model_path(path)
+                                  << "; will keep retrying" << std::endl;
+                        warned_llm_fail = true;
+                    }
+                }
+            } else if (!warned_llm) {
+                std::cout << "Waiting for LLM — "
+                          << describe_model_path(path) << std::endl;
+                warned_llm = true;
+            }
+        }
+
+        // Nothing left to do once both are up.
+        if (g_embeddings.load(std::memory_order_acquire) != nullptr &&
+            g_llm.load(std::memory_order_acquire) != nullptr)
+            break;
+
+        // Interruptible wait: poll g_running every 250 ms so shutdown is prompt.
+        const int wait = get_scan_interval_sec();
+        for (int i = 0; i < wait * 4 && g_running.load(); i++)
+            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════
 // main
 // ═════════════════════════════════════════════════════════════════════
 
@@ -334,28 +465,17 @@ int main() {
     }, nullptr);
     ggml_backend_load_all();
 
-    // ── Models ───────────────────────────────────────────────────────
-    std::cout << "Loading models..." << std::endl;
-
-    // Missing GGUF models must not kill the server: the CI publish gate (and
-    // a fresh install before models are provisioned) runs the container with
-    // an empty gguf_models/. Serve the UI and /status regardless; /query
-    // answers 503 until the models are in place.
-    g_embeddings = new EmbeddingGenerator();
-    if (!g_embeddings->init()) {
-        std::cerr << "Embeddings init failed — continuing in degraded mode "
-                     "(semantic search disabled)" << std::endl;
-        delete g_embeddings;
-        g_embeddings = nullptr;
-    }
-
-    g_llm = new LLMGenerator();
-    if (!g_llm->init()) {
-        std::cerr << "LLM init failed — continuing in degraded mode "
-                     "(/query returns 503)" << std::endl;
-        delete g_llm;
-        g_llm = nullptr;
-    }
+    // ── Models (loaded in the background) ─────────────────────────────
+    // Missing GGUF models must not kill or stall the server: the CI publish
+    // gate (and a fresh install before models are provisioned) runs the
+    // container with an empty gguf_models/. The server serves the UI and
+    // /status immediately; the model_loader thread loads the models as soon
+    // as they appear — no restart required — and /query answers 503 until
+    // then. Reporting the resolved directory up front makes a mis-pointed
+    // bind mount obvious in the logs instead of a silent degraded run.
+    std::cout << "Model directory: " << resolved_gguf_dir()
+              << " — models load in the background as they become available"
+              << std::endl;
 
     // ── SQLite index ─────────────────────────────────────────────────
     const std::string db_path = get_db_path();
@@ -370,8 +490,12 @@ int main() {
     std::cout << "Index: " << g_chunk_count.load() << " chunks, "
               << g_file_count.load() << " files" << std::endl;
 
-    // Background count refresher (joined on shutdown)
+    // Background workers (joined on shutdown): count refresher + model loader.
+    // The loader is started before listen() so the UI/degraded mode is served
+    // immediately while models load; its first iteration attempts a load right
+    // away, so models already present at boot come up promptly.
     std::thread refresher(count_refresher);
+    std::thread loader(model_loader);
 
     // ── HTTP server ──────────────────────────────────────────────────
     httplib::Server svr;
@@ -431,9 +555,12 @@ int main() {
     std::cout << "Shutting down..." << std::endl;
     g_running.store(false);
     refresher.join();
+    loader.join();   // finishes any in-flight load, then exits (see model_loader)
 
-    delete g_embeddings;
-    delete g_llm;
+    // Safe to delete now: listen() has joined every request-handler worker,
+    // and the loader thread is joined, so nothing else touches these pointers.
+    delete g_embeddings.load();
+    delete g_llm.load();
     delete g_index;
     llama_backend_free();
     std::cout << "Bye." << std::endl;
