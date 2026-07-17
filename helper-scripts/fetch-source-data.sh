@@ -16,7 +16,9 @@
 #     --dest DIR        library directory          (default: ./public/sources)
 #     --seed DIR        copy DIR/* into the library first (no clobber)
 #     --category CAT    only fetch one category    (e.g. 200_Medical)
+#     --collection ID   only fetch one collection  (e.g. austere-medicine)
 #     --list            print the manifest and exit
+#     --list-collections print the declared collections and exit
 #     --validate        lint the manifest (no network) and exit
 #     --force           re-download files that already exist
 #     --strict          exit non-zero if any download failed
@@ -31,6 +33,7 @@ MANIFEST="sources.yaml"
 DEST="public/sources"
 SEED=""
 ONLY_CATEGORY=""
+ONLY_COLLECTION=""
 MODE="fetch"
 FORCE=0
 STRICT=0
@@ -41,7 +44,9 @@ while [[ $# -gt 0 ]]; do
         --dest)     DEST="$2";     shift 2 ;;
         --seed)     SEED="$2";     shift 2 ;;
         --category) ONLY_CATEGORY="$2"; shift 2 ;;
+        --collection) ONLY_COLLECTION="$2"; shift 2 ;;
         --list)     MODE="list";     shift ;;
+        --list-collections) MODE="list-collections"; shift ;;
         --validate) MODE="validate"; shift ;;
         --force)    FORCE=1;  shift ;;
         --strict)   STRICT=1; shift ;;
@@ -73,15 +78,39 @@ parse_manifest() {
         }
         function emit() {
             if (url != "")
-                printf "%s\037%s\037%s\037%s\037%s\n", url, cat, fn, sha, title
-            url = cat = fn = sha = title = ""
+                printf "%s\037%s\037%s\037%s\037%s\037%s\n", url, cat, fn, sha, title, coll
+            url = cat = fn = sha = title = coll = ""
         }
         /^[[:space:]]*#/ { next }
         /^[[:space:]]*-[[:space:]]*url:/      { emit(); url   = val($0); next }
         /^[[:space:]]+filename:/              { fn    = val($0); next }
         /^[[:space:]]+category:/              { cat   = val($0); next }
+        /^[[:space:]]+collection:/            { coll  = val($0); next }
         /^[[:space:]]+sha256:/                { sha   = val($0); next }
         /^[[:space:]]+title:/                 { title = val($0); next }
+        END { emit() }
+    ' "$MANIFEST"
+}
+
+# Emits one record per collection definition:  id \037 name \037 description
+parse_collections() {
+    awk '
+        function val(line) {
+            sub(/^[^:]*:[[:space:]]*/, "", line)
+            sub(/[[:space:]]+#.*$/, "", line)
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+            gsub(/^"|"$/, "", line)
+            return line
+        }
+        function emit() {
+            if (id != "") printf "%s\037%s\037%s\n", id, name, desc
+            id = name = desc = ""
+        }
+        /^collections:[[:space:]]*$/          { incoll = 1; next }
+        /^sources:[[:space:]]*$/              { if (incoll) { emit(); incoll = 0 } }
+        incoll && /^[[:space:]]*-[[:space:]]*id:/ { emit(); id = val($0); next }
+        incoll && /^[[:space:]]+name:/            { name = val($0); next }
+        incoll && /^[[:space:]]+description:/     { desc = val($0); next }
         END { emit() }
     ' "$MANIFEST"
 }
@@ -89,8 +118,12 @@ parse_manifest() {
 # ── Validate ─────────────────────────────────────────────────────────
 validate_manifest() {
     local errors=0 count=0
-    declare -A seen
-    while IFS="$US" read -r url cat fn sha title; do
+    declare -A seen defined
+    # Collections declared in the top-level `collections:` block
+    while IFS="$US" read -r id name desc; do
+        [[ -n "$id" ]] && defined[$id]=1
+    done < <(parse_collections)
+    while IFS="$US" read -r url cat fn sha title coll; do
         count=$((count + 1))
         local where="entry #$count (${fn:-$url})"
         if [[ ! "$url" =~ ^https?:// ]]; then
@@ -111,6 +144,11 @@ validate_manifest() {
         if [[ -z "$title" ]]; then
             echo "  ✗ $where: missing title"; errors=$((errors+1))
         fi
+        if [[ -z "$coll" ]]; then
+            echo "  ✗ $where: missing collection"; errors=$((errors+1))
+        elif [[ -z "${defined[$coll]:-}" ]]; then
+            echo "  ✗ $where: collection '$coll' not declared in the collections: block"; errors=$((errors+1))
+        fi
         if [[ -n "$sha" && ! "$sha" =~ ^[0-9a-fA-F]{64}$ ]]; then
             echo "  ✗ $where: sha256 must be 64 hex chars"; errors=$((errors+1))
         fi
@@ -128,15 +166,28 @@ validate_manifest() {
 
 # ── List ─────────────────────────────────────────────────────────────
 list_manifest() {
-    printf '%-18s %-52s %s\n' "CATEGORY" "FILENAME" "TITLE"
-    while IFS="$US" read -r url cat fn sha title; do
-        printf '%-18s %-52s %s\n' "$cat" "$fn" "$title"
+    printf '%-22s %-18s %-48s %s\n' "COLLECTION" "CATEGORY" "FILENAME" "TITLE"
+    while IFS="$US" read -r url cat fn sha title coll; do
+        printf '%-22s %-18s %-48s %s\n' "$coll" "$cat" "$fn" "$title"
     done < <(parse_manifest | sort)
 }
 
+# Print the declared collections with a live item count for each.
+list_collections() {
+    declare -A cnt
+    while IFS="$US" read -r url cat fn sha title coll; do
+        [[ -n "$coll" ]] && cnt[$coll]=$(( ${cnt[$coll]:-0} + 1 ))
+    done < <(parse_manifest)
+    printf '%-24s %-6s %s\n' "ID" "ITEMS" "NAME"
+    while IFS="$US" read -r id name desc; do
+        printf '%-24s %-6s %s\n' "$id" "${cnt[$id]:-0}" "$name"
+    done < <(parse_collections)
+}
+
 case "$MODE" in
-    validate) echo "Validating $MANIFEST ..."; validate_manifest; exit $? ;;
-    list)     list_manifest; exit 0 ;;
+    validate)         echo "Validating $MANIFEST ..."; validate_manifest; exit $? ;;
+    list)             list_manifest; exit 0 ;;
+    list-collections) list_collections; exit 0 ;;
 esac
 
 # ── Fetch ────────────────────────────────────────────────────────────
@@ -163,8 +214,9 @@ echo "── Fetching manifest: $MANIFEST → $DEST"
 ok=0; skipped=0; failed=0
 failed_list=""
 
-while IFS="$US" read -r url cat fn sha title; do
-    [[ -n "$ONLY_CATEGORY" && "$cat" != "$ONLY_CATEGORY" ]] && continue
+while IFS="$US" read -r url cat fn sha title coll; do
+    [[ -n "$ONLY_CATEGORY"   && "$cat"  != "$ONLY_CATEGORY"   ]] && continue
+    [[ -n "$ONLY_COLLECTION" && "$coll" != "$ONLY_COLLECTION" ]] && continue
 
     dir="$DEST/$cat"
     out="$dir/$fn"

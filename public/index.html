@@ -39,7 +39,10 @@
       </section>
 
       <section class="panel panel-grow" aria-label="Field library">
-        <h2 class="panel-title">Field library <span class="badge" id="library-count">0</span></h2>
+        <h2 class="panel-title">Field library <span class="badge" id="library-count">0</span>
+          <button class="ghost-btn panel-action" id="library-add-btn" type="button"
+                  aria-haspopup="dialog">+ Add</button>
+        </h2>
         <div class="library" id="library-list">
           <p class="library-empty">No documents indexed yet. Run the content
           fetcher or drop PDFs into the sources volume — they are indexed
@@ -94,6 +97,42 @@
         <p class="disclaimer">Research project — verify critical guidance against the cited source documents.</p>
       </div>
     </main>
+  </div>
+
+  <!-- ── Add-content modal ─────────────────────────────────────── -->
+  <div class="modal" id="library-modal" hidden role="dialog" aria-modal="true"
+       aria-labelledby="library-modal-title">
+    <div class="modal-backdrop" id="library-modal-backdrop"></div>
+    <div class="modal-card" role="document">
+      <header class="modal-head">
+        <h2 id="library-modal-title">Add to the field library</h2>
+        <button class="icon-btn" id="library-modal-close" type="button" aria-label="Close">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+        </button>
+      </header>
+      <p class="modal-sub">Import curated public-domain collections, or upload your own
+        PDF/TXT documents. New files are indexed automatically — no restart needed.</p>
+
+      <section class="modal-section">
+        <h3 class="modal-h3">Curated collections</h3>
+        <div id="catalog-list" class="catalog-list">Loading…</div>
+      </section>
+
+      <section class="modal-section">
+        <h3 class="modal-h3">Upload your own</h3>
+        <form id="upload-form" class="upload-form">
+          <label class="upload-cat">Category
+            <select id="upload-category"></select>
+          </label>
+          <button type="button" class="upload-drop" id="upload-drop">
+            <input type="file" id="upload-file" accept=".pdf,.txt" hidden>
+            <span id="upload-drop-text">Choose a PDF or TXT file, or drop it here…</span>
+          </button>
+          <button type="submit" class="ghost-btn" id="upload-submit">Upload</button>
+        </form>
+        <p class="modal-status" id="upload-status" hidden></p>
+      </section>
+    </div>
   </div>
 
   <script src="app.js"></script>

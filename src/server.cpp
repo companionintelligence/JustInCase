@@ -18,6 +18,10 @@
 #include <atomic>
 #include <csignal>
 #include <cctype>
+#include <cerrno>
+#include <spawn.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "httplib.h"
 #include "llama.h"
@@ -28,6 +32,7 @@
 #include "embeddings.h"
 #include "llm.h"
 #include "sqlite_vec_index.h"
+#include "catalog.h"
 
 namespace fs = std::filesystem;
 using json = nlohmann::json;
@@ -127,6 +132,10 @@ static void handle_query(const httplib::Request& req, httplib::Response& res) {
     }
 
     // ── Parse & validate input (client errors → 400, not 500) ───────
+    if (req.body.size() > MAX_REQUEST_BODY) {   // /query is small JSON, not an upload
+        send_error(res, 413, "Request body too large");
+        return;
+    }
     json rj;
     try {
         rj = json::parse(req.body);
@@ -327,6 +336,287 @@ static void handle_library(const httplib::Request&, httplib::Response& res) {
 }
 
 // ═════════════════════════════════════════════════════════════════════
+// Content import & upload
+//
+// Two ways to grow the library at runtime, both writing into the sources
+// volume where the ingestion service auto-indexes new files:
+//   • POST /api/import — download a vetted catalog collection. The server
+//     execs the bundled fetcher, which only ever contacts the fixed URLs in
+//     the image-baked manifest, so there is no arbitrary-URL / SSRF surface.
+//   • POST /api/upload — accept a user's own PDF/TXT (works fully offline).
+// GET /api/catalog lists what is available and what is already installed.
+// ═════════════════════════════════════════════════════════════════════
+
+extern char** environ;
+
+// One import at a time — a collection download can take minutes; this guards
+// against a client spawning many concurrent fetchers.
+static std::atomic<bool> g_import_running{false};
+
+static bool str_ends_with(const std::string& s, const std::string& suf) {
+    return s.size() >= suf.size() &&
+           s.compare(s.size() - suf.size(), suf.size(), suf) == 0;
+}
+
+// Reduce a browser-supplied filename to a safe basename: no path components,
+// no traversal, a conservative character set. Returns "" if nothing usable.
+static std::string sanitize_upload_filename(const std::string& raw) {
+    std::string name = fs::path(raw).filename().string();   // strip any path
+    std::string out;
+    for (char c : name) {
+        unsigned char u = static_cast<unsigned char>(c);
+        if (std::isalnum(u) || c == '.' || c == '_' || c == '-' ||
+            c == ' ' || c == '(' || c == ')')
+            out += c;
+    }
+    while (!out.empty() && (out.front() == ' ' || out.front() == '.'))
+        out.erase(out.begin());
+    while (!out.empty() && out.back() == ' ')
+        out.pop_back();
+    if (out.empty() || out.size() > 200) return "";
+    if (out.find("..") != std::string::npos) return "";
+    return out;
+}
+
+// Category must match the taxonomy pattern NNN_Alpha (e.g. 200_Medical); this
+// alone forbids path separators and traversal.
+static bool valid_upload_category(const std::string& c) {
+    if (c.size() < 5 || c.size() > 40) return false;
+    if (!std::isdigit((unsigned char)c[0]) || !std::isdigit((unsigned char)c[1]) ||
+        !std::isdigit((unsigned char)c[2]) || c[3] != '_') return false;
+    for (size_t i = 4; i < c.size(); i++)
+        if (!std::isalpha((unsigned char)c[i])) return false;
+    return true;
+}
+
+// Download one catalog collection by exec-ing the bundled fetcher. Uses
+// posix_spawn with an explicit argv (never a shell), so the collection id —
+// already validated against the catalog — cannot be interpreted as a command.
+// Runs on a detached worker thread; clears the single-flight flag when done.
+static void run_import_collection(std::string collection) {
+    std::string fetcher  = get_fetcher_path();
+    std::string manifest = get_catalog_path();
+    std::string dest     = get_sources_dir();
+
+    std::vector<std::string> args = {
+        fetcher, "--manifest", manifest, "--dest", dest,
+        "--collection", collection
+    };
+    std::vector<char*> argv;
+    for (auto& a : args) argv.push_back(const_cast<char*>(a.c_str()));
+    argv.push_back(nullptr);
+
+    std::cout << "Import: fetching collection '" << collection << "'" << std::endl;
+    pid_t pid = 0;
+    int rc = posix_spawn(&pid, fetcher.c_str(), nullptr, nullptr,
+                         argv.data(), environ);
+    if (rc == 0) {
+        int status = 0;
+        waitpid(pid, &status, 0);
+        std::cout << "Import: collection '" << collection << "' done (exit "
+                  << (WIFEXITED(status) ? WEXITSTATUS(status) : -1) << ")" << std::endl;
+    } else {
+        std::cerr << "Import: failed to spawn fetcher (" << get_fetcher_path()
+                  << "): " << std::strerror(rc) << std::endl;
+    }
+    g_import_running.store(false);
+}
+
+// GET /api/catalog — the importable catalog, grouped by collection, with an
+// "installed" flag per item (file already present in the sources volume).
+static void handle_catalog(const httplib::Request&, httplib::Response& res) {
+    Catalog cat = parse_catalog(get_catalog_path());
+    const fs::path sources_root = get_sources_dir();
+
+    json cols = json::array();
+    for (const auto& c : cat.collections) {
+        json items = json::array();
+        int installed = 0;
+        for (const auto& it : cat.items) {
+            if (it.collection != c.id) continue;
+            std::error_code ec;
+            bool present = fs::exists(sources_root / it.category / it.filename, ec) && !ec;
+            if (present) installed++;
+            items.push_back({
+                {"filename",  it.filename},
+                {"category",  it.category},
+                {"title",     it.title},
+                {"license",   it.license},
+                {"size",      it.size},
+                {"installed", present}
+            });
+        }
+        cols.push_back({
+            {"id",          c.id},
+            {"name",        c.name},
+            {"description", c.description},
+            {"count",       items.size()},
+            {"installed",   installed},
+            {"items",       items}
+        });
+    }
+    json out;
+    out["collections"]    = cols;
+    out["import_enabled"] = network_import_enabled();
+    out["importing"]      = g_import_running.load();
+    // error_handler_t::replace: never throw out of the handler if a manifest
+    // string contains an invalid UTF-8 byte — emit a replacement char instead.
+    res.set_content(out.dump(-1, ' ', false, json::error_handler_t::replace),
+                    "application/json");
+}
+
+// POST /api/import  { "collection": "<id>" } — start downloading a collection.
+static void handle_import(const httplib::Request& req, httplib::Response& res) {
+    if (!network_import_enabled()) {
+        send_error(res, 403, "Catalog import over the network is disabled on this deployment.");
+        return;
+    }
+    if (req.body.size() > MAX_REQUEST_BODY) {   // this endpoint needs only tiny JSON
+        send_error(res, 413, "Request body too large");
+        return;
+    }
+    json rj;
+    try { rj = json::parse(req.body); }
+    catch (const std::exception&) { send_error(res, 400, "Request body must be valid JSON"); return; }
+
+    if (!rj.contains("collection") || !rj["collection"].is_string()) {
+        send_error(res, 400, "Missing required string field: collection");
+        return;
+    }
+    std::string collection = rj["collection"];
+
+    // Validate against the catalog (a closed set) AND as a strict slug —
+    // defence in depth, even though posix_spawn never involves a shell.
+    Catalog cat = parse_catalog(get_catalog_path());
+    if (!cat.find_collection(collection)) {
+        send_error(res, 404, "Unknown collection id");
+        return;
+    }
+    for (char c : collection)
+        if (!(std::islower((unsigned char)c) || std::isdigit((unsigned char)c) || c == '-')) {
+            send_error(res, 400, "Invalid collection id");
+            return;
+        }
+
+    bool expected = false;
+    if (!g_import_running.compare_exchange_strong(expected, true)) {
+        send_error(res, 409, "An import is already in progress.");
+        return;
+    }
+    try {
+        std::thread(run_import_collection, collection).detach();
+    } catch (const std::exception& e) {
+        g_import_running.store(false);   // never leave the flag wedged
+        std::cerr << "Import: could not start worker: " << e.what() << std::endl;
+        send_error(res, 503, "Could not start the import worker; please retry.");
+        return;
+    }
+
+    res.status = 202;
+    json out;
+    out["status"]     = "started";
+    out["collection"] = collection;
+    res.set_content(out.dump(), "application/json");
+}
+
+// POST /api/upload  (multipart: file=<pdf|txt>, category=NNN_Name)
+static void handle_upload(const httplib::Request& req, httplib::Response& res) {
+    if (!req.is_multipart_form_data()) {
+        send_error(res, 400, "Expected multipart/form-data");
+        return;
+    }
+    if (!req.has_file("file")) {   // clean 400 rather than risk a throw on a missing field
+        send_error(res, 400, "Missing form field: file");
+        return;
+    }
+    auto file = req.get_file_value("file");
+    std::string category = req.has_file("category")
+                         ? req.get_file_value("category").content
+                         : (req.has_param("category") ? req.get_param_value("category") : "");
+
+    if (!valid_upload_category(category)) {
+        send_error(res, 400, "Invalid category (expected NNN_Name, e.g. 200_Medical)");
+        return;
+    }
+    std::string fn = sanitize_upload_filename(file.filename);
+    if (fn.empty()) { send_error(res, 400, "Invalid or missing filename"); return; }
+
+    // Validate the extension case-insensitively (ingestion lowercases it, so
+    // e.g. FOO.PDF is a valid PDF and must pass the same gate here).
+    std::string ext_lc = fn;
+    for (char& c : ext_lc) c = static_cast<char>(std::tolower((unsigned char)c));
+    const bool is_pdf = str_ends_with(ext_lc, ".pdf");
+    const bool is_txt = str_ends_with(ext_lc, ".txt");
+    if (!is_pdf && !is_txt) {
+        send_error(res, 400, "Only .pdf or .txt files can be indexed");
+        return;
+    }
+    if (file.content.empty()) { send_error(res, 400, "Empty file"); return; }
+    if (file.content.size() > MAX_UPLOAD_BYTES) {
+        send_error(res, 413, "File exceeds the size limit");
+        return;
+    }
+    if (is_pdf && file.content.compare(0, 4, "%PDF") != 0) {
+        send_error(res, 400, "File does not look like a PDF");
+        return;
+    }
+
+    std::error_code ec;
+    fs::path dir = fs::path(get_sources_dir()) / category;
+    fs::create_directories(dir, ec);
+    if (ec) { send_error(res, 500, "Could not create the category directory"); return; }
+
+    // Refuse when the volume is nearly full, so uploads can't fill the disk and
+    // wedge the search index / DB. Fails CLOSED: if free space can't even be
+    // queried, reject rather than write blindly.
+    std::error_code space_ec;
+    auto space = fs::space(dir, space_ec);
+    if (space_ec || space.available < file.content.size() + (64ull << 20)) {
+        send_error(res, 507, "Not enough free space in the library volume");
+        return;
+    }
+
+    fs::path target = dir / fn;
+    if (fs::exists(target, ec)) {
+        send_error(res, 409, "A file with that name already exists in this category");
+        return;
+    }
+    // Unique temp name so two concurrent uploads never write the same .part
+    // (the ".part" suffix is not an ingestible extension, so a transient temp
+    // is never indexed).
+    static std::atomic<uint64_t> upload_seq{0};
+    fs::path part = dir / (fn + "." + std::to_string(upload_seq.fetch_add(1)) + ".part");
+    {
+        std::ofstream o(part, std::ios::binary | std::ios::trunc);
+        if (!o) { send_error(res, 500, "Could not write the file"); return; }
+        o.write(file.content.data(), static_cast<std::streamsize>(file.content.size()));
+        if (!o.good()) { o.close(); fs::remove(part, ec); send_error(res, 500, "Write failed"); return; }
+    }
+    // Finalise atomically WITHOUT clobbering: link() fails with EEXIST if the
+    // target appeared meanwhile, closing the check-then-rename race. The
+    // ingester never sees the .part (not an ingestible extension).
+    if (link(part.c_str(), target.c_str()) != 0) {
+        int e = errno;
+        fs::remove(part, ec);
+        if (e == EEXIST) {
+            send_error(res, 409, "A file with that name already exists in this category");
+        } else {
+            send_error(res, 500, "Could not finalise the file");
+        }
+        return;
+    }
+    fs::remove(part, ec);   // drop the temporary hard link; target remains
+
+    std::cout << "Upload: stored " << category << "/" << fn
+              << " (" << file.content.size() << " bytes)" << std::endl;
+    json out;
+    out["status"]   = "ok";
+    out["category"] = category;
+    out["filename"] = fn;
+    res.set_content(out.dump(), "application/json");
+}
+
+// ═════════════════════════════════════════════════════════════════════
 // Background thread: refresh cached counts every 10 s
 // ═════════════════════════════════════════════════════════════════════
 
@@ -503,8 +793,10 @@ int main() {
     httplib::Server svr;
     g_server = &svr;
 
-    // Reject oversized request bodies before buffering them
-    svr.set_payload_max_length(MAX_REQUEST_BODY);
+    // Body cap. Raised to MAX_UPLOAD_BYTES so /api/upload can accept real
+    // documents; cpp-httplib's limit is global, and on this single-user
+    // appliance that upper bound on buffered request size is acceptable.
+    svr.set_payload_max_length(MAX_UPLOAD_BYTES);
     svr.set_read_timeout(15, 0);
     svr.set_write_timeout(60, 0);
 
@@ -546,6 +838,9 @@ int main() {
     svr.Post("/query",       handle_query);
     svr.Get ("/status",      handle_status);
     svr.Get ("/api/library", handle_library);
+    svr.Get ("/api/catalog", handle_catalog);
+    svr.Post("/api/import",  handle_import);
+    svr.Post("/api/upload",  handle_upload);
     svr.Options(".*", [&cors_origin](const httplib::Request&, httplib::Response& res) {
         res.status = cors_origin.empty() ? 405 : 204;
     });

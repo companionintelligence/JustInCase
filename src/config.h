@@ -34,6 +34,14 @@ const size_t MAX_QUERY_CHARS   = 8000;            // longest accepted question
 const size_t MAX_CONV_ID_CHARS = 128;
 const size_t MAX_CONVERSATIONS = 200;             // bounded history map
 
+// Largest single file accepted by POST /api/upload. cpp-httplib's payload
+// limit is global, so this also caps how much ANY request can buffer — kept
+// modest to bound that exposure. Large curated documents are pulled by the
+// server-side importer (curl), not through an upload body, so this only needs
+// to fit a user's own document; the /query and /api/import handlers separately
+// reject bodies over MAX_REQUEST_BODY.
+const size_t MAX_UPLOAD_BYTES  = 32u * 1024u * 1024u; // 32 MB per uploaded file
+
 // ── Ingestion ────────────────────────────────────────────────────────
 const size_t MAX_DOCUMENT_CHARS = 8u * 1000u * 1000u; // per-document text cap
 const int    FILE_SETTLE_SECONDS = 10; // skip files modified more recently
@@ -166,4 +174,23 @@ inline std::string get_llm_model_name() {
 
 inline std::string get_embedding_model_name() {
     return env_or("EMBEDDING_MODEL", "nomic-embed-text");
+}
+
+// ── Content import (catalog + upload) ─────────────────────────────────
+// The curated manifest the /api/catalog + /api/import endpoints read, and the
+// fetcher script they exec to download vetted catalog items. Both are baked
+// into the image (see Dockerfile); overridable for local runs and tests.
+inline std::string get_catalog_path() {
+    return env_or("JIC_CATALOG_PATH", "sources.yaml");
+}
+
+inline std::string get_fetcher_path() {
+    return env_or("JIC_FETCHER_PATH", "/app/bin/fetch-sources");
+}
+
+// Catalog import reaches out to the network. Allow locking it down for
+// air-gapped deployments (uploading local files stays available regardless).
+inline bool network_import_enabled() {
+    const char* v = getenv("JIC_DISABLE_NETWORK_IMPORT");
+    return !(v && *v);
 }
