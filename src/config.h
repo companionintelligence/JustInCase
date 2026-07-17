@@ -150,6 +150,10 @@ inline std::string describe_model_path(const std::string& path) {
             }
             if (n == 0) out += "(empty)";
         }
+    } else if (ec) {
+        // is_directory() itself failed (e.g. the parent is not traversable):
+        // report the actual reason instead of mislabelling it "does not exist".
+        out += "; dir '" + dir_shown + "' is unreadable: " + ec.message();
     } else {
         out += "; dir '" + dir_shown + "' does not exist";
     }

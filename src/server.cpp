@@ -117,10 +117,12 @@ static void handle_query(const httplib::Request& req, httplib::Response& res) {
     // revert to null), so there is no check-then-use race with the loader.
     LLMGenerator* llm = g_llm.load(std::memory_order_acquire);
     if (!llm) {
+        // Point at the *resolved* model directory (honours JIC_GGUF_DIR), the
+        // same value /status reports, rather than a hardcoded path.
         send_error(res, 503,
                    "Language model not loaded yet — it loads automatically once "
-                   "the GGUF files are present in gguf_models/. The document "
-                   "library stays browsable in the meantime.");
+                   "the GGUF files are present in " + resolved_gguf_dir() +
+                   ". The document library stays browsable in the meantime.");
         return;
     }
 
