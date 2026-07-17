@@ -306,6 +306,7 @@
 
   function closeLibraryModal() {
     $('library-modal').hidden = true;
+    if (importPoll) { clearInterval(importPoll); importPoll = null; }  // stop background polling
   }
 
   async function loadCatalog() {
@@ -314,7 +315,9 @@
     try {
       const res = await fetch('/api/catalog');
       if (!res.ok) throw new Error('HTTP ' + res.status);
-      renderCatalog(await res.json());
+      const data = await res.json();
+      renderCatalog(data);
+      if (data.importing) pollImport();   // resume progress polling if an import is already running
     } catch (e) {
       list.textContent = 'Could not load the catalog.';
     }

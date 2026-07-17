@@ -525,6 +525,10 @@ static void handle_upload(const httplib::Request& req, httplib::Response& res) {
         send_error(res, 400, "Expected multipart/form-data");
         return;
     }
+    if (!req.has_file("file")) {   // clean 400 rather than risk a throw on a missing field
+        send_error(res, 400, "Missing form field: file");
+        return;
+    }
     auto file = req.get_file_value("file");
     std::string category = req.has_file("category")
                          ? req.get_file_value("category").content
@@ -536,7 +540,14 @@ static void handle_upload(const httplib::Request& req, httplib::Response& res) {
     }
     std::string fn = sanitize_upload_filename(file.filename);
     if (fn.empty()) { send_error(res, 400, "Invalid or missing filename"); return; }
-    if (!str_ends_with(fn, ".pdf") && !str_ends_with(fn, ".txt")) {
+
+    // Validate the extension case-insensitively (ingestion lowercases it, so
+    // e.g. FOO.PDF is a valid PDF and must pass the same gate here).
+    std::string ext_lc = fn;
+    for (char& c : ext_lc) c = static_cast<char>(std::tolower((unsigned char)c));
+    const bool is_pdf = str_ends_with(ext_lc, ".pdf");
+    const bool is_txt = str_ends_with(ext_lc, ".txt");
+    if (!is_pdf && !is_txt) {
         send_error(res, 400, "Only .pdf or .txt files can be indexed");
         return;
     }
@@ -545,7 +556,7 @@ static void handle_upload(const httplib::Request& req, httplib::Response& res) {
         send_error(res, 413, "File exceeds the size limit");
         return;
     }
-    if (str_ends_with(fn, ".pdf") && file.content.compare(0, 4, "%PDF") != 0) {
+    if (is_pdf && file.content.compare(0, 4, "%PDF") != 0) {
         send_error(res, 400, "File does not look like a PDF");
         return;
     }
@@ -553,15 +564,17 @@ static void handle_upload(const httplib::Request& req, httplib::Response& res) {
     std::error_code ec;
     fs::path dir = fs::path(get_sources_dir()) / category;
     fs::create_directories(dir, ec);
+    if (ec) { send_error(res, 500, "Could not create the category directory"); return; }
 
     // Refuse when the volume is nearly full, so uploads can't fill the disk and
-    // wedge the search index / DB. Requires headroom beyond the file itself.
-    auto space = fs::space(dir, ec);
-    if (!ec && space.available < file.content.size() + (64ull << 20)) {
+    // wedge the search index / DB. Fails CLOSED: if free space can't even be
+    // queried, reject rather than write blindly.
+    std::error_code space_ec;
+    auto space = fs::space(dir, space_ec);
+    if (space_ec || space.available < file.content.size() + (64ull << 20)) {
         send_error(res, 507, "Not enough free space in the library volume");
         return;
     }
-    ec.clear();
 
     fs::path target = dir / fn;
     if (fs::exists(target, ec)) {
