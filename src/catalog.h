@@ -40,8 +40,25 @@ inline std::string catalog_clean_value(std::string v) {
     v = v.substr(b);
 
     if (v.front() == '"') {
-        size_t end = v.find('"', 1);
-        if (end != std::string::npos) return v.substr(1, end - 1);
+        // YAML double-quoted scalars use \" for a literal quote. Scan for the
+        // real terminator, unescaping \" -> " along the way (a naive find('"')
+        // stops at the FIRST quote and truncates any title/license containing
+        // an embedded quotation, e.g. a nickname in quotes).
+        std::string out;
+        size_t i = 1;
+        bool closed = false;
+        for (; i < v.size(); i++) {
+            if (v[i] == '\\' && i + 1 < v.size() && v[i + 1] == '"') {
+                out += '"';
+                i++;
+            } else if (v[i] == '"') {
+                closed = true;
+                break;
+            } else {
+                out += v[i];
+            }
+        }
+        if (closed) return out;
         // Unterminated quote — fall through to best-effort unquoted handling.
     }
 
