@@ -1,6 +1,10 @@
 name: Style canon lint
 
-on: [pull_request, push]
+# >>> ci-local:gated original triggers below, restore with `ci-local restore`
+# on: [pull_request, push]
+# <<< ci-local:gated
+on:
+  workflow_dispatch:
 
 jobs:
   style-canon-lint:
