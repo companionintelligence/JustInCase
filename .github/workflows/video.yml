@@ -1,0 +1,123 @@
+# Product video — capture the real UI, then render both cuts.
+#
+# Deliberately NO `push` trigger. CI-Local-CICD's policy gates always-on
+# workflows (its README: "CI-Marketplace was fully gated and billing again
+# within a day"), so this runs on demand and once a week.
+name: Product video
+
+on:
+  workflow_dispatch:
+    inputs:
+      render:
+        description: Also render the MP4s (slower)
+        type: boolean
+        default: true
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+
+concurrency:
+  group: video-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          # Without a scope, setup-node writes a bare `registry=` into ~/.npmrc
+          # and every package — playwright included — routes to GitHub Packages
+          # and 404s. Scope it so only @companionintelligence/* goes there.
+          scope: "@companionintelligence"
+
+      - name: Install video project
+        working-directory: video
+        run: npm install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Chromium
+        working-directory: video
+        run: npx playwright install --with-deps chromium
+
+      # JIC's UI is static: src/server.cpp does set_mount_point("/", "public")
+      # and adds three JSON endpoints (/status, /api/library, /query). Those are
+      # stubbed from committed fixtures in video/capture.config.mjs, so the
+      # capture stage is just a static file server over public/.
+      #
+      # tests/container/playwright.config.ts deliberately has no `webServer`
+      # (it targets an already-running container), so there is no existing boot
+      # step to reuse. The real container is not usable here: the Dockerfile
+      # compiles llama.cpp and MuPDF from source and the server needs ~2.3 GB of
+      # host-provisioned GGUF weights, and its answers are non-deterministic —
+      # which would make every capture a false UI-drift diff.
+      - name: Start app
+        run: |
+          # Detach from the step's stdout, or the runner waits on the pipe.
+          nohup python3 -m http.server 8080 --directory public \
+            > /tmp/jic-stage.log 2>&1 &
+          echo $! > /tmp/jic-stage.pid
+          for _ in $(seq 1 30); do
+            curl -fsS -o /dev/null http://localhost:8080/ && break
+            sleep 1
+          done
+          curl -fsS -o /dev/null http://localhost:8080/
+          echo "stage up on http://localhost:8080 (static public/)"
+
+      - name: Capture
+        working-directory: video
+        run: npm run capture
+
+      - name: Stop app
+        if: always()
+        run: |
+          [ -f /tmp/jic-stage.pid ] && kill "$(cat /tmp/jic-stage.pid)" || true
+
+      # Shots are byte-stable, so a diff here means the UI genuinely changed.
+      # Surface it as a PR rather than silently committing to the branch.
+      - name: Detect UI drift
+        id: drift
+        working-directory: video
+        run: |
+          if [ -n "$(git status --porcelain assets/shots)" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git status --porcelain assets/shots
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and check
+        working-directory: video
+        run: npm run build && npm run check
+
+      - name: Render
+        if: ${{ github.event_name == 'schedule' || inputs.render }}
+        working-directory: video
+        run: npm run render
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ci-just-in-case-video
+          path: |
+            video/out/*.mp4
+            video/assets/shots/*.png
+          if-no-files-found: warn
+
+      - name: Open a PR when the UI drifted
+        if: steps.drift.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: chore/video-shot-refresh
+          title: "chore(video): refresh Just In Case product-video captures"
+          body: |
+            The scheduled capture produced different screenshots, which means the UI changed.
+
+            Review the image diff, update `video/storyboard.json` captions if a screen's meaning
+            changed, then merge to re-render the product video from the current UI.
+          add-paths: video/assets/shots
+          commit-message: "chore(video): refresh product-video captures"

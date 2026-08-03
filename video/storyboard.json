@@ -1,0 +1,197 @@
+{
+  "$schema": "https://raw.githubusercontent.com/companionintelligence/CI-Common/main/packages/video-kit/schema/storyboard.schema.json",
+  "app": {
+    "id": "ci-just-in-case",
+    "name": "Just In Case",
+    "repo": "companionintelligence/JustInCase",
+    "marketplaceId": "ci-just-in-case",
+    "website": "ci.computer"
+  },
+  "meta": {
+    "fps": 30,
+    "transitionSeconds": 0.5
+  },
+  "chapters": {
+    "first-run": "First run",
+    "ask": "Ask and verify",
+    "offline": "When it's offline"
+  },
+  "media": {
+    "music": null,
+    "musicVolume": 0.14
+  },
+  "scenes": [
+    {
+      "id": "open",
+      "kind": "intro",
+      "seconds": 4.5,
+      "title": "Just In Case",
+      "caption": "Emergency knowledge, offline.",
+      "narration": "Just In Case is an offline emergency knowledge assistant."
+    },
+    {
+      "id": "first-launch",
+      "kind": "screen",
+      "chapter": "first-run",
+      "seconds": 6,
+      "caption": "First launch. Nothing indexed yet.",
+      "narration": "On first launch the library is empty, and the panel says so plainly.",
+      "shots": [
+        {
+          "id": "welcome-empty",
+          "url": "localhost:8080",
+          "alt": "Just In Case on first launch: brand hero, suggested questions, and an empty field library",
+          "motion": "push-in",
+          "capture": {
+            "path": "/?stage=empty",
+            "waitFor": ".welcome h1",
+            "waitUntil": "networkidle",
+            "settle": 500,
+            "before": [
+              { "waitFor": "#status-pill.warn" },
+              { "waitFor": ".library-empty" },
+              { "waitFor": ".chips .chip" }
+            ],
+            "mask": ["#st-uptime"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "field-library",
+      "kind": "screen",
+      "chapter": "first-run",
+      "seconds": 6,
+      "caption": "Copy documents in. Ingestion indexes them.",
+      "narration": "Copy reference documents into the sources volume. Ingestion picks them up and indexes them.",
+      "shots": [
+        {
+          "id": "library-indexed",
+          "url": "localhost:8080",
+          "alt": "The field library sidebar listing thirty-two indexed documents grouped by category",
+          "motion": "drift-down",
+          "capture": {
+            "path": "/?stage=ready",
+            "waitFor": "#status-pill.ok",
+            "waitUntil": "networkidle",
+            "settle": 500,
+            "before": [
+              { "waitFor": ".lib-file" },
+              { "eval": "document.getElementById('sidebar').classList.add('open')" },
+              { "wait": 150 }
+            ],
+            "mask": ["#st-uptime"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ask-a-question",
+      "kind": "screen",
+      "chapter": "ask",
+      "seconds": 6.5,
+      "caption": "Ask in plain language. No account, no network.",
+      "narration": "Ask a question. Retrieval finds the relevant passages, and a model on this device writes the answer.",
+      "shots": [
+        {
+          "id": "answer",
+          "url": "localhost:8080",
+          "alt": "A question about purifying water answered in the chat, with a collapsed sources accordion",
+          "motion": "push-in",
+          "capture": {
+            "path": "/?stage=ready",
+            "waitFor": ".chips .chip",
+            "waitUntil": "networkidle",
+            "settle": 600,
+            "before": [
+              { "click": ".chips .chip:first-child" },
+              { "waitFor": ".msg.bot .msg-bubble" },
+              { "waitFor": "details.sources > summary" }
+            ],
+            "mask": ["#st-uptime"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-the-sources",
+      "kind": "screen",
+      "chapter": "ask",
+      "seconds": 6.5,
+      "caption": "Every answer opens onto the documents behind it.",
+      "narration": "Open the sources panel to see which documents matched, and how strongly. Verify before you act.",
+      "shots": [
+        {
+          "id": "sources-open",
+          "url": "localhost:8080",
+          "alt": "The expanded sources accordion listing three matched documents with per-document match scores",
+          "motion": "drift-down",
+          "capture": {
+            "path": "/?stage=ready",
+            "waitFor": ".chips .chip",
+            "waitUntil": "networkidle",
+            "settle": 600,
+            "before": [
+              { "click": ".chips .chip:first-child" },
+              { "waitFor": ".msg.bot .msg-bubble" },
+              { "click": "details.sources > summary" },
+              { "waitFor": ".source-item .source-score" },
+              { "eval": "document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight" },
+              { "wait": 150 }
+            ],
+            "mask": ["#st-uptime"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "no-model-no-panic",
+      "kind": "screen",
+      "chapter": "offline",
+      "seconds": 6,
+      "caption": "No model on the box? It says so, and keeps going.",
+      "narration": "With no language model on the device it says so, and the library stays browsable.",
+      "shots": [
+        {
+          "id": "degraded",
+          "url": "localhost:8080",
+          "alt": "The degraded state: an LLM missing status pill and a banner naming the directory the model files belong in",
+          "motion": "push-in",
+          "capture": {
+            "path": "/?stage=degraded",
+            "waitFor": "#status-pill.err",
+            "waitUntil": "networkidle",
+            "settle": 500,
+            "before": [
+              { "waitFor": "#banner" },
+              { "waitFor": ".lib-file" }
+            ],
+            "mask": ["#st-uptime"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "feature",
+      "seconds": 6,
+      "title": "Runs on your hardware",
+      "caption": "One Docker stack. No accounts, no cloud.",
+      "narration": "One Docker stack. No accounts, no cloud. It keeps working when the network does not.",
+      "items": [
+        { "label": "Network", "value": "Not required" },
+        { "label": "Model", "value": "Local GGUF" },
+        { "label": "Retrieval", "value": "Hybrid search" },
+        { "label": "Answers", "value": "Cited" }
+      ]
+    },
+    {
+      "id": "close",
+      "kind": "outro",
+      "seconds": 4.5,
+      "cta": "UnCloud your life.",
+      "url": "ci.computer",
+      "narration": "Just In Case, from Companion Intelligence. UnCloud your life."
+    }
+  ]
+}

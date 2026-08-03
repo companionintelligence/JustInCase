@@ -1,0 +1,262 @@
+{
+  "files": [
+    {
+      "filename": "100_Survival/FEMA-Emergency-Checklist.pdf",
+      "category": "100_Survival",
+      "chunks": 6,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 153600,
+      "status": "indexed"
+    },
+    {
+      "filename": "100_Survival/FEMA-Financial-First-Aid-Kit.pdf",
+      "category": "100_Survival",
+      "chunks": 58,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 1782579,
+      "status": "indexed"
+    },
+    {
+      "filename": "100_Survival/FM21-76-US-Army-Survival.pdf",
+      "category": "100_Survival",
+      "chunks": 102,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 3145728,
+      "status": "indexed"
+    },
+    {
+      "filename": "100_Survival/FM3-25-26-Map-Reading-Land-Navigation.pdf",
+      "category": "100_Survival",
+      "chunks": 816,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 25165824,
+      "status": "indexed"
+    },
+    {
+      "filename": "100_Survival/NuclearWarSurvivalSkills-CressonHKearney.pdf",
+      "category": "100_Survival",
+      "chunks": 218,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 6710886,
+      "status": "indexed"
+    },
+    {
+      "filename": "100_Survival/NWS-Weather-Spotters-Field-Guide.pdf",
+      "category": "100_Survival",
+      "chunks": 952,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 29360128,
+      "status": "indexed"
+    },
+    {
+      "filename": "100_Survival/Camp-Life-In-The-Woods-Trapping.txt",
+      "category": "100_Survival",
+      "chunks": 103,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 512000,
+      "status": "indexed"
+    },
+    {
+      "filename": "100_Survival/Shelters-Shacks-And-Shanties.txt",
+      "category": "100_Survival",
+      "chunks": 82,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 409600,
+      "status": "indexed"
+    },
+    {
+      "filename": "200_Medical/Where-There-Is-No-Doctor.pdf",
+      "category": "200_Medical",
+      "chunks": 296,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 9122611,
+      "status": "indexed"
+    },
+    {
+      "filename": "200_Medical/Where-There-Is-No-Dentist.pdf",
+      "category": "200_Medical",
+      "chunks": 231,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 7130316,
+      "status": "indexed"
+    },
+    {
+      "filename": "200_Medical/Where-Women-Have-No-Doctor.pdf",
+      "category": "200_Medical",
+      "chunks": 408,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 12582912,
+      "status": "indexed"
+    },
+    {
+      "filename": "200_Medical/FM4-25-11-First-Aid.pdf",
+      "category": "200_Medical",
+      "chunks": 88,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 2726297,
+      "status": "indexed"
+    },
+    {
+      "filename": "200_Medical/Emergency-War-Surgery-5th-Edition.pdf",
+      "category": "200_Medical",
+      "chunks": 1020,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 31457280,
+      "status": "indexed"
+    },
+    {
+      "filename": "200_Medical/Survival-And-Austere-Medicine-3rd-Ed.pdf",
+      "category": "200_Medical",
+      "chunks": 782,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 24117248,
+      "status": "indexed"
+    },
+    {
+      "filename": "200_Medical/PFA-Field-Operations-Guide.pdf",
+      "category": "200_Medical",
+      "chunks": 116,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 3565158,
+      "status": "indexed"
+    },
+    {
+      "filename": "300_Food/USDA-Complete-Guide-Home-Canning.pdf",
+      "category": "300_Food",
+      "chunks": 578,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 17825792,
+      "status": "indexed"
+    },
+    {
+      "filename": "300_Food/Manual-Of-Gardening-Bailey.txt",
+      "category": "300_Food",
+      "chunks": 185,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 921600,
+      "status": "indexed"
+    },
+    {
+      "filename": "400_Engineering/NREL-PV-Solar-Systems.pdf",
+      "category": "400_Engineering",
+      "chunks": 34,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 1048576,
+      "status": "indexed"
+    },
+    {
+      "filename": "400_Engineering/VITA-Village-Technology-Handbook.pdf",
+      "category": "400_Engineering",
+      "chunks": 510,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 15728640,
+      "status": "indexed"
+    },
+    {
+      "filename": "400_Engineering/Handbook-Of-Gravity-Flow-Water-Systems.pdf",
+      "category": "400_Engineering",
+      "chunks": 612,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 18874368,
+      "status": "indexed"
+    },
+    {
+      "filename": "400_Engineering/Solar-Disinfection-Of-Water.pdf",
+      "category": "400_Engineering",
+      "chunks": 442,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 13631488,
+      "status": "indexed"
+    },
+    {
+      "filename": "500_Comms/ARRL-Emergency-Comms.pdf",
+      "category": "500_Comms",
+      "chunks": 18,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 552960,
+      "status": "indexed"
+    },
+    {
+      "filename": "500_Comms/CISA-NIFOG-2.02.pdf",
+      "category": "500_Comms",
+      "chunks": 228,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 7025459,
+      "status": "indexed"
+    },
+    {
+      "filename": "600_Education/OpenStax-Elementary-Algebra-2e.pdf",
+      "category": "600_Education",
+      "chunks": 1530,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 47185920,
+      "status": "indexed"
+    },
+    {
+      "filename": "700_Social/UN-Universal-Declaration-Human-Rights.pdf",
+      "category": "700_Social",
+      "chunks": 6,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 102400,
+      "status": "indexed"
+    },
+    {
+      "filename": "700_Social/US-Constitution.pdf",
+      "category": "700_Social",
+      "chunks": 136,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 4194304,
+      "status": "indexed"
+    },
+    {
+      "filename": "700_Social/Federalist-Papers.txt",
+      "category": "700_Social",
+      "chunks": 252,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 1258291,
+      "status": "indexed"
+    },
+    {
+      "filename": "700_Social/KJV-Bible.txt",
+      "category": "700_Social",
+      "chunks": 924,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 4613734,
+      "status": "indexed"
+    },
+    {
+      "filename": "800_Software/ThinkPython2.pdf",
+      "category": "800_Software",
+      "chunks": 31,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 942080,
+      "status": "indexed"
+    },
+    {
+      "filename": "800_Software/ThinkOS.pdf",
+      "category": "800_Software",
+      "chunks": 12,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 378880,
+      "status": "indexed"
+    },
+    {
+      "filename": "800_Software/Eloquent-JavaScript.pdf",
+      "category": "800_Software",
+      "chunks": 68,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 2097152,
+      "status": "indexed"
+    },
+    {
+      "filename": "800_Software/Pro-Git-2.pdf",
+      "category": "800_Software",
+      "chunks": 646,
+      "indexed_at": "2026-06-15T14:41:07Z",
+      "size_bytes": 19922944,
+      "status": "indexed"
+    }
+  ],
+  "total_files": 32,
+  "total_chunks": 11490
+}
