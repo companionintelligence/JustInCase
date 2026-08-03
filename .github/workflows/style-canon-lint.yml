@@ -6,6 +6,10 @@ name: Style canon lint
 on:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   style-canon-lint:
     runs-on: ubuntu-latest
