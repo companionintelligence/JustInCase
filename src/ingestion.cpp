@@ -15,10 +15,12 @@
 #include <atomic>
 #include <csignal>
 #include <filesystem>
+#include <typeinfo>
 
 #include "llama.h"
 #include "nlohmann/json.hpp"
 #include "config.h"
+#include "telemetry.h"
 #include "types.h"
 #include "text_utils.h"
 #include "pdf_utils.h"
@@ -53,6 +55,15 @@ int main() {
     std::cout << "  JIC Ingestion " << JIC_VERSION
               << " (MuPDF + SQLite)" << std::endl;
     std::cout << "═══════════════════════════════════════════" << std::endl;
+
+    // ── Error reporting ──────────────────────────────────────────────
+    // Opt-out and DSN-gated; see src/telemetry.h and
+    // docs/1700-error-reporting.md. This worker is the one that runs MuPDF
+    // over the user's own documents, so it is also the one whose crashes must
+    // never carry a memory image — hence inproc, never a minidump.
+    jic::telemetry::init("ci-just-in-case-ingestion");
+    jic::telemetry::install_terminate_handler();
+    std::cout << jic::telemetry::status_line() << std::endl;
 
     std::signal(SIGINT,  handle_shutdown_signal);
     std::signal(SIGTERM, handle_shutdown_signal);
@@ -89,6 +100,7 @@ int main() {
         std::cout << "Stopped before the embedding model became available."
                   << std::endl;
         llama_backend_free();
+        jic::telemetry::shutdown();
         return 0;
     }
     std::cout << "Embedding model loaded." << std::endl;
@@ -99,6 +111,9 @@ int main() {
     SQLiteVecIndex index;
     if (!index.open(db_path)) {
         std::cerr << "Failed to open database: " << db_path << std::endl;
+        jic::telemetry::capture(jic::telemetry::Level::Fatal, "index database failed to open",
+                                {{"db_path", db_path}});
+        jic::telemetry::shutdown();
         return 1;
     }
 
@@ -262,6 +277,18 @@ int main() {
                 } catch (const std::exception& e) {
                     std::cerr << "Error processing " << rel_path << ": "
                               << e.what() << std::endl;
+                    // Neither `rel_path` nor `e.what()` is reported: the path is
+                    // the NAME of one of the user's own documents, and a MuPDF
+                    // or SQLite message at this point quotes its content. The
+                    // extension, the size bucket and the exception type are
+                    // enough to identify a parser bug and are not user content.
+                    std::error_code size_ec;
+                    const auto size = fs::file_size(full_path, size_ec);
+                    jic::telemetry::capture(
+                        jic::telemetry::Level::Error, "document ingestion failed",
+                        {{"extension", fs::path(rel_path).extension().string()},
+                         {"size_bytes", size_ec ? "unknown" : std::to_string(size)},
+                         {"exception_type", typeid(e).name()}});
                     index.mark_file_processed(rel_path, 0);
                 }
             }
@@ -276,5 +303,6 @@ int main() {
 
     std::cout << "Ingestion service stopped." << std::endl;
     llama_backend_free();
+    jic::telemetry::shutdown();
     return 0;
 }

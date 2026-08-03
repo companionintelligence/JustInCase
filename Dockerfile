@@ -3,8 +3,9 @@
 #
 # Stage 1: Download & build llama.cpp (pinned tag)
 # Stage 2: Build MuPDF
-# Stage 3: Build sqlite-vec + our application
-# Stage 4: Slim runtime image
+# Stage 3: Build sentry-native (OPT-IN — see JIC_SENTRY below)
+# Stage 4: Build sqlite-vec + our application
+# Stage 5: Slim runtime image
 # ══════════════════════════════════════════════════════════════════════
 
 # ── Pinned versions ──────────────────────────────────────────────────
@@ -17,6 +18,14 @@
 # compiles out entirely with -DLLAMA_CURL=OFF. See issue #10.
 ARG LLAMA_CPP_TAG=b6591
 ARG MUPDF_TAG=1.27.2
+ARG SENTRY_NATIVE_VERSION=0.16.1
+
+# Opt-out error reporting is optional at build time. JIC_SENTRY=0 (the default)
+# downloads nothing, links nothing, and produces binaries with no Sentry code
+# in them at all — src/telemetry.h compiles to no-ops. Build a reporting-capable
+# image with:  docker build --build-arg JIC_SENTRY=1 .
+# The DSN is NOT baked in here; it is supplied at runtime via SENTRY_DSN.
+ARG JIC_SENTRY=0
 
 # ═══════════════════════ Stage 1: llama.cpp ══════════════════════════
 FROM ubuntu:24.04 AS llama-builder
@@ -69,12 +78,51 @@ RUN git clone --depth 1 --recurse-submodules --shallow-submodules --branch ${MUP
         HAVE_LEPTONICA=no HAVE_TESSERACT=no \
         shared=no prefix=/mupdf-install install
 
-# ═══════════════════════ Stage 3: App build ══════════════════════════
+# ═════════════════ Stage 3: sentry-native (opt-in) ═══════════════════
+# The stage always exists so `COPY --from=sentry-builder` resolves, but with
+# JIC_SENTRY=0 it only creates an empty directory: no apt, no download, no
+# build. Nothing new is contacted at runtime either — sentry-native uses the
+# curl transport, and libcurl4 is already in the runtime image.
+#
+# Backend is inproc on purpose. crashpad would additionally require shipping a
+# `crashpad_handler` executable in the runtime image and would upload
+# minidumps; see the rationale at the top of src/telemetry.h.
+FROM ubuntu:24.04 AS sentry-builder
+
+ARG JIC_SENTRY
+ARG SENTRY_NATIVE_VERSION
+RUN mkdir -p /sentry-install && \
+    if [ "$JIC_SENTRY" = "1" ]; then \
+        apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            build-essential cmake wget unzip ca-certificates \
+            libcurl4-openssl-dev zlib1g-dev \
+            --no-install-recommends && rm -rf /var/lib/apt/lists/* && \
+        wget -O /tmp/sentry-native.zip \
+            "https://github.com/getsentry/sentry-native/releases/download/${SENTRY_NATIVE_VERSION}/sentry-native.zip" && \
+        mkdir -p /build/sentry-native && \
+        unzip -q /tmp/sentry-native.zip -d /build/sentry-native && \
+        rm /tmp/sentry-native.zip && \
+        cmake -S /build/sentry-native -B /build/sentry-build \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_INSTALL_PREFIX=/sentry-install \
+            -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+            -DSENTRY_BACKEND=inproc \
+            -DSENTRY_TRANSPORT=curl \
+            -DSENTRY_BUILD_SHARED_LIBS=OFF \
+            -DSENTRY_BUILD_TESTS=OFF \
+            -DSENTRY_BUILD_EXAMPLES=OFF && \
+        cmake --build /build/sentry-build --parallel "$(nproc)" --target install ; \
+    fi
+
+# ═══════════════════════ Stage 4: App build ══════════════════════════
 FROM ubuntu:24.04 AS app-builder
 
+# libcurl4-openssl-dev is only needed when linking sentry-native (curl
+# transport). It is installed unconditionally so the layer is identical in
+# both build modes; it never reaches the runtime image.
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     build-essential cmake git wget unzip ca-certificates \
-    libopenblas-dev libsqlite3-dev \
+    libopenblas-dev libsqlite3-dev libcurl4-openssl-dev \
     --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
@@ -83,6 +131,7 @@ WORKDIR /build
 COPY --from=llama-builder /llama-install /llama-install
 COPY --from=llama-builder /build/llama.cpp/ggml/src /build/llama.cpp/ggml/src
 COPY --from=mupdf-builder /mupdf-install /mupdf-install
+COPY --from=sentry-builder /sentry-install /sentry-install
 
 # nlohmann/json (single header)
 RUN mkdir -p include/nlohmann && \
@@ -118,14 +167,18 @@ COPY src/  ./src/
 COPY CMakeLists.txt ./
 
 # Build
-RUN cmake -B build \
+ARG JIC_SENTRY
+RUN if [ "$JIC_SENTRY" = "1" ]; then JIC_SENTRY_FLAG=ON; else JIC_SENTRY_FLAG=OFF; fi && \
+    cmake -B build \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_CXX_FLAGS="-O3" \
         -DCMAKE_VERBOSE_MAKEFILE=ON \
+        -DJIC_SENTRY=$JIC_SENTRY_FLAG \
+        -DJIC_SENTRY_PREFIX=/sentry-install \
         . && \
     cmake --build build -- -j$(nproc)
 
-# ═══════════════════════ Stage 4: Runtime ════════════════════════════
+# ═══════════════════════ Stage 5: Runtime ════════════════════════════
 FROM ubuntu:24.04
 
 LABEL org.opencontainers.image.title="JIC — Just In Case" \

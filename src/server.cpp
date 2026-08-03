@@ -18,11 +18,13 @@
 #include <atomic>
 #include <csignal>
 #include <cctype>
+#include <typeinfo>
 
 #include "httplib.h"
 #include "llama.h"
 #include "nlohmann/json.hpp"
 #include "config.h"
+#include "telemetry.h"
 #include "types.h"
 #include "text_utils.h"
 #include "embeddings.h"
@@ -250,6 +252,12 @@ static void handle_query(const httplib::Request& req, httplib::Response& res) {
 
     } catch (const std::exception& e) {
         std::cerr << "query error: " << e.what() << std::endl;
+        // Deliberately NOT reporting e.what(): an error raised in here quotes
+        // the offending input, which at this point is the user's own question
+        // or a chunk of one of their own documents. The exception's type is
+        // non-user-derived and is what actually identifies the bug.
+        jic::telemetry::capture(jic::telemetry::Level::Error, "query handler failed",
+                                {{"exception_type", typeid(e).name()}});
         send_error(res, 500, "Internal error while answering the query");
     }
 }
@@ -284,6 +292,16 @@ static void handle_status(const httplib::Request&, httplib::Response& res) {
     status["gguf_dir"]               = resolved_gguf_dir();
     status["llm_gguf_present"]       = model_file_present(get_llm_model_path());
     status["embedding_gguf_present"] = model_file_present(get_embedding_model_path());
+    // Whether this process is reporting errors, and if not, why. Deliberately
+    // never includes the DSN. This is how an operator (and the gate probe)
+    // confirms the kill switches actually took effect on a running container.
+    status["telemetry"] = {
+        {"enabled", jic::telemetry::is_active()},
+        {"reason",  to_string(jic::telemetry::settings().disabled_reason)},
+        {"crash_handler", jic::telemetry::is_active() &&
+                          jic::telemetry::settings().crash_handler ? "inproc" : "off"},
+        {"minidumps", false},
+    };
     res.set_content(status.dump(), "application/json");
 }
 
@@ -389,6 +407,14 @@ static void model_loader() {
                                      "(corrupt or incompatible?) — "
                                   << describe_model_path(path)
                                   << "; will keep retrying" << std::endl;
+                        // Once per process, not once per scan. The GGUF file
+                        // NAME is operator configuration (EMBEDDING_GGUF_FILE),
+                        // not user content; describe_model_path() is not sent
+                        // because it enumerates the directory.
+                        jic::telemetry::capture(
+                            jic::telemetry::Level::Error, "embedding model present but failed to load",
+                            {{"gguf_file", env_or("EMBEDDING_GGUF_FILE",
+                                                  "nomic-embed-text-v1.5.Q4_K_M.gguf")}});
                         warned_emb_fail = true;
                     }
                 }
@@ -419,6 +445,10 @@ static void model_loader() {
                                      "(corrupt or incompatible?) — "
                                   << describe_model_path(path)
                                   << "; will keep retrying" << std::endl;
+                        jic::telemetry::capture(
+                            jic::telemetry::Level::Error, "LLM present but failed to load",
+                            {{"gguf_file", env_or("LLM_GGUF_FILE",
+                                                  "Llama-3.2-3B-Instruct-Q4_K_M.gguf")}});
                         warned_llm_fail = true;
                     }
                 }
@@ -456,6 +486,15 @@ int main() {
               << "  (SQLite hybrid search)" << std::endl;
     std::cout << "═══════════════════════════════════════════" << std::endl;
 
+    // ── Error reporting ──────────────────────────────────────────────
+    // First, so a failure anywhere below is reportable. Opt-out and
+    // DSN-gated; see src/telemetry.h and docs/1700-error-reporting.md.
+    // Installed before our own SIGINT/SIGTERM handlers so sentry-native's
+    // fatal-signal handler chain is established first.
+    jic::telemetry::init("ci-just-in-case-server");
+    jic::telemetry::install_terminate_handler();
+    std::cout << jic::telemetry::status_line() << std::endl;
+
     std::signal(SIGPIPE, SIG_IGN);
     std::signal(SIGINT,  handle_shutdown_signal);
     std::signal(SIGTERM, handle_shutdown_signal);
@@ -485,6 +524,12 @@ int main() {
     g_index = new SQLiteVecIndex();
     if (!g_index->open(db_path)) {
         std::cerr << "DB open failed: " << db_path << std::endl;
+        // A startup failure the operator cannot see any other way on a headless
+        // appliance. The path is configuration, not user content, and the
+        // scrubber collapses a home directory in it either way.
+        jic::telemetry::capture(jic::telemetry::Level::Fatal, "index database failed to open",
+                                {{"db_path", db_path}});
+        jic::telemetry::shutdown();
         return 1;
     }
 
@@ -565,6 +610,9 @@ int main() {
     delete g_llm.load();
     delete g_index;
     llama_backend_free();
+    // Bounded flush (2 s cap, see telemetry.h) — never delays container stop
+    // past the grace period.
+    jic::telemetry::shutdown();
     std::cout << "Bye." << std::endl;
     return 0;
 }
