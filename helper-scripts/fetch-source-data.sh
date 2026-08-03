@@ -61,6 +61,10 @@ fi
 #   url \037 category \037 filename \037 sha256 \037 title
 # Only the simple flat schema used by sources.yaml is supported.
 US=$'\037'
+
+# Lowercase a string.  bash 3.2 (macOS) has no ${var,,} expansion.
+lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
+
 parse_manifest() {
     awk '
         function val(line) {
@@ -89,7 +93,12 @@ parse_manifest() {
 # ── Validate ─────────────────────────────────────────────────────────
 validate_manifest() {
     local errors=0 count=0
-    declare -A seen
+    # Seen targets are tracked in a newline-delimited string, not an
+    # associative array: macOS ships bash 3.2, which has no `declare -A`.
+    # Quoting the key inside the pattern keeps the comparison literal, so
+    # filenames containing glob characters still match only themselves.
+    local nl=$'\n'
+    local seen="$nl"
     while IFS="$US" read -r url cat fn sha title; do
         count=$((count + 1))
         local where="entry #$count (${fn:-$url})"
@@ -115,10 +124,10 @@ validate_manifest() {
             echo "  ✗ $where: sha256 must be 64 hex chars"; errors=$((errors+1))
         fi
         local key="$cat/$fn"
-        if [[ -n "${seen[$key]:-}" ]]; then
+        if [[ "$seen" == *"$nl$key$nl"* ]]; then
             echo "  ✗ $where: duplicate target $key"; errors=$((errors+1))
         fi
-        seen[$key]=1
+        seen="$seen$key$nl"
     done < <(parse_manifest)
 
     echo ""
@@ -202,7 +211,7 @@ while IFS="$US" read -r url cat fn sha title; do
     fi
     if [[ -n "$sha" ]]; then
         actual=$(sha256sum "$part" | awk '{print $1}')
-        if [[ "${actual,,}" != "${sha,,}" ]]; then
+        if [[ "$(lower "$actual")" != "$(lower "$sha")" ]]; then
             echo "    ✗ sha256 mismatch (expected $sha, got $actual)"
             rm -f "$part"; failed=$((failed + 1)); failed_list+="    $cat/$fn — sha256 mismatch"$'\n'
             continue
