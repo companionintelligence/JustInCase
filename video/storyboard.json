@@ -62,8 +62,8 @@
       "kind": "screen",
       "chapter": "first-run",
       "seconds": 6,
-      "caption": "Drop PDFs in. They index themselves.",
-      "narration": "Drop reference documents into the sources volume. Ingestion picks them up and indexes them.",
+      "caption": "Copy documents in. Ingestion indexes them.",
+      "narration": "Copy reference documents into the sources volume. Ingestion picks them up and indexes them.",
       "shots": [
         {
           "id": "library-indexed",
@@ -176,8 +176,8 @@
       "kind": "feature",
       "seconds": 6,
       "title": "Runs on your hardware",
-      "caption": "One container. No accounts, no cloud.",
-      "narration": "One container. No accounts, no cloud. It keeps working when the network does not.",
+      "caption": "One Docker stack. No accounts, no cloud.",
+      "narration": "One Docker stack. No accounts, no cloud. It keeps working when the network does not.",
       "items": [
         { "label": "Network", "value": "Not required" },
         { "label": "Model", "value": "Local GGUF" },
@@ -189,9 +189,9 @@
       "id": "close",
       "kind": "outro",
       "seconds": 4.5,
-      "cta": "Own your AI.",
+      "cta": "UnCloud your life.",
       "url": "ci.computer",
-      "narration": "Just In Case, from Companion Intelligence. Own your AI."
+      "narration": "Just In Case, from Companion Intelligence. UnCloud your life."
     }
   ]
 }

@@ -30,6 +30,10 @@ jobs:
         with:
           node-version: 22
           registry-url: https://npm.pkg.github.com
+          # Without a scope, setup-node writes a bare `registry=` into ~/.npmrc
+          # and every package — playwright included — routes to GitHub Packages
+          # and 404s. Scope it so only @companionintelligence/* goes there.
+          scope: "@companionintelligence"
 
       - name: Install video project
         working-directory: video
