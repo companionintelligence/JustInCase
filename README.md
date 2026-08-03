@@ -187,6 +187,15 @@ Additional environment knobs (all optional):
 | `JIC_DB_PATH` | `data/jic.db` | SQLite index location |
 | `JIC_SCAN_INTERVAL_SEC` | `30` | Ingestion scan cadence |
 | `JIC_CORS_ORIGIN` | _(unset — CORS disabled)_ | Allow cross-origin API access for a specific origin |
+| `SENTRY_DSN` | _(unset — reporting inert)_ | Enables opt-out error reporting. See [docs/1700-error-reporting.md](docs/1700-error-reporting.md) |
+| `CI_TELEMETRY` | _(unset)_ | `off` disables error reporting even with a DSN configured |
+| `CI_LOCAL_ONLY` | _(unset)_ | `true` disables all phone-home; beats `CI_TELEMETRY` |
+
+Error reporting is **opt-out** but only exists in images built with
+`--build-arg JIC_SENTRY=1`; the default build links no Sentry SDK at all. JIC
+ships **no minidumps** — a memory image of this process would contain the
+user's questions and documents. See
+[docs/1700-error-reporting.md](docs/1700-error-reporting.md).
 
 ## Security posture
 
@@ -195,7 +204,7 @@ The appliance is hardened by default: containers run as a non-root user with a r
 ## Testing
 
 ```bash
-make -C tests/unit                 # chunker unit tests (no deps)
+make -C tests/unit                 # chunker + telemetry gate/scrubber unit tests
 ./helper-scripts/test-config.sh    # static config/consistency lint
 ./helper-scripts/test-server.sh    # runtime tests against a live server
 helper-scripts/fetch-source-data.sh --validate   # manifest lint

@@ -111,6 +111,37 @@ else()
     set(LLAMA_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/llama.cpp)
 endif()
 
+# ── Sentry (optional, OFF by default) ────────────────────────────────
+# Error reporting is opt-out at RUNTIME (a DSN turns it on, CI_TELEMETRY /
+# CI_LOCAL_ONLY turn it back off) but optional at BUILD time. Without
+# -DJIC_SENTRY=ON, src/telemetry.h compiles every entry point to a no-op and
+# no SDK is linked, so "no DSN configured ⇒ no Sentry in the binary" is a fact
+# about the artifact rather than a promise about its behaviour.
+#
+# The SDK is built with SENTRY_BACKEND=inproc — see the crash-handler rationale
+# at the top of src/telemetry.h. crashpad/breakpad would emit minidumps, i.e. a
+# memory image of a process holding the user's questions, their documents and
+# the model's output, and no client-side callback can redact a minidump.
+option(JIC_SENTRY "Link sentry-native for opt-out error reporting" OFF)
+set(JIC_SENTRY_PREFIX "/sentry-install" CACHE PATH
+    "Install prefix of a sentry-native build (Dockerfile stage 'sentry-builder')")
+
+if(JIC_SENTRY)
+    find_package(sentry REQUIRED CONFIG
+                 PATHS "${JIC_SENTRY_PREFIX}"
+                 PATH_SUFFIXES lib/cmake/sentry lib64/cmake/sentry
+                 NO_DEFAULT_PATH)
+endif()
+
+# Applies the Sentry build mode to a target. Kept as a function so the two
+# executables cannot drift apart.
+function(jic_configure_telemetry target)
+    if(JIC_SENTRY)
+        target_compile_definitions(${target} PRIVATE JIC_SENTRY_ENABLED)
+        target_link_libraries(${target} PRIVATE sentry::sentry)
+    endif()
+endfunction()
+
 # ── Executables ──────────────────────────────────────────────────────
 
 add_executable(jic-server    src/server.cpp)
@@ -154,12 +185,19 @@ set(COMMON_LIBS
 # ── jic-server ───────────────────────────────────────────────────────
 target_include_directories(jic-server PRIVATE ${JIC_INCLUDES})
 target_link_libraries(jic-server PRIVATE ${COMMON_LIBS})
+jic_configure_telemetry(jic-server)
 
 # ── jic-ingestion ────────────────────────────────────────────────────
 target_include_directories(jic-ingestion PRIVATE ${JIC_INCLUDES})
 target_link_libraries(jic-ingestion PRIVATE ${COMMON_LIBS})
+jic_configure_telemetry(jic-ingestion)
 
 # ── Build info ───────────────────────────────────────────────────────
 message(STATUS "JIC build configuration:")
 message(STATUS "  CMAKE_BUILD_TYPE : ${CMAKE_BUILD_TYPE}")
 message(STATUS "  MuPDF include    : ${MUPDF_INCLUDE_DIR}")
+if(JIC_SENTRY)
+    message(STATUS "  Sentry           : ON (inproc backend, no minidumps)")
+else()
+    message(STATUS "  Sentry           : OFF (no SDK linked into the binaries)")
+endif()

@@ -22,6 +22,20 @@ x-jic-env: &jic-env
   EMBEDDING_MODEL: nomic-embed-text
   LLM_GGUF_FILE: Llama-3.2-3B-Instruct-Q4_K_M.gguf
   EMBEDDING_GGUF_FILE: nomic-embed-text-v1.5.Q4_K_M.gguf
+  # ── Error reporting (opt-out; see docs/1700-error-reporting.md) ──
+  # Only meaningful in an image built with --build-arg JIC_SENTRY=1; a
+  # default image has no SDK linked and ignores all of these. All empty by
+  # default, which the gate reads as "unset".
+  SENTRY_DSN: ${SENTRY_DSN:-}
+  SENTRY_ENV: ${SENTRY_ENV:-}
+  SENTRY_RELEASE: ${SENTRY_RELEASE:-}
+  CI_JIC_VERSION: ${CI_JIC_VERSION:-}
+  # Kill switches — these beat a DSN baked into an image.
+  CI_TELEMETRY: ${CI_TELEMETRY:-}
+  CI_LOCAL_ONLY: ${CI_LOCAL_ONLY:-}
+  # Set to `off` to keep handled-error reporting but install no fatal-signal
+  # handler at all.
+  JIC_SENTRY_CRASH_HANDLER: ${JIC_SENTRY_CRASH_HANDLER:-}
 
 x-jic-hardening: &jic-hardening
   init: true
@@ -39,6 +53,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # 0 = no Sentry SDK in the binaries at all (default).
+        JIC_SENTRY: ${JIC_SENTRY:-0}
     image: jic:latest
     container_name: jic-server
     <<: *jic-hardening

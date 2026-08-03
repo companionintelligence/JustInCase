@@ -44,3 +44,13 @@ docker-compose.override.yml
 
 # Build artifacts
 build/
+
+# Unit-test binaries and their fetched headers (tests/unit/Makefile downloads
+# nlohmann/json.hpp the same way the Dockerfile does).
+# test_text_utils was previously committed as an x86-64 Linux ELF, which made
+# `make -C tests/unit` fail on every other platform: make saw the binary as
+# up to date and tried to execute it.
+tests/unit/.deps/
+tests/unit/test_text_utils
+tests/unit/test_telemetry
+tests/unit/test_telemetry_scrub
