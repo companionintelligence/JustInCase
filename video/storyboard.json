@@ -63,7 +63,7 @@
       "chapter": "first-run",
       "seconds": 6,
       "caption": "Copy documents in. Ingestion indexes them.",
-      "narration": "Copy reference documents into the sources volume. Ingestion picks them up and indexes them.",
+      "narration": "Copy reference documents into the sources volume. Ingestion indexes them.",
       "shots": [
         {
           "id": "library-indexed",
@@ -91,7 +91,7 @@
       "chapter": "ask",
       "seconds": 6.5,
       "caption": "Ask in plain language. No account, no network.",
-      "narration": "Ask a question. Retrieval finds the relevant passages, and a model on this device writes the answer.",
+      "narration": "Ask a question. Retrieval finds the passages, and a model on this device answers.",
       "shots": [
         {
           "id": "answer",
@@ -119,7 +119,7 @@
       "chapter": "ask",
       "seconds": 6.5,
       "caption": "Every answer opens onto the documents behind it.",
-      "narration": "Open the sources panel to see which documents matched, and how strongly. Verify before you act.",
+      "narration": "See which documents matched, and how strongly. Verify before you act.",
       "shots": [
         {
           "id": "sources-open",
@@ -150,7 +150,7 @@
       "chapter": "offline",
       "seconds": 6,
       "caption": "No model on the box? It says so, and keeps going.",
-      "narration": "With no language model on the device it says so, and the library stays browsable.",
+      "narration": "With no language model installed it says so, and the library stays browsable.",
       "shots": [
         {
           "id": "degraded",
@@ -191,7 +191,7 @@
       "seconds": 4.5,
       "cta": "UnCloud your life.",
       "url": "ci.computer",
-      "narration": "Just In Case, from Companion Intelligence. UnCloud your life."
+      "narration": "From Companion Intelligence. UnCloud your life."
     }
   ]
 }
