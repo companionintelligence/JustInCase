@@ -33,7 +33,7 @@
       "id": "first-launch",
       "kind": "screen",
       "chapter": "first-run",
-      "seconds": 6,
+      "seconds": 7,
       "caption": "First launch. Nothing indexed yet.",
       "narration": "On first launch the library is empty, and the panel says so plainly.",
       "shots": [
@@ -51,6 +51,27 @@
               { "waitFor": "#status-pill.warn" },
               { "waitFor": ".library-empty" },
               { "waitFor": ".chips .chip" }
+            ],
+            "mask": ["#st-uptime"]
+          }
+        },
+        {
+          "id": "empty-library",
+          "url": "localhost:8080",
+          "alt": "The field library panel on first launch, saying no documents are indexed yet and naming the sources volume to drop PDFs into",
+          "motion": "drift-down",
+          "capture": {
+            "path": "/?stage=empty",
+            "waitFor": ".welcome h1",
+            "waitUntil": "networkidle",
+            "settle": 500,
+            "before": [
+              { "waitFor": "#status-pill.warn" },
+              { "waitFor": ".library-empty" },
+              {
+                "eval": "(() => { const t = document.getElementById('sidebar-toggle'); if (getComputedStyle(t).display !== 'none') { t.click(); } else { document.getElementById('sidebar').classList.add('open'); } })()"
+              },
+              { "wait": 150 }
             ],
             "mask": ["#st-uptime"]
           }
@@ -77,8 +98,72 @@
             "settle": 500,
             "before": [
               { "waitFor": ".lib-file" },
-              { "eval": "document.getElementById('sidebar').classList.add('open')" },
+              {
+                "eval": "(() => { const t = document.getElementById('sidebar-toggle'); if (getComputedStyle(t).display !== 'none') { t.click(); } else { document.getElementById('sidebar').classList.add('open'); } })()"
+              },
               { "wait": 150 }
+            ],
+            "mask": ["#st-uptime"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "library-shelf",
+      "kind": "screen",
+      "chapter": "first-run",
+      "seconds": 7.5,
+      "caption": "Scroll the shelf. Eight categories, thirty-two documents.",
+      "narration": "Thirty-two reference documents across eight categories, indexed on your hardware and browsable offline.",
+      "shots": [
+        {
+          "id": "library-scrolled",
+          "url": "localhost:8080",
+          "alt": "The field library scrolled past its first categories, showing later category headers and their reference filenames with per-document chunk counts",
+          "motion": "drift-down",
+          "capture": {
+            "path": "/?stage=ready",
+            "waitFor": "#status-pill.ok",
+            "waitUntil": "networkidle",
+            "settle": 500,
+            "before": [
+              { "waitFor": "#library-list .lib-cat" },
+              {
+                "eval": "(() => { const t = document.getElementById('sidebar-toggle'); if (getComputedStyle(t).display !== 'none') { t.click(); } else { document.getElementById('sidebar').classList.add('open'); } })()"
+              },
+              { "wait": 150 },
+              { "eval": "document.getElementById('library-list').scrollTop = 640" },
+              { "wait": 150 }
+            ],
+            "mask": ["#st-uptime"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "type-a-question",
+      "kind": "screen",
+      "chapter": "ask",
+      "seconds": 6,
+      "caption": "Type your own. The question never leaves the machine.",
+      "narration": "Type any question in plain language; nothing leaves the device to answer it.",
+      "shots": [
+        {
+          "id": "question-typed",
+          "url": "localhost:8080",
+          "alt": "A question about purifying water typed into the composer, with the suggested-question chips still above it",
+          "motion": "push-in",
+          "capture": {
+            "path": "/?stage=ready",
+            "waitFor": ".chips .chip",
+            "waitUntil": "networkidle",
+            "settle": 500,
+            "before": [
+              { "waitFor": ".chips .chip" },
+              { "fill": ["#user-input", "How do I purify water in the field?"] },
+              {
+                "eval": "(() => { const i = document.getElementById('user-input'); i.setSelectionRange(0, 0); i.scrollLeft = 0; })()"
+              }
             ],
             "mask": ["#st-uptime"]
           }

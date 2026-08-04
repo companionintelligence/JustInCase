@@ -35,6 +35,20 @@ jobs:
           # and 404s. Scope it so only @companionintelligence/* goes there.
           scope: "@companionintelligence"
 
+      # @companionintelligence/video-kit is published to GitHub Packages from
+      # CI-Common. `secrets.GITHUB_TOKEN` is scoped to THIS repository, so it can
+      # only read that package if the package grants JustInCase read access:
+      #
+      #   CI-Common → Packages → video-kit → Package settings
+      #     → Manage Actions access → Add repository → JustInCase (role: Read)
+      #
+      # Without that grant this step dies in ~13 seconds with
+      #   403 Forbidden - GET .../@companionintelligence%2fvideo-kit
+      #   Permission permission_denied: read_package
+      # and no capture ever runs — which is how every shot below ended up
+      # rendering as a "capture pending" slate. The grant is a package setting
+      # and cannot be made from a workflow file. Do not route around it with a
+      # long-lived PAT.
       - name: Install video project
         working-directory: video
         run: npm install
@@ -72,6 +86,34 @@ jobs:
       - name: Capture
         working-directory: video
         run: npm run capture
+
+      # A missing PNG is NOT a build failure anywhere else in this pipeline:
+      # video-kit swaps in a branded "capture pending" slate (src/scenes.mjs
+      # shotSrc), `ci-video build` only prints a note and exits 0, `ci-video
+      # check` never looks at assets/shots, and the upload below is
+      # if-no-files-found: warn. So a run where capture silently produced
+      # nothing still goes green with an all-slate video attached. Fail here
+      # instead, naming the files, so that can never happen again.
+      - name: Every shot must be captured
+        working-directory: video
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+
+          board = json.load(open("storyboard.json"))
+          ids = sorted({shot["id"] for s in board["scenes"] for shot in s.get("shots", [])})
+          # capture writes <id>.png (16:9) and <id>.mobile.png (9:16) per shot.
+          want = [f"assets/shots/{i}{v}.png" for i in ids for v in ("", ".mobile")]
+          missing = [p for p in want if not os.path.exists(p)]
+
+          for p in missing:
+              print(f"::error file=video/{p}::not captured — renders as a 'capture pending' slate")
+          if missing:
+              print(f"::error::{len(missing)} of {len(want)} shot PNGs missing "
+                    f"({len(ids)} shots x 2 viewports); refusing to ship a video with slates in it")
+              sys.exit(1)
+          print(f"all {len(want)} shot PNGs present ({len(ids)} shots x 2 viewports)")
+          PY
 
       - name: Stop app
         if: always()

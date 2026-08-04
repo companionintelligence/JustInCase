@@ -67,16 +67,49 @@
  *   · theme           app.js initTheme() reads localStorage 'jic-theme' and
  *                     falls back to dark. Playwright contexts start with empty
  *                     storage, so captures are always the dark theme.
- *   · sidebar         style.css hides the sidebar off-canvas below 920px, which
- *                     includes the 360px mobile capture viewport. The library
- *                     shot opens it with an `eval` rather than a click on
- *                     #sidebar-toggle, because that button is display:none at
- *                     the 1280px desktop viewport and the click would time out.
+ *   · sidebar         style.css:744-764 hides the sidebar off-canvas below
+ *                     920px, which includes the 360px mobile capture viewport.
+ *                     capture.mjs runs ONE `before` list per shot across BOTH
+ *                     viewports (the viewport loop is outer, the shot loop
+ *                     inner), so a shot cannot simply click #sidebar-toggle —
+ *                     that button is display:none at 1280px (style.css:397) and
+ *                     the click would time out. Every drawer shot therefore uses
+ *                     a VIEWPORT-CONDITIONAL eval:
+ *
+ *                       getComputedStyle(#sidebar-toggle).display !== 'none'
+ *                         ? #sidebar-toggle.click()   // 360px: the real handler
+ *                         : #sidebar.classList.add('open')   // 1280px: no-op
+ *
+ *                     The click path matters. toggleSidebar() (app.js:379-385)
+ *                     also unhides #backdrop, and at 360px that dims the chat
+ *                     behind the drawer (style.css:757-762). An unconditional
+ *                     classList.add() skips the handler and photographs an open
+ *                     drawer over an UNDIMMED chat — a state the app never
+ *                     actually produces. Above 920px the eval is inert, because
+ *                     `.sidebar.open` only exists inside the media query.
+ *   · library scroll  The capture `{ scroll: n }` action calls window.scrollTo,
+ *                     which cannot move #library-list — that pane is its own
+ *                     scroll container (`.library { flex: 1; overflow-y: auto }`,
+ *                     style.css:263-268). `library-scrolled` sets .scrollTop
+ *                     directly via eval; FREEZE_CSS forces `scroll-behavior:
+ *                     auto`, so it lands instantly and byte-stably.
+ *   · composer text   `question-typed` uses `{ fill: [...] }` and then resets
+ *                     the input's caret and scrollLeft to 0. Without that reset
+ *                     the 360px frame shows the question scrolled to its END
+ *                     ("…v do I purify water in the field?"). FREEZE_CSS blanks
+ *                     the caret, so no cursor blink drifts between runs.
  *   · fonts           Abel and Source Code Pro are vendored under
  *                     public/assets/fonts — no CDN, nothing to fail offline.
  *   · chat scroll     scrollChat() pins the log to the bottom; stable for fixed
  *                     fixture content, but it will reframe if the answer text
  *                     in fixtures/query.water.json changes length.
+ *
+ * ── Known coverage gap ───────────────────────────────────────────────────────
+ * There is no "ingestion in progress" screen to film. refreshStatus() has
+ * exactly three display branches (app.js:220-232): LLM missing → err,
+ * documents_indexed === 0 → warn "Index empty", otherwise ok. A half-indexed
+ * appliance renders pixel-identically to a fully-indexed one apart from two
+ * numbers, so a status.indexing.json fixture would buy a near-duplicate frame.
  */
 
 import fs from "node:fs";
