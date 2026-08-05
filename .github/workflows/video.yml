@@ -87,33 +87,50 @@ jobs:
         working-directory: video
         run: npm run capture
 
-      # A missing PNG is NOT a build failure anywhere else in this pipeline:
-      # video-kit swaps in a branded "capture pending" slate (src/scenes.mjs
-      # shotSrc), `ci-video build` only prints a note and exits 0, `ci-video
-      # check` never looks at assets/shots, and the upload below is
-      # if-no-files-found: warn. So a run where capture silently produced
-      # nothing still goes green with an all-slate video attached. Fail here
-      # instead, naming the files, so that can never happen again.
+      # A shot with no PNG renders as a branded "capture pending" slate
+      # (video-kit src/scenes.mjs shotSrc), and `ci-video build` only prints a
+      # note about it. Two gates now stand between that slate and a shipped
+      # video, and this is the FIRST of them:
+      #
+      #   · `ci-video capture` exits 1 if any single shot failed
+      #     (bin/ci-video.mjs cmdCapture) — that is the step above.
+      #   · `ci-video check` exits 1 if any shot file is missing or empty,
+      #     unless --allow-slates is passed — that is "Build and check" below.
+      #     Never add --allow-slates here; it exists for local drafting.
+      #
+      # So this step is deliberately a duplicate of the second gate, pulled
+      # forward: it fires before `build` so a bad capture is reported next to
+      # the capture that produced it, and it emits a per-file `::error file=`
+      # annotation, which `ci-video check` does not.
+      #
+      # It calls video-kit's own `missingShots()` rather than re-deriving the
+      # filenames. An earlier hand-rolled version checked only os.path.exists,
+      # so a 0-byte PNG passed this gate and still rendered as a slate — both
+      # video-kit code paths that choose slate-vs-real require size > 0
+      # (build.mjs hasShot, capture.mjs missingShots). Use the helper.
       - name: Every shot must be captured
         working-directory: video
         run: |
-          python3 - <<'PY'
-          import json, os, sys
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import { missingShots } from "@companionintelligence/video-kit/capture";
 
-          board = json.load(open("storyboard.json"))
-          ids = sorted({shot["id"] for s in board["scenes"] for shot in s.get("shots", [])})
-          # capture writes <id>.png (16:9) and <id>.mobile.png (9:16) per shot.
-          want = [f"assets/shots/{i}{v}.png" for i in ids for v in ("", ".mobile")]
-          missing = [p for p in want if not os.path.exists(p)]
+            const sb = JSON.parse(fs.readFileSync("storyboard.json", "utf8"));
+            const missing = missingShots(sb, process.cwd());
+            // Shot ids are unique across the storyboard; capture writes
+            // <id>.png (16:9) and <id>.mobile.png (9:16) for each.
+            const ids = new Set(sb.scenes.flatMap((s) => s.shots ?? []).map((s) => s.id));
+            const total = ids.size * 2;
 
-          for p in missing:
-              print(f"::error file=video/{p}::not captured — renders as a 'capture pending' slate")
-          if missing:
-              print(f"::error::{len(missing)} of {len(want)} shot PNGs missing "
-                    f"({len(ids)} shots x 2 viewports); refusing to ship a video with slates in it")
-              sys.exit(1)
-          print(f"all {len(want)} shot PNGs present ({len(ids)} shots x 2 viewports)")
-          PY
+            for (const f of missing) {
+              console.log(`::error file=video/assets/shots/${f}::missing or empty — renders as a "capture pending" slate`);
+            }
+            if (missing.length) {
+              console.log(`::error::${missing.length} of ${total} shot PNGs missing or empty; refusing to ship a video with slates in it`);
+              process.exit(1);
+            }
+            console.log(`all ${total} shot PNGs present and non-empty`);
+          '
 
       - name: Stop app
         if: always()

@@ -2,7 +2,7 @@
  * Capture stage for Just In Case.
  *
  * ── The stage ────────────────────────────────────────────────────────────────
- * JIC's UI is entirely static files. `src/server.cpp:543` does
+ * JIC's UI is entirely static files. `src/server.cpp:588` does
  * `svr.set_mount_point("/", "public")` and registers exactly three JSON
  * endpoints — `GET /status`, `GET /api/library`, `POST /query`. There is no
  * framework, no bundler, no router and no auth, so the whole front end can be
@@ -87,6 +87,21 @@
  *                     drawer over an UNDIMMED chat — a state the app never
  *                     actually produces. Above 920px the eval is inert, because
  *                     `.sidebar.open` only exists inside the media query.
+ *
+ *                     COROLLARY: a shot whose ONLY difference from another shot
+ *                     is that eval is a DUPLICATE at 1280px. `empty-library`
+ *                     was exactly that — it differed from `welcome-empty` only
+ *                     by the drawer, so the two desktop PNGs came out
+ *                     byte-identical (sha256 af669a4b…) and the 16:9
+ *                     `first-launch` scene cross-dissolved one image into
+ *                     itself, as a double-exposure ghost: scenes.mjs gives f0
+ *                     `push-in` (scale 1.045) and f1 `drift-down` (y -6%), so
+ *                     the two identical layers drift apart mid-dissolve. It has
+ *                     been removed. The storyboard has no per-format shot
+ *                     selection (schema `shot` has no viewport/format key, and
+ *                     scenes.mjs shotPath keys purely off fmt.name), so a frame
+ *                     that only pays off in portrait cannot be bought without
+ *                     charging the landscape cut for it.
  *   · library scroll  The capture `{ scroll: n }` action calls window.scrollTo,
  *                     which cannot move #library-list — that pane is its own
  *                     scroll container (`.library { flex: 1; overflow-y: auto }`,
@@ -96,8 +111,19 @@
  *   · composer text   `question-typed` uses `{ fill: [...] }` and then resets
  *                     the input's caret and scrollLeft to 0. Without that reset
  *                     the 360px frame shows the question scrolled to its END
- *                     ("…v do I purify water in the field?"). FREEZE_CSS blanks
- *                     the caret, so no cursor blink drifts between runs.
+ *                     ("…l creek water to make it safe?"). FREEZE_CSS blanks the
+ *                     caret, so no cursor blink drifts between runs.
+ *                     The question it types must NOT be one of the six
+ *                     SUGGESTED_PROMPTS (app.js:29-36) — those render as chips
+ *                     directly above the composer in the same frame, and a
+ *                     shot captioned "type your own" that echoes a chip
+ *                     verbatim demonstrates the opposite of what it claims.
+ *                     `answer` and `sources-open` type and submit the SAME
+ *                     string rather than clicking a chip, so the conversation
+ *                     the video shows is the one it just watched being typed.
+ *                     The stubbed POST /query returns query.water.json for any
+ *                     question, so the answer stays on-topic for any phrasing
+ *                     of the water beat.
  *   · fonts           Abel and Source Code Pro are vendored under
  *                     public/assets/fonts — no CDN, nothing to fail offline.
  *   · chat scroll     scrollChat() pins the log to the bottom; stable for fixed
