@@ -5,7 +5,19 @@
 Generates a **16:9 desktop cut** and a **9:16 mobile cut** of Just In Case's FTUE and major
 screens, from this repo's own UI. Both are produced from [`storyboard.json`](storyboard.json).
 
-## Quick start
+## A video is build output
+
+Cuts are rendered **locally, on demand, on a developer machine**. Nothing renders them for you:
+there is no scheduled job, no CI workflow, and no stored MP4 anywhere — not as a build artifact,
+not committed, not attached to a release. Render one when you need it, use it, then delete it.
+
+The supported entry point is the local video runner in the engineering repo, which resolves the
+shared video toolkit from your checkout on disk (no registry, no token). It can list every product
+it knows how to build and takes a product name to build this one; see the pipeline contract linked
+at the bottom of this file. The stages below are what that runner drives, and can still be run by
+hand from this directory.
+
+## Running the stages by hand
 
 ```bash
 npm install
@@ -54,9 +66,13 @@ picked up automatically from `assets/audio/<sceneId>.mp3`; regenerate it from th
 
 ## What is committed
 
-`assets/shots/*.png` and `assets/audio/*.mp3` **are** committed — they are the record of what the
-product looked like, and captures are byte-stable, so a diff in them means the UI genuinely
-changed. `out/` is not committed.
+`assets/shots/*.png` and `assets/audio/*.mp3` **are** committed — they are the inputs, and they let
+anyone render a cut without booting the real stack. Captures are byte-stable, so a diff in them
+means the UI genuinely changed, and it lands as a reviewable image diff on whatever branch you
+recaptured on.
+
+`out/` is not committed, and the MP4s in it are never stored anywhere else either. They are
+regenerated from the shots and the storyboard whenever a video is needed.
 
 See [CI-Engineering `projects/product-video-pipeline/`](https://github.com/companionintelligence/CI-Engineering/tree/main/projects/product-video-pipeline)
 for the full contract.
