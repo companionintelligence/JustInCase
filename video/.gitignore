@@ -8,3 +8,14 @@ build/
 .auth/
 
 node_modules/
+
+# captured screenshots — regenerate with `./video/make.sh`. They are inputs
+# to the render, not artefacts worth keeping: capturing locally is cheap, and a
+# committed screenshot that nothing refreshes goes on looking current long after
+# the UI has moved, which is worse than having none.
+assets/shots/
+
+# npm install writes this when the toolchain is installed; the project has never
+# had one and both make.sh and the workflow use `npm install`, so committing it
+# now would quietly change how the video toolchain resolves.
+package-lock.json
