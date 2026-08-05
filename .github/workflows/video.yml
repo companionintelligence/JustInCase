@@ -1,8 +1,17 @@
 # Product video — capture the real UI, then render both cuts.
 #
-# Deliberately NO `push` trigger. CI-Local-CICD's policy gates always-on
-# workflows (its README: "CI-Marketplace was fully gated and billing again
-# within a day"), so this runs on demand and once a week.
+# THE VIDEO IS BUILT LOCALLY. Run `./video/make.sh`: it stages the app on your
+# own machine, captures, and renders into video/out/. That is the supported path
+# and the one that gets used.
+#
+# This workflow is kept only as a manual fallback and is deliberately
+# UNSCHEDULED — no cron and no `push` trigger, so it never runs on its own and
+# costs nothing unless somebody asks for it by hand.
+#
+# It also no longer commits screenshots: video/assets/shots/ is gitignored, so
+# any drift step below has nothing left to detect. A screenshot nothing
+# refreshes goes on looking current long after the UI has moved, which is worse
+# than having none.
 name: Product video
 
 on:
@@ -12,8 +21,6 @@ on:
         description: Also render the MP4s (slower)
         type: boolean
         default: true
-  schedule:
-    - cron: "0 6 * * 1" # Mondays 06:00 UTC
 
 concurrency:
   group: video-${{ github.ref }}
