@@ -103,6 +103,28 @@
     return (bytes / 1048576).toFixed(1) + ' MB';
   }
 
+  // The field library is an inventory of documents, so it should list titles.
+  // Printing the raw basename cost it two ways: ".pdf" repeated on 27 of 32
+  // rows carried no information and used the width that ran ten names into an
+  // ellipsis, and hyphen-joined words read as identifiers rather than as the
+  // books they are. The exact filename stays on the row's `title`, and every
+  // citation in an answer still prints the full path unchanged — this is the
+  // sidebar's label only.
+  //
+  // A hyphen only becomes a space where it is joining words: before an
+  // uppercase letter, or after a lowercase one. That leaves document numbers
+  // intact ("FM3-25-26-Map-Reading" → "FM3-25-26 Map Reading", not
+  // "FM3 25 26 Map Reading") and never touches CamelCase, so "OpenStax",
+  // "ThinkOS" and "Eloquent-JavaScript" survive.
+  function displayTitle(filename) {
+    const base = String(filename).split('/').pop();
+    return base
+      .replace(/\.(pdf|txt|md|epub|html?)$/i, '')
+      .replace(/[_-](?=[A-Z])/g, ' ')
+      .replace(/(?<=[a-z])[_-]/g, ' ')
+      .trim();
+  }
+
   // ── Chat rendering ─────────────────────────────────────────────────
 
   function addMessage(role, content, opts = {}) {
@@ -220,14 +242,31 @@
     $('pill-detail').textContent = detail ? ' · ' + detail : '';
   }
 
-  function setBanner(text) {
+  // `parts` are plain strings, except that a { path } object is rendered as a
+  // <code> span. The degraded-mode banner names the directory to drop the GGUF
+  // files into — the one actionable thing a self-hoster needs from it — and set
+  // in running prose an absolute container path reads as a leaked debug string.
+  // Marking it up as a path says "this is a literal to copy", which is what it
+  // is, without replacing the instruction with vaguer prose.
+  function setBanner(...parts) {
     const b = $('banner');
-    if (text) {
-      b.textContent = text;
-      b.hidden = false;
-    } else {
+    b.textContent = '';
+    const filled = parts.filter((p) => p && (typeof p !== 'string' || p.length));
+    if (!filled.length) {
       b.hidden = true;
+      return;
     }
+    for (const part of filled) {
+      if (typeof part === 'string') {
+        b.appendChild(document.createTextNode(part));
+      } else {
+        const code = document.createElement('code');
+        code.className = 'banner-path';
+        code.textContent = part.path;
+        b.appendChild(code);
+      }
+    }
+    b.hidden = false;
   }
 
   async function refreshStatus() {
@@ -245,7 +284,12 @@
       $('st-index').textContent =
         `${formatCount(s.documents_indexed)} chunks · ${formatCount(s.files_processed)} files`;
       $('st-index').className = s.documents_indexed > 0 ? 'ok' : 'warn';
+      // Same contradiction the Engine field had, one tile over: in degraded
+      // mode "no model" sat next to a confidently-lit "llama3.2:3b". The name
+      // is the configured model, so when it is not resident it is dimmed
+      // rather than presented as the running one.
       $('st-model').textContent = s.llm_model || '—';
+      $('st-model').className = s.llm_loaded ? '' : 'idle';
       $('st-embed').textContent = s.embedding_model || '—';
       $('st-version').textContent = 'v' + (s.version || '?');
       $('sidebar-footer').title = s.uptime_seconds
@@ -254,16 +298,18 @@
 
       if (!s.llm_loaded) {
         setPill('err', 'LLM missing');
-        const where = s.gguf_dir || 'gguf_models/';
-        setBanner('Language model not loaded — drop the GGUF files into ' + where +
-                  ' and they load automatically within ~30s (no restart needed). ' +
-                  'The library stays browsable; answers are unavailable.');
+        setBanner(
+          'Language model not loaded — drop the GGUF files into ',
+          { path: s.gguf_dir || 'gguf_models/' },
+          ' and they load automatically within ~30s (no restart needed). ' +
+          'The library stays browsable; answers are unavailable.'
+        );
       } else if (s.documents_indexed === 0) {
         setPill('warn', 'Index empty');
-        setBanner('');
+        setBanner();
       } else {
         setPill('ok', 'Ready', `${formatCount(s.files_processed)} docs`);
-        setBanner('');
+        setBanner();
       }
 
       if (s.files_processed !== state.lastFileCount) {
@@ -317,9 +363,8 @@
           a.target = '_blank';
           a.rel = 'noopener';
           a.title = f.filename + (f.size_bytes ? ` · ${formatSize(f.size_bytes)}` : '');
-          const base = f.filename.split('/').pop();
           a.innerHTML =
-            `<span class="lib-name">${escapeHtml(base)}</span>` +
+            `<span class="lib-name">${escapeHtml(displayTitle(f.filename))}</span>` +
             `<span class="lib-chunks">${f.status === 'skipped' ? 'skipped' : f.chunks}</span>`;
           list.appendChild(a);
         });
