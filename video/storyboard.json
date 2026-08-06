@@ -58,9 +58,6 @@
               {
                 "waitFor": ".chips .chip"
               }
-            ],
-            "mask": [
-              "#st-uptime"
             ]
           }
         }
@@ -94,9 +91,6 @@
               {
                 "wait": 150
               }
-            ],
-            "mask": [
-              "#st-uptime"
             ]
           }
         }
@@ -136,9 +130,6 @@
               {
                 "wait": 150
               }
-            ],
-            "mask": [
-              "#st-uptime"
             ]
           }
         }
@@ -175,9 +166,6 @@
               {
                 "eval": "(() => { const i = document.getElementById('user-input'); i.setSelectionRange(0, 0); i.scrollLeft = 0; })()"
               }
-            ],
-            "mask": [
-              "#st-uptime"
             ]
           }
         }
@@ -220,9 +208,6 @@
               {
                 "waitFor": "details.sources > summary"
               }
-            ],
-            "mask": [
-              "#st-uptime"
             ]
           }
         }
@@ -274,9 +259,6 @@
               {
                 "wait": 150
               }
-            ],
-            "mask": [
-              "#st-uptime"
             ]
           }
         }
@@ -307,9 +289,6 @@
               {
                 "waitFor": ".lib-file"
               }
-            ],
-            "mask": [
-              "#st-uptime"
             ]
           }
         }
