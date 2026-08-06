@@ -69,16 +69,32 @@ if [ "$RENDER" = 1 ]; then
   command -v ffprobe >/dev/null || die "ffprobe not found — 'brew install ffmpeg', or use --no-render"
 fi
 
-# @companionintelligence/video-kit is a private GitHub Packages package, so the
-# install needs a token. Locally that comes from the gh CLI rather than a CI
-# secret; video/.npmrc reads it out of NODE_AUTH_TOKEN and nothing is written to
-# disk.
-if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
-  command -v gh >/dev/null || die "gh not found — needed for the video-kit token, or export NODE_AUTH_TOKEN yourself"
-  gh auth status >/dev/null 2>&1 || die "gh is not logged in — run: gh auth login"
-  NODE_AUTH_TOKEN="$(gh auth token)"
-  export NODE_AUTH_TOKEN
+# video-kit comes off the CI-Common checkout on disk, NOT the package registry.
+# The package is private, so a registry install needs a token; running the kit's
+# bin directly removes authentication from the local path entirely. Same
+# resolution CI-Engineering's tools/make-videos.mjs uses, so both runners agree
+# on which kit is in play.
+KIT_REL="CI-Common/packages/video-kit/bin/ci-video.mjs"
+KIT=""
+if [ -n "${CI_WORKSPACE:-}" ]; then
+  KIT="$CI_WORKSPACE/$KIT_REL"
+else
+  # Walk UP looking for the workspace, rather than assuming it is the parent
+  # directory. This checkout may be a git worktree (../ is .worktrees/) or a
+  # nested clone, and in both cases the sibling-directory guess is wrong.
+  d="$REPO_ROOT"
+  while [ "$d" != "/" ]; do
+    if [ -f "$d/$KIT_REL" ]; then KIT="$d/$KIT_REL"; break; fi
+    d="$(dirname "$d")"
+  done
 fi
+[ -n "$KIT" ] && [ -f "$KIT" ] || die "video-kit not found (looked for */$KIT_REL above $REPO_ROOT)
+     Clone CI-Common into the workspace, or set CI_WORKSPACE to the directory holding it."
+
+# The one way to invoke the kit. stage.sh uses this too, so a multi-pass
+# capture_all cannot accidentally fall back to the npm script — which would go
+# looking for the private package in the registry and ask for a token.
+kit() { node "$KIT" "$@"; }
 
 # ── the stage ────────────────────────────────────────────────────────────────
 # stage.sh is this repo's own staging, ported from the workflow. It must define:
@@ -115,26 +131,60 @@ stage_up
 # ── capture and render ───────────────────────────────────────────────────────
 cd "$VIDEO_DIR"
 
-say "installing the video toolchain"
-npm install --silent
+# Playwright is a PEER dependency on purpose: the kit resolves it from THIS
+# project (capture.mjs loadPlaywright uses createRequire against video/), so each
+# repo pins the version its own e2e suite uses. It is public, so installing it
+# needs no auth — and installing it on its own avoids `npm install` reaching for
+# the private kit in package.json, which is the thing that would want a token.
+PW_RANGE="$(node -p "require('./package.json').devDependencies.playwright" 2>/dev/null || echo 'latest')"
+if ! node -e "require.resolve('playwright')" >/dev/null 2>&1; then
+  say "installing Playwright ($PW_RANGE)"
+  # Installed through a scratch project, NOT `npm install playwright` in here.
+  # Even when told to add one package, npm resolves the whole of
+  # video/package.json — which still lists the private video-kit — so it demands
+  # a registry token for a dependency this script deliberately no longer uses.
+  # A throwaway manifest contains only playwright, and playwright is public.
+  _pw_tmp="$(mktemp -d)"
+  ( cd "$_pw_tmp" && npm init -y >/dev/null 2>&1 && npm install --silent "playwright@$PW_RANGE" ) \
+    || die "could not install playwright@$PW_RANGE"
+  mkdir -p node_modules
+  cp -R "$_pw_tmp/node_modules/." node_modules/
+  rm -rf "$_pw_tmp"
+  node -e "require.resolve('playwright')" >/dev/null 2>&1 \
+    || die "playwright still not resolvable from $VIDEO_DIR after install"
+fi
 
 say "installing Chromium for Playwright"
 # Idempotent and cached under ~/Library/Caches/ms-playwright, so a no-op after
 # the first run. No --with-deps: that is an apt path and does nothing on macOS.
-npx playwright install chromium
+#
+# npx, not a path into node_modules: playwright often resolves from the REPO's
+# node_modules rather than video/'s (node walks up, and the stage has usually
+# just run npm ci at the repo root), so a hardcoded video/node_modules/playwright
+# path is simply absent. npx walks up the same way node does. It is a public
+# package, so even a registry fetch here needs no auth.
+npx --yes playwright install chromium
 
 say "capturing the UI"
-npm run capture -- "${ONLY[@]+"${ONLY[@]}"}"
+# Some repos cannot capture in one pass — a shot may need a different identity,
+# a different seeded state, or a stage step in between. Those define capture_all
+# in stage.sh and own the whole sequence; everyone else gets the single pass.
+# --only always wins, so re-shooting one shot never re-runs a multi-pass script.
+if declare -f capture_all >/dev/null && [ ${#ONLY[@]} -eq 0 ]; then
+  capture_all
+else
+  kit capture "${ONLY[@]+"${ONLY[@]}"}"
+fi
 
 say "building the compositions"
-npm run build
+kit build
 
 say "checking them"
-npm run check
+kit check
 
 if [ "$RENDER" = 1 ]; then
   say "rendering"
-  npm run render
+  kit render
   say "done"
   ls -lh out/*.mp4 2>/dev/null || warn "no mp4 found in video/out/"
 else
