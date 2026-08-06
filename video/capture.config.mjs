@@ -10,8 +10,8 @@
  *
  *     python3 -m http.server 8080 --directory public
  *
- * That is what CI (and `npm run capture` locally) points at. The three JSON
- * endpoints are stubbed below from committed fixtures.
+ * That is what `npm run capture` points at. The three JSON endpoints are
+ * stubbed below from committed fixtures.
  *
  * ── Why mocks and not the real backend ───────────────────────────────────────
  * Filming the real container is not currently possible in a repeatable way:
@@ -19,7 +19,7 @@
  *   1. NON-DETERMINISTIC ANSWERS. `handle_query` (src/server.cpp) ends in
  *      `llm->generate(prompt)` — a local Llama-3.2-3B sampling loop. The answer
  *      text differs run to run, so every capture would produce a different PNG
- *      and the shot-drift gate in .github/workflows/video.yml could never tell a
+ *      and a shot diff could never tell a
  *      real UI change from sampling noise.
  *   2. ~2.3 GB OF GGUF WEIGHTS. `src/config.h:84,89` default to
  *      Llama-3.2-3B-Instruct-Q4_K_M.gguf + nomic-embed-text-v1.5.Q4_K_M.gguf,
