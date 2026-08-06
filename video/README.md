@@ -19,13 +19,45 @@ hand from this directory.
 
 ## Running the stages by hand
 
+The video is built **on your own machine**. One command serves the app, captures
+the UI, checks the composition, renders both cuts, and stops the server again:
+
+```bash
+./video/make.sh
+```
+
+Needs `node` and `ffmpeg` (`brew install ffmpeg`). Chromium is installed on the
+first run and cached afterwards.
+
+```bash
+./video/make.sh --no-render          # capture + check only, much faster
+./video/make.sh --only <shot-id>     # re-shoot a single shot
+```
+
+Where things end up:
+
+| path | what | in git? |
+|---|---|---|
+| `out/*.mp4` | the rendered cuts | no — rebuild with `make.sh` |
+| `assets/shots/*.png` | captured screenshots | no — inputs to the render |
+| `assets/audio/*.mp3` | narration | **yes** — expensive to regenerate |
+
+Neither the video nor the screenshots are stored: both are build artifacts. A
+committed screenshot that nothing refreshes goes on looking current long after
+the UI has moved, which is worse than having none.
+
+The stage is just the static files in `public/`, so a plain HTTP server is the
+whole app. `make.sh` picks a free port — 8080 when it is available — and points
+the capture at it with `APP_URL`.
+
+### Running the steps by hand
+
 ```bash
 npm install
-npx playwright install --with-deps chromium
+npx playwright install chromium
 npm run doctor        # verify node / ffmpeg / playwright / hyperframes / fonts
 
-# stage: JIC's UI is static files, so a static file server is the whole app.
-# Run this from the REPO ROOT in another terminal:
+# from the REPO ROOT, in another terminal:
 python3 -m http.server 8080 --directory public
 
 npm run capture       # drive the real UI -> assets/shots/*.png (both viewports)

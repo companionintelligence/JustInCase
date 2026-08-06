@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "make": "./make.sh",
     "doctor": "ci-video doctor",
     "capture": "ci-video capture",
     "build": "ci-video build",
