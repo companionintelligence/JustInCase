@@ -14,7 +14,7 @@
   "chapters": {
     "first-run": "First run",
     "ask": "Ask and verify",
-    "offline": "When it's offline"
+    "offline": "When a piece is missing"
   },
   "media": {
     "music": null,
@@ -39,7 +39,7 @@
       "shots": [
         {
           "id": "welcome-empty",
-          "url": "localhost:8080",
+          "url": "just-in-case.local",
           "alt": "Just In Case on first launch: brand hero, suggested questions, and an empty field library",
           "motion": "push-in",
           "capture": {
@@ -67,7 +67,7 @@
       "shots": [
         {
           "id": "library-indexed",
-          "url": "localhost:8080",
+          "url": "just-in-case.local",
           "alt": "The field library sidebar listing thirty-two indexed documents grouped by category",
           "motion": "drift-down",
           "capture": {
@@ -91,15 +91,15 @@
       "id": "library-shelf",
       "kind": "screen",
       "chapter": "first-run",
-      "seconds": 7.5,
+      "seconds": 6,
       "caption": "Scroll the shelf. Eight categories, thirty-two documents.",
-      "narration": "Thirty-two reference documents across eight categories, indexed on your hardware and browsable offline.",
+      "narration": "The whole shelf stays browsable offline, on hardware you own.",
       "shots": [
         {
           "id": "library-scrolled",
-          "url": "localhost:8080",
+          "url": "just-in-case.local",
           "alt": "The field library scrolled past its first categories, showing later category headers and their reference filenames with per-document chunk counts",
-          "motion": "drift-down",
+          "motion": "push-in",
           "capture": {
             "path": "/?stage=ready",
             "waitFor": "#status-pill.ok",
@@ -129,9 +129,9 @@
       "shots": [
         {
           "id": "question-typed",
-          "url": "localhost:8080",
+          "url": "just-in-case.local",
           "alt": "A question of the viewer's own — how long to boil creek water — typed into the composer, with the six suggested-question chips still offered above it",
-          "motion": "push-in",
+          "motion": "drift-down",
           "capture": {
             "path": "/?stage=ready",
             "waitFor": ".chips .chip",
@@ -154,12 +154,12 @@
       "kind": "screen",
       "chapter": "ask",
       "seconds": 6.5,
-      "caption": "Ask in plain language. No account, no network.",
+      "caption": "Retrieval finds the passages. A local model writes the answer.",
       "narration": "Ask a question. Retrieval finds the passages, and a model on this device answers.",
       "shots": [
         {
           "id": "answer",
-          "url": "localhost:8080",
+          "url": "just-in-case.local",
           "alt": "The typed question — how long to boil creek water — asked and answered in the chat, with a collapsed sources accordion",
           "motion": "push-in",
           "capture": {
@@ -185,12 +185,12 @@
       "chapter": "ask",
       "seconds": 6.5,
       "caption": "Every answer opens onto the documents behind it.",
-      "narration": "See which documents matched, and how strongly. Verify before you act.",
+      "narration": "See exactly which documents the answer came from. Verify before you act.",
       "shots": [
         {
           "id": "sources-open",
-          "url": "localhost:8080",
-          "alt": "The expanded sources accordion listing three matched documents with per-document match scores",
+          "url": "just-in-case.local",
+          "alt": "The expanded sources accordion listing the three documents the answer was drawn from, each with the passage that matched",
           "motion": "drift-down",
           "capture": {
             "path": "/?stage=ready",
@@ -203,7 +203,7 @@
               { "click": "#send-button" },
               { "waitFor": ".msg.bot .msg-bubble" },
               { "click": "details.sources > summary" },
-              { "waitFor": ".source-item .source-score" },
+              { "waitFor": ".source-item .source-snippet" },
               { "eval": "document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight" },
               { "wait": 150 }
             ],
@@ -222,7 +222,7 @@
       "shots": [
         {
           "id": "degraded",
-          "url": "localhost:8080",
+          "url": "just-in-case.local",
           "alt": "The degraded state: an LLM missing status pill and a banner naming the directory the model files belong in",
           "motion": "push-in",
           "capture": {
@@ -248,7 +248,7 @@
       "narration": "One Docker stack. No accounts, no cloud. It keeps working when the network does not.",
       "items": [
         { "label": "Network", "value": "Not required" },
-        { "label": "Model", "value": "Local GGUF" },
+        { "label": "Monthly fee", "value": "$0" },
         { "label": "Retrieval", "value": "Hybrid search" },
         { "label": "Answers", "value": "Cited" }
       ]

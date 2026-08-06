@@ -9,11 +9,19 @@ build/
 
 node_modules/
 
-# captured screenshots — regenerate with `./video/make.sh`. They are inputs
-# to the render, not artefacts worth keeping: capturing locally is cheap, and a
-# committed screenshot that nothing refreshes goes on looking current long after
-# the UI has moved, which is worse than having none.
-assets/shots/
+# captured screenshots ARE COMMITTED — see assets/shots/.
+#
+# They used to be ignored here, on the reasoning that capturing locally is cheap
+# and a stale committed screenshot outlives the UI it photographed. That trade
+# only holds if everyone can re-capture, and fleet-wide they cannot: as of
+# 2026-08-05 only three of twelve products have a stage that actually comes up.
+# A gitignored shot set therefore means nobody but the stage's author can render
+# the cut, and eleven of twelve products were rendering every screen beat as a
+# "capture pending" slate.
+#
+# So the shots are inputs, checked in like any other input. Staleness is the
+# cost we accept for a render anyone can reproduce; re-run `./video/make.sh`
+# when the UI moves and commit the new PNGs in the same change.
 
 # npm install writes this when the toolchain is installed; the project has never
 # had one and both make.sh and the workflow use `npm install`, so committing it

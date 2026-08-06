@@ -3,19 +3,16 @@
   "answer": "**Boil, filter, or treat — in that order of reliability.**\n\n- **Boil** — one minute at a rolling boil; three minutes above 2,000 m.\n- **Filter** — 0.2 micron removes protozoa and bacteria, not viruses.\n- **Chemical** — 2 drops of unscented bleach per litre, then wait 30 minutes.\n\nLet cloudy water settle and pre-filter it through cloth first — turbidity defeats chemical treatment.",
   "matches": [
     {
-      "filename": "400_Engineering/Solar-Disinfection-Of-Water.pdf",
-      "text": "Clear water in a transparent bottle, exposed to full sun for six hours, is inactivated by the combination of UV-A radiation and heat. Turbid water must be filtered or allowed to settle before exposure...",
-      "score": 0.84
-    },
-    {
       "filename": "100_Survival/FM21-76-US-Army-Survival.pdf",
-      "text": "Water from any natural source must be treated before drinking. Boiling is the most dependable method available in the field; chemical treatment and filtration are alternatives when fuel is limited...",
-      "score": 0.79
+      "text": "Water from any natural source must be treated before drinking. Boiling is the most dependable method available in the field; chemical treatment and filtration are alternatives when fuel is limited..."
     },
     {
       "filename": "400_Engineering/Handbook-Of-Gravity-Flow-Water-Systems.pdf",
-      "text": "Sedimentation and slow sand filtration remove suspended solids and much of the biological load before any disinfection step, and reduce the chemical dose a system needs to stay safe...",
-      "score": 0.71
+      "text": "Sedimentation and slow sand filtration remove suspended solids and much of the biological load before any disinfection step, and reduce the chemical dose a system needs to stay safe..."
+    },
+    {
+      "filename": "400_Engineering/Solar-Disinfection-Of-Water.pdf",
+      "text": "Pathogens in clear water, in a transparent bottle exposed to full sun for six hours, are inactivated by the combination of UV-A radiation and heat. Turbid water must be filtered or allowed to settle before exposure..."
     }
   ]
 }
