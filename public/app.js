@@ -65,7 +65,29 @@
       .replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>')
       .replace(/\n\n+/g, '</p><p>')
       .replace(/\n/g, '<br>');
-    return '<p>' + html + '</p>';
+
+    html = '<p>' + html + '</p>';
+
+    // The `\n` → `<br>` pass above fires inside the <ul> it just built and
+    // right after its closing tag, so a three-bullet answer rendered as
+    // <ul><li>…</li><br><li>…</li>…</ul><br> — a stray break between every
+    // pair of bullets (invalid as a child of <ul>) plus one more under the
+    // list. The blocks also sit inside the wrapping <p>, which the parser
+    // force-closes, leaving an empty paragraph that keeps its bottom margin.
+    // Together those are the ragged gaps in the answer bubble.
+    return html
+      // stray breaks introduced around block boundaries
+      .replace(/<br>\s*(?=<\/?(?:ul|ol|li|h[2-4]|pre)\b)/g, '')
+      .replace(/(<\/(?:ul|ol|h[2-4]|pre)>)\s*<br>/g, '$1')
+      // lift blocks out of the paragraph instead of letting the parser do it
+      .replace(/(<(?:ul|ol|h[2-4]|pre)\b)/g, '</p>$1')
+      .replace(/(<\/(?:ul|ol|h[2-4]|pre)>)/g, '$1<p>')
+      .replace(/<p>\s*<\/p>/g, '');
+  }
+
+  function formatCount(n) {
+    const v = Number(n);
+    return Number.isFinite(v) ? v.toLocaleString('en-US') : '—';
   }
 
   function formatUptime(seconds) {
@@ -171,10 +193,13 @@
   function renderChips() {
     const wrap = $('chips');
     wrap.innerHTML = '';
-    SUGGESTED_PROMPTS.forEach((p) => {
+    SUGGESTED_PROMPTS.forEach((p, i) => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'chip';
+      // At 360px every chip is its own row; six of them took two thirds of the
+      // viewport and pushed the welcome copy under the composer, cutting the
+      // last line in half. CSS drops the overflow below 620px.
+      b.className = 'chip' + (i >= 3 ? ' chip-extra' : '');
       b.textContent = p;
       b.addEventListener('click', () => {
         $('user-input').value = p;
@@ -186,10 +211,13 @@
 
   // ── Status & library ───────────────────────────────────────────────
 
-  function setPill(kind, text) {
+  // `detail` is the secondary half of the pill ("· 32 docs"). It is dropped
+  // below 620px, where the full string pushed "New chat" onto a second line.
+  function setPill(kind, text, detail) {
     const pill = $('status-pill');
     pill.className = 'status-pill ' + kind;
     pill.querySelector('.pill-text').textContent = text;
+    $('pill-detail').textContent = detail ? ' · ' + detail : '';
   }
 
   function setBanner(text) {
@@ -209,13 +237,20 @@
       const s = await res.json();
       state.statusFailures = 0;
 
-      $('st-engine').textContent = s.llm_loaded ? 'online' : 'degraded';
+      // "online"/"degraded" read as a contradiction next to the app's own
+      // "Runs 100% offline" footer. This field is really about whether the
+      // local weights are resident, so say that.
+      $('st-engine').textContent = s.llm_loaded ? 'model loaded' : 'no model';
       $('st-engine').className = s.llm_loaded ? 'ok' : 'err';
-      $('st-index').textContent = `${s.documents_indexed} chunks / ${s.files_processed} files`;
+      $('st-index').textContent =
+        `${formatCount(s.documents_indexed)} chunks · ${formatCount(s.files_processed)} files`;
       $('st-index').className = s.documents_indexed > 0 ? 'ok' : 'warn';
       $('st-model').textContent = s.llm_model || '—';
-      $('st-uptime').textContent = formatUptime(s.uptime_seconds || 0);
+      $('st-embed').textContent = s.embedding_model || '—';
       $('st-version').textContent = 'v' + (s.version || '?');
+      $('sidebar-footer').title = s.uptime_seconds
+        ? 'Server up ' + formatUptime(s.uptime_seconds)
+        : '';
 
       if (!s.llm_loaded) {
         setPill('err', 'LLM missing');
@@ -227,7 +262,7 @@
         setPill('warn', 'Index empty');
         setBanner('');
       } else {
-        setPill('ok', `Ready · ${s.files_processed} docs`);
+        setPill('ok', 'Ready', `${formatCount(s.files_processed)} docs`);
         setBanner('');
       }
 
@@ -386,8 +421,20 @@
 
   // ── Init ───────────────────────────────────────────────────────────
 
+  // The full placeholder is 38 characters and overflowed the narrow composer,
+  // so it read as "Ask an emergency or survival (" — a clipped string, not a
+  // prompt. CSS cannot swap placeholder text, so match the viewport here.
+  function syncPlaceholder() {
+    const narrow = window.matchMedia('(max-width: 620px)').matches;
+    $('user-input').placeholder = narrow
+      ? 'Ask a survival question…'
+      : 'Ask an emergency or survival question…';
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     initTheme();
+    syncPlaceholder();
+    window.matchMedia('(max-width: 620px)').addEventListener('change', syncPlaceholder);
     showWelcome();
     renderChips();
 

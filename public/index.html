@@ -32,9 +32,9 @@
         <h2 class="panel-title">System</h2>
         <dl class="status-grid" id="status-grid">
           <div><dt>Engine</dt><dd id="st-engine">—</dd></div>
-          <div><dt>Index</dt><dd id="st-index">—</dd></div>
           <div><dt>Model</dt><dd id="st-model">—</dd></div>
-          <div><dt>Uptime</dt><dd id="st-uptime">—</dd></div>
+          <div class="status-wide"><dt>Retrieval</dt><dd id="st-embed">—</dd></div>
+          <div class="status-wide"><dt>Index</dt><dd id="st-index">—</dd></div>
         </dl>
       </section>
 
@@ -47,7 +47,11 @@
         </div>
       </section>
 
-      <footer class="sidebar-footer">
+      <!-- Uptime is operational telemetry, not something a user reads: it was
+           the only volatile value on screen, so every product screenshot had
+           to mask it and shipped a blank tile where a stat should be. It is
+           still reported — as this footer's tooltip — just not rendered. -->
+      <footer class="sidebar-footer" id="sidebar-footer">
         <span class="offline-dot" aria-hidden="true"></span>
         <span>Runs 100% offline · <span id="st-version">v—</span></span>
       </footer>
@@ -61,14 +65,20 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
         </button>
         <div class="status-pill" id="status-pill" role="status">
-          <span class="pill-dot"></span><span class="pill-text">Connecting…</span>
+          <span class="pill-dot"></span><span class="pill-text">Connecting…</span><span
+            class="pill-detail" id="pill-detail"></span>
         </div>
         <div class="topbar-actions">
           <label class="toggle" title="Ground answers in the document library">
-            <input type="checkbox" id="context-toggle" checked>
-            <span>Use library</span>
+            <input type="checkbox" id="context-toggle" checked
+                   aria-label="Ground answers in the document library">
+            <span class="toggle-long">Use library</span>
+            <span class="toggle-short">Library</span>
           </label>
-          <button class="ghost-btn" id="new-chat-btn">New chat</button>
+          <button class="ghost-btn" id="new-chat-btn" aria-label="Start a new chat">
+            <svg class="ghost-btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+            <span class="ghost-btn-label">New chat</span>
+          </button>
           <button class="icon-btn" id="theme-toggle" aria-label="Toggle light/dark theme">
             <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
             <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z" fill="currentColor"/></svg>
@@ -86,8 +96,8 @@
           <input type="text" id="user-input" class="composer-input" autocomplete="off"
                  placeholder="Ask an emergency or survival question…"
                  aria-label="Ask an emergency or survival question">
-          <button type="submit" class="send-btn" id="send-button">
-            <span>Send</span>
+          <button type="submit" class="send-btn" id="send-button" aria-label="Send question">
+            <span class="send-btn-label">Send</span>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12l18-9-6 9 6 9-18-9z" fill="currentColor"/></svg>
           </button>
         </form>
