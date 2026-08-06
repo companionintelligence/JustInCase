@@ -259,6 +259,7 @@ body {
   text-overflow: ellipsis;
 }
 
+.status-grid dd.idle { color: var(--fg-dim); }
 .status-grid dd.ok   { color: var(--ok); }
 .status-grid dd.warn { color: var(--warn); }
 .status-grid dd.err  { color: var(--err); }
@@ -312,12 +313,20 @@ body {
 
 .lib-file:hover { background: var(--bg3); }
 
+/* Dropping the ".pdf" suffix (see displayTitle) took the clipped rows from ten
+   to three. Those three are genuinely long titles, so give them a second line
+   rather than an ellipsis: the clamp only expands the rows that need it, which
+   costs three lines across the whole 32-document library instead of the row
+   height every fixed two-line layout would spend. */
 .lib-file .lib-name {
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow-wrap: anywhere;
 }
 
 .lib-file .lib-chunks {
@@ -465,6 +474,17 @@ body {
   border-bottom: 1px solid var(--line);
   color: var(--warn);
   font-size: 0.82rem;
+}
+
+/* The GGUF directory is a literal the reader has to act on, not prose. Setting
+   it as a path stops it reading as a debug string leaking into the UI. */
+.banner-path {
+  font-family: var(--mono);
+  font-size: 0.95em;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+  white-space: nowrap;
 }
 
 /* ── Chat ───────────────────────────────────────────────────────── */
