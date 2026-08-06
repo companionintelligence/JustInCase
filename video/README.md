@@ -107,3 +107,46 @@ screen the video covers, re-run the capture yourself and watch the result before
 
 See [CI-Engineering `projects/product-video-pipeline/`](https://github.com/companionintelligence/CI-Engineering/tree/main/projects/product-video-pipeline)
 for the full contract.
+
+## Why `playwright` is pinned exactly
+
+`package.json` in this directory pins `playwright` to **`1.62.1`** — an exact version, with
+no caret. That is deliberate, and a caret here is a bug.
+
+The 14 shots committed under `assets/shots/` are byte-stable **within one resolved
+Playwright build**, and not across builds. The declaration used to be `^1.58.0`, which
+resolves to 1.62.1 today — and when it did, a full re-capture rewrote *every* committed shot
+by 0.07%–0.47% of pixels. Diffing them showed pure text antialiasing: identical layout,
+identical content, a different Chromium rasterizer. Nothing was wrong with the new shots and
+nothing was wrong with the old ones, but every image diff in the repo became noise, which is
+precisely the property that makes committing screenshots worth doing.
+
+**1.62.1 is the build that produced the shots currently on `main`.** Pinning anything
+else invalidates footage that already exists. Bump it deliberately, in its own commit, and
+re-capture every shot in that same change — so the rasterizer shift shows up once, legibly,
+instead of smearing itself across unrelated PRs.
+
+### The repo's own e2e Playwright
+
+`@companionintelligence/video-kit` declares `playwright` as an **optional peer dependency**
+precisely so each repo can pin what it needs. A difference between this project and the e2e
+suite is therefore a real decision, not a mistake to be tidied away.
+
+`tests/container/package.json` declares `@playwright/test` as `^1.48.0` — a *range*,
+which resolves to 1.62.1 today. Nothing diverges right now, but it is free to float on
+its own and this one is not.
+
+### The pin is necessary, but it is not sufficient
+
+Worth knowing before trusting it. The kit resolves Playwright with
+`createRequire(video/package.json).resolve("playwright")`, and Node's resolution walks **up**
+the directory tree. If `video/node_modules/playwright` is absent but the repo root has one
+installed — which it usually does, from the e2e suite — capture runs under the **repo's**
+Playwright and this pin is never consulted. `make.sh` reinforces that: it only installs Playwright when
+`require.resolve("playwright")` *already fails*, and it then fetches the browser binary with
+an unversioned `npx --yes playwright install chromium`.
+
+So this pin states the intent and controls the fresh-install path. It does not *enforce*
+anything. The actual guard is recording the resolved Playwright version alongside the shots
+and warning when a capture runs under a different one, and that belongs in the kit rather
+than in twelve copies of this file.
