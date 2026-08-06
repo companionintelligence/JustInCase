@@ -129,6 +129,24 @@
  *   · chat scroll     scrollChat() pins the log to the bottom; stable for fixed
  *                     fixture content, but it will reframe if the answer text
  *                     in fixtures/query.water.json changes length.
+ *   · match scores    fixtures/query.water.json carries NO `score` key, on
+ *                     purpose — do not add one back. app.js:119 renders it as
+ *                     `match ${(score * 100).toFixed(0)}%`, but the value the
+ *                     real server sends is a raw Reciprocal-Rank-Fusion sum
+ *                     (src/sqlite_vec_index.h:182,203,226 — `1/(60 + rank)`
+ *                     accumulated over the vector and BM25 lists, and
+ *                     server.cpp:190 is its only call site). The best a chunk
+ *                     can score is 2/61 = 0.0328, so the shipped product can
+ *                     never render more than "match 3%": a fixture with
+ *                     "score": 0.84 filmed a number the app cannot produce.
+ *                     app.js:119 guards with `if (m.score)`, so omitting the
+ *                     key renders the source list with the filename and the
+ *                     matched passage and no percentage. Put scores back only
+ *                     once the index normalises RRF to a relative confidence,
+ *                     and then take the values from a provisioned appliance.
+ *                     `sources-open` therefore waits on `.source-item
+ *                     .source-snippet`, not `.source-score` — the old wait
+ *                     would now hang until the capture timed out.
  *
  * ── Known coverage gap ───────────────────────────────────────────────────────
  * There is no "ingestion in progress" screen to film. refreshStatus() has
