@@ -9,7 +9,8 @@
   },
   "meta": {
     "fps": 30,
-    "transitionSeconds": 0.5
+    "transitionSeconds": 0.5,
+    "pacing": "fit"
   },
   "chapters": {
     "first-run": "First run",
@@ -48,11 +49,19 @@
             "waitUntil": "networkidle",
             "settle": 500,
             "before": [
-              { "waitFor": "#status-pill.warn" },
-              { "waitFor": ".library-empty" },
-              { "waitFor": ".chips .chip" }
+              {
+                "waitFor": "#status-pill.warn"
+              },
+              {
+                "waitFor": ".library-empty"
+              },
+              {
+                "waitFor": ".chips .chip"
+              }
             ],
-            "mask": ["#st-uptime"]
+            "mask": [
+              "#st-uptime"
+            ]
           }
         }
       ]
@@ -76,13 +85,19 @@
             "waitUntil": "networkidle",
             "settle": 500,
             "before": [
-              { "waitFor": ".lib-file" },
+              {
+                "waitFor": ".lib-file"
+              },
               {
                 "eval": "(() => { const t = document.getElementById('sidebar-toggle'); if (getComputedStyle(t).display !== 'none') { t.click(); } else { document.getElementById('sidebar').classList.add('open'); } })()"
               },
-              { "wait": 150 }
+              {
+                "wait": 150
+              }
             ],
-            "mask": ["#st-uptime"]
+            "mask": [
+              "#st-uptime"
+            ]
           }
         }
       ]
@@ -106,15 +121,25 @@
             "waitUntil": "networkidle",
             "settle": 500,
             "before": [
-              { "waitFor": "#library-list .lib-cat" },
+              {
+                "waitFor": "#library-list .lib-cat"
+              },
               {
                 "eval": "(() => { const t = document.getElementById('sidebar-toggle'); if (getComputedStyle(t).display !== 'none') { t.click(); } else { document.getElementById('sidebar').classList.add('open'); } })()"
               },
-              { "wait": 150 },
-              { "eval": "document.getElementById('library-list').scrollTop = 640" },
-              { "wait": 150 }
+              {
+                "wait": 150
+              },
+              {
+                "eval": "document.getElementById('library-list').scrollTop = 640"
+              },
+              {
+                "wait": 150
+              }
             ],
-            "mask": ["#st-uptime"]
+            "mask": [
+              "#st-uptime"
+            ]
           }
         }
       ]
@@ -138,13 +163,22 @@
             "waitUntil": "networkidle",
             "settle": 500,
             "before": [
-              { "waitFor": ".chips .chip" },
-              { "fill": ["#user-input", "How long do I boil creek water to make it safe?"] },
+              {
+                "waitFor": ".chips .chip"
+              },
+              {
+                "fill": [
+                  "#user-input",
+                  "How long do I boil creek water to make it safe?"
+                ]
+              },
               {
                 "eval": "(() => { const i = document.getElementById('user-input'); i.setSelectionRange(0, 0); i.scrollLeft = 0; })()"
               }
             ],
-            "mask": ["#st-uptime"]
+            "mask": [
+              "#st-uptime"
+            ]
           }
         }
       ]
@@ -168,13 +202,28 @@
             "waitUntil": "networkidle",
             "settle": 600,
             "before": [
-              { "waitFor": ".chips .chip" },
-              { "fill": ["#user-input", "How long do I boil creek water to make it safe?"] },
-              { "click": "#send-button" },
-              { "waitFor": ".msg.bot .msg-bubble" },
-              { "waitFor": "details.sources > summary" }
+              {
+                "waitFor": ".chips .chip"
+              },
+              {
+                "fill": [
+                  "#user-input",
+                  "How long do I boil creek water to make it safe?"
+                ]
+              },
+              {
+                "click": "#send-button"
+              },
+              {
+                "waitFor": ".msg.bot .msg-bubble"
+              },
+              {
+                "waitFor": "details.sources > summary"
+              }
             ],
-            "mask": ["#st-uptime"]
+            "mask": [
+              "#st-uptime"
+            ]
           }
         }
       ]
@@ -198,16 +247,37 @@
             "waitUntil": "networkidle",
             "settle": 600,
             "before": [
-              { "waitFor": ".chips .chip" },
-              { "fill": ["#user-input", "How long do I boil creek water to make it safe?"] },
-              { "click": "#send-button" },
-              { "waitFor": ".msg.bot .msg-bubble" },
-              { "click": "details.sources > summary" },
-              { "waitFor": ".source-item .source-snippet" },
-              { "eval": "document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight" },
-              { "wait": 150 }
+              {
+                "waitFor": ".chips .chip"
+              },
+              {
+                "fill": [
+                  "#user-input",
+                  "How long do I boil creek water to make it safe?"
+                ]
+              },
+              {
+                "click": "#send-button"
+              },
+              {
+                "waitFor": ".msg.bot .msg-bubble"
+              },
+              {
+                "click": "details.sources > summary"
+              },
+              {
+                "waitFor": ".source-item .source-snippet"
+              },
+              {
+                "eval": "document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight"
+              },
+              {
+                "wait": 150
+              }
             ],
-            "mask": ["#st-uptime"]
+            "mask": [
+              "#st-uptime"
+            ]
           }
         }
       ]
@@ -231,10 +301,16 @@
             "waitUntil": "networkidle",
             "settle": 500,
             "before": [
-              { "waitFor": "#banner" },
-              { "waitFor": ".lib-file" }
+              {
+                "waitFor": "#banner"
+              },
+              {
+                "waitFor": ".lib-file"
+              }
             ],
-            "mask": ["#st-uptime"]
+            "mask": [
+              "#st-uptime"
+            ]
           }
         }
       ]
@@ -247,10 +323,22 @@
       "caption": "One Docker stack. No accounts, no cloud.",
       "narration": "One Docker stack. No accounts, no cloud. It keeps working when the network does not.",
       "items": [
-        { "label": "Network", "value": "Not required" },
-        { "label": "Monthly fee", "value": "$0" },
-        { "label": "Retrieval", "value": "Hybrid search" },
-        { "label": "Answers", "value": "Cited" }
+        {
+          "label": "Network",
+          "value": "Not required"
+        },
+        {
+          "label": "Monthly fee",
+          "value": "$0"
+        },
+        {
+          "label": "Retrieval",
+          "value": "Hybrid search"
+        },
+        {
+          "label": "Answers",
+          "value": "Cited"
+        }
       ]
     },
     {
