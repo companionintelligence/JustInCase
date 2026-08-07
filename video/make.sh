@@ -134,35 +134,95 @@ cd "$VIDEO_DIR"
 # Playwright is a PEER dependency on purpose: the kit resolves it from THIS
 # project (capture.mjs loadPlaywright uses createRequire against video/), so each
 # repo pins the version its own e2e suite uses. It is public, so installing it
-# needs no auth — and installing it on its own avoids `npm install` reaching for
-# the private kit in package.json, which is the thing that would want a token.
-PW_RANGE="$(node -p "require('./package.json').devDependencies.playwright" 2>/dev/null || echo 'latest')"
-if ! node -e "require.resolve('playwright')" >/dev/null 2>&1; then
-  say "installing Playwright ($PW_RANGE)"
+# needs no auth.
+#
+# What matters here is the VERSION, not whether the package is importable. Node
+# resolution walks UP from video/, and stage_up has just run `npm ci` at the repo
+# root — whose e2e suite pins a DIFFERENT playwright. So `require.resolve` finds
+# the ROOT copy and succeeds, and a presence-only check skips the pinned install
+# entirely: capture then runs on whatever the root happened to carry.
+#
+# That is not a cosmetic difference. Capture is only byte-stable within one
+# resolved Playwright build. Running a shoot on the wrong one rewrites every
+# committed screenshot by a fraction of a percent of pixels — pure text
+# antialiasing — which arrives in review looking like a real UI change. Compare
+# the versions, and refuse to shoot on a mismatch.
+PW_SPEC="$(node -p "require('./package.json').devDependencies.playwright" 2>/dev/null || echo '')"
+[ -n "$PW_SPEC" ] && [ "$PW_SPEC" != "undefined" ] \
+  || die "video/package.json declares no playwright devDependency — capture cannot be pinned"
+
+# Resolved version, and the path it came from. The path is what makes a mismatch
+# diagnosable: "1.60.0, from the repo root" rather than a bare "1.60.0".
+pw_version() { node -p "require('playwright/package.json').version" 2>/dev/null || true; }
+pw_origin()  { node -p "require.resolve('playwright/package.json')" 2>/dev/null || true; }
+
+# An exact pin is the only spec a string comparison can actually verify, and it
+# is what every repo here uses. A range is handled deliberately rather than
+# silently: it is not treated as a match, because it cannot promise the next
+# shoot resolves the same build. See the warning after the install.
+case "$PW_SPEC" in
+  [0-9]*) PW_PIN="$PW_SPEC" ;;
+  *)      PW_PIN="" ;;
+esac
+
+PW_HAVE="$(pw_version)"
+if [ -n "$PW_PIN" ] && [ "$PW_HAVE" = "$PW_PIN" ]; then
+  say "Playwright $PW_HAVE (matches the pin)"
+else
+  say "installing Playwright $PW_SPEC (resolved here: ${PW_HAVE:-none})"
   # Installed through a scratch project, NOT `npm install playwright` in here.
-  # Even when told to add one package, npm resolves the whole of
-  # video/package.json — which still lists the private video-kit — so it demands
-  # a registry token for a dependency this script deliberately no longer uses.
+  # Even when told to add one package, npm builds the ideal tree from the whole
+  # of video/package.json — which lists the private video-kit — so it demands a
+  # registry token for a dependency this script deliberately does not use, and
+  # exits 1. Under --silent it does that without printing anything at all.
   # A throwaway manifest contains only playwright, and playwright is public.
   _pw_tmp="$(mktemp -d)"
-  ( cd "$_pw_tmp" && npm init -y >/dev/null 2>&1 && npm install --silent "playwright@$PW_RANGE" ) \
-    || die "could not install playwright@$PW_RANGE"
+  ( cd "$_pw_tmp" \
+      && npm init -y >/dev/null 2>&1 \
+      && npm install --silent --no-audit --no-fund "playwright@$PW_SPEC" ) \
+    || { rm -rf "$_pw_tmp"; die "could not install playwright@$PW_SPEC"; }
+
+  # Land it in video/node_modules so video/ wins resolution over the repo root —
+  # that placement is the whole point, not an implementation detail. Only
+  # playwright's own trees are cleared first, so a video/node_modules that
+  # legitimately holds anything else survives intact.
   mkdir -p node_modules
+  rm -rf node_modules/playwright node_modules/playwright-core
   cp -R "$_pw_tmp/node_modules/." node_modules/
   rm -rf "$_pw_tmp"
-  node -e "require.resolve('playwright')" >/dev/null 2>&1 \
-    || die "playwright still not resolvable from $VIDEO_DIR after install"
+
+  PW_HAVE="$(pw_version)"
+  [ -n "$PW_HAVE" ] \
+    || die "playwright still does not resolve from $VIDEO_DIR after installing $PW_SPEC"
+fi
+
+# Loud, not silent: a wrong-version capture is far more expensive to discover in
+# review than a failed run is here.
+if [ -n "$PW_PIN" ] && [ "$PW_HAVE" != "$PW_PIN" ]; then
+  die "Playwright version mismatch — refusing to capture.
+     video/package.json pins : $PW_PIN
+     actually resolved       : $PW_HAVE
+     resolved from           : $(pw_origin)
+     Capture is only byte-stable within one build; shooting on $PW_HAVE would
+     rewrite every committed shot with antialiasing noise that reads as a real
+     UI diff. Remove that copy or reconcile the pin, then re-run."
+fi
+if [ -z "$PW_PIN" ]; then
+  warn "video/package.json declares playwright '$PW_SPEC' — a range, not an exact pin.
+     Resolved $PW_HAVE for this run, but a later shoot may resolve a different
+     build and rewrite every shot. Pin an exact version for byte-stable capture."
 fi
 
 say "installing Chromium for Playwright"
 # Idempotent and cached under ~/Library/Caches/ms-playwright, so a no-op after
 # the first run. No --with-deps: that is an apt path and does nothing on macOS.
 #
-# npx, not a path into node_modules: playwright often resolves from the REPO's
-# node_modules rather than video/'s (node walks up, and the stage has usually
-# just run npm ci at the repo root), so a hardcoded video/node_modules/playwright
-# path is simply absent. npx walks up the same way node does. It is a public
-# package, so even a registry fetch here needs no auth.
+# npx, not a hardcoded path: it walks up the same way node does, so it works
+# whether playwright came from video/node_modules (the block above installed it)
+# or from the repo root (the root already had the pinned version, so nothing was
+# installed here). Either way the guard above has already established that the
+# resolved version IS the pin, so the browser this downloads matches the
+# playwright that will drive it. It is a public package, so no auth is needed.
 npx --yes playwright install chromium
 
 say "capturing the UI"
