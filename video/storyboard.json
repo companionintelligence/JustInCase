@@ -28,7 +28,9 @@
       "seconds": 4.5,
       "title": "Just In Case",
       "caption": "Emergency knowledge, offline.",
-      "narration": "Just In Case is an offline emergency knowledge assistant."
+      "narration": "Just In Case is an offline emergency knowledge assistant.",
+      "mark": "./assets/app-icon.png",
+      "reveal": "paced"
     },
     {
       "id": "first-launch",
@@ -329,7 +331,8 @@
           "label": "Answers",
           "value": "Cited"
         }
-      ]
+      ],
+      "reveal": "paced"
     },
     {
       "id": "close",
@@ -337,7 +340,8 @@
       "seconds": 4.5,
       "cta": "UnCloud your life.",
       "url": "ci.computer",
-      "narration": "Just In Case, from Companion Intelligence. UnCloud your life."
+      "narration": "Just In Case, from Companion Intelligence. UnCloud your life.",
+      "mark": "brand:logo.full"
     }
   ]
 }
