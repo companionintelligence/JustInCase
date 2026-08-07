@@ -186,6 +186,11 @@
           "url": "just-in-case.local",
           "alt": "The typed question — how long to boil creek water — asked and answered in the chat, with a collapsed sources accordion",
           "motion": "push-in",
+          "_focusNote": "The film's first punch-in, and it arrives late on purpose: four earlier scenes are this same app shell, so the wide read is long since established and this scene can spend its dwell on the conversation instead of re-introducing the furniture. It ends on the question, the answer and the collapsed SOURCES row — the narration, line for line.\n\nThe 16:9 window is always SQUARE in normalised image coordinates, because the capture and the canvas are both 16:9. So the only lever a landscape rectangle has is its longer side: scale = 1.263 / max(w, h), clamped to [1.263, 2.4]. max here is 0.65, giving 1.943x. An earlier attempt pointed at the answer bubble alone (0.51) was therefore pointless — it asks for 2.48x, clamps to 2.4, and the extra 0.14 of window it wins slices the question bubble instead.\n\nPortrait is a different instrument. The mobile capture is already legible at rest, and its window is square-ish too, so any tight crop slices full-width body copy — there is no honest close-up available. What IS available is the reframe coverScale gives for free: w 1.0 asks for nothing tighter than full-bleed, the phone frame drops away and the screen grows 39%. That is the portrait shot-size change; a portrait crop is not.",
+          "focus": {
+            "landscape": { "x": 0.3, "y": 0.091, "w": 0.65, "h": 0.4 },
+            "portrait": { "x": 0.0, "y": 0.06, "w": 1.0, "h": 0.86 }
+          },
           "capture": {
             "path": "/?stage=ready",
             "waitFor": ".chips .chip",
@@ -220,6 +225,8 @@
       "kind": "screen",
       "chapter": "ask",
       "seconds": 6.5,
+      "transition": "cut",
+      "_transitionNote": "Forced by the focus on the scene before it, and measured rather than assumed. Both scenes now end full-bleed on the same app screen at nearly the same scale, and the default half-second cross-dissolve between them renders as two full-frame copies of the answer text sliding through each other — a screenful of overlapping body copy that reads as a broken render, not a transition. At rest the same dissolve was harmless, because both plates were small cards on a lot of empty ground. AUTHORING.md predicts this ('a cross-dissolve between two shots of the SAME app screen reads as a double-exposure ghost'); punching in is what makes it unmissable. Cut instead — which is also the right edit, since this is the escalation from the answer to its receipts.",
       "caption": "Every answer opens onto the documents behind it.",
       "narration": "See exactly which documents the answer came from. Verify before you act.",
       "shots": [
@@ -228,6 +235,10 @@
           "url": "just-in-case.local",
           "alt": "The expanded sources accordion listing the three documents the answer was drawn from, each with the passage that matched",
           "motion": "drift-down",
+          "_focusNote": "The credibility beat, and the one frame in this film that is genuinely unreadable wide: the filenames the caption promises — 100_Survival/FM21-76-US-Army-Survival.pdf and the two engineering handbooks — are about 13px on a 1080-tall canvas at rest. At 1.974x they are 26px and the claim is verifiable rather than asserted.\n\ndrift-down rather than push-in, and it has room: headroomDown is 100px against a 107px request, so the shot travels 0.063 of the plate down through the three cards instead of stalling. That matters — a focus that lands hard against the coverage clamp leaves drift-down with nowhere to go and renders DEAD STILL while the storyboard claims it moves. Worth re-checking with the kit's own focusState after any change to this rectangle.\n\nLANDSCAPE ONLY, deliberately. On mobile the source list is full-bleed body copy that is already comfortable to read, so the only portrait framing available would crop the card text at the sides. A format left out keeps the legacy move, which is the right answer here: 'this screen does not need a camera on 9:16' should render as a plain shot, not a confidently wrong one.",
+          "focus": {
+            "landscape": { "x": 0.3, "y": 0.28, "w": 0.64, "h": 0.6 }
+          },
           "capture": {
             "path": "/?stage=ready",
             "waitFor": ".chips .chip",
@@ -329,7 +340,7 @@
       "seconds": 4.5,
       "cta": "UnCloud your life.",
       "url": "ci.computer",
-      "narration": "From Companion Intelligence. UnCloud your life.",
+      "narration": "Just In Case, from Companion Intelligence. UnCloud your life.",
       "mark": "brand:logo.full"
     }
   ]
