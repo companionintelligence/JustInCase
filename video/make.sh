@@ -92,6 +92,100 @@ fi
 [ -n "$KIT" ] && [ -f "$KIT" ] || die "video-kit not found (looked for */$KIT_REL above $REPO_ROOT)
      Clone CI-Common into the workspace, or set CI_WORKSPACE to the directory holding it."
 
+# ── which kit answered ───────────────────────────────────────────────────────
+# That resolution above lands on a WORKING TREE, and a working tree is whatever
+# branch someone left it on. CI-Engineering's tools pinned their half of this
+# (they export the kit from origin/<default> and print which one answered); this
+# half was never pinned, so `bash video/make.sh` silently captured and built with
+# whatever the shared CI-Common clone happened to be checked out at.
+#
+# Not hypothetical. On 2026-08-05 that clone sat at video-kit 0.1.2 while
+# origin/main carried 0.2.0 with a repainted brand: six products were re-rendered
+# specifically to pick the repaint up and came out byte-identical. It was still
+# open on 2026-08-06, by then 0.1.2 against 0.7.0. A stale kit is invisible by
+# nature — the run reports success either way — so the only thing that makes it
+# visible is printing it, and the only thing that stops it is refusing.
+#
+# Announce always; refuse when the tree is behind origin or dirty. Same shape and
+# vocabulary as `kitLabel` in CI-Engineering tools/lib/workspace.mjs, so the two
+# halves of the pipeline report identically.
+KIT_ROOT="${KIT%/bin/ci-video.mjs}"
+KIT_REPO_DIR="${KIT%/packages/video-kit/bin/ci-video.mjs}"
+KIT_VERSION="$(node -p "require('$KIT_ROOT/package.json').version" 2>/dev/null || echo unknown)"
+
+kit_git() { git -C "$KIT_REPO_DIR" "$@" 2>/dev/null; }
+
+KIT_NOTES=()
+KIT_STALE=0
+
+if kit_git rev-parse --git-dir >/dev/null; then
+  # Always fetch before asserting branch state: a stale origin ref reports a
+  # current tree as behind, or worse, a behind tree as current.
+  kit_git fetch --quiet origin || warn "could not fetch CI-Common — the comparison below may itself be stale"
+
+  KIT_DEFAULT="$(kit_git symbolic-ref --short refs/remotes/origin/HEAD | sed 's|^origin/||')"
+  [ -n "$KIT_DEFAULT" ] || KIT_DEFAULT=main
+  KIT_BRANCH="$(kit_git symbolic-ref --short HEAD || echo "")"
+  if [ -n "$KIT_BRANCH" ]; then
+    KIT_WHERE="on $KIT_BRANCH"
+  else
+    KIT_BRANCH="$(kit_git rev-parse --short HEAD || echo unknown)"
+    KIT_WHERE="detached at $KIT_BRANCH"
+  fi
+
+  [ "$KIT_BRANCH" = "$KIT_DEFAULT" ] || KIT_WHERE="$KIT_WHERE, not $KIT_DEFAULT"
+  KIT_NOTES+=("$KIT_WHERE")
+
+  # Behind-ness is measured over packages/video-kit only. CI-Common carries far
+  # more than the kit, and blocking a capture because an unrelated package moved
+  # would train everyone to set the override permanently.
+  KIT_BEHIND="$(kit_git rev-list --count "HEAD..origin/$KIT_DEFAULT" -- packages/video-kit || echo 0)"
+  if [ "${KIT_BEHIND:-0}" -gt 0 ]; then
+    KIT_NOTES+=("$KIT_BEHIND commit(s) behind origin/$KIT_DEFAULT under packages/video-kit")
+    KIT_STALE=1
+  fi
+
+  if [ -n "$(kit_git status --porcelain -- packages/video-kit)" ]; then
+    KIT_NOTES+=("uncommitted changes under packages/video-kit")
+    KIT_STALE=1
+  fi
+else
+  KIT_NOTES+=("not a git checkout — provenance unknown")
+  KIT_STALE=1
+fi
+
+# Joined by hand: "${arr[*]}" separates on the FIRST character of IFS only, so
+# IFS=', ' silently yields "a,b" rather than "a, b".
+KIT_JOINED=""
+for note in "${KIT_NOTES[@]}"; do
+  [ -z "$KIT_JOINED" ] && KIT_JOINED="$note" || KIT_JOINED="$KIT_JOINED, $note"
+done
+KIT_LABEL="video-kit $KIT_VERSION — CI-Common working tree: $KIT_JOINED"
+
+if [ "$KIT_STALE" = 0 ]; then
+  printf '\033[0;2mkit:\033[0m \033[0;32m%s\033[0m\n' "$KIT_LABEL"
+elif [ "${CI_VIDEO_ALLOW_STALE_KIT:-0}" = 1 ]; then
+  # The deliberate opt-out, for testing a kit branch. Allowed, never silent.
+  warn "kit: $KIT_LABEL"
+  warn "proceeding anyway (CI_VIDEO_ALLOW_STALE_KIT=1) — do not commit shots or publish a cut from this run"
+else
+  die "kit: $KIT_LABEL
+
+     This run would capture and build with a kit that is not what origin ships,
+     and would report success either way. Shots are byte-stable only within one
+     kit, so committing them from here rewrites the fleet's record for everyone.
+
+     Fix it in a worktree — do NOT switch branches in a shared CI-Common clone,
+     other agents are working there:
+
+       git -C $KIT_REPO_DIR worktree add /tmp/video-kit origin/$KIT_DEFAULT
+       CI_WORKSPACE=... ./video/make.sh
+
+     Or, if you are deliberately testing a kit branch:
+
+       CI_VIDEO_ALLOW_STALE_KIT=1 ./video/make.sh"
+fi
+
 # The one way to invoke the kit. stage.sh uses this too, so a multi-pass
 # capture_all cannot accidentally fall back to the npm script — which would go
 # looking for the private package in the registry and ask for a token.
