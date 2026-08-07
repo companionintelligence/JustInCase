@@ -7,9 +7,10 @@
 #   ./video/make.sh --only <id>     re-shoot a single shot by id
 #   ./video/make.sh --keep-up       leave the stage running when it finishes
 #
-# Output lands in video/out/ and video/assets/shots/, both gitignored: the video
-# and the screenshots are build artifacts, regenerated on demand rather than
-# stored.
+# The rendered cut lands in video/out/, which is gitignored — a video is a build
+# artifact, rendered on demand. The screenshots land in video/assets/shots/ and
+# ARE committed: without them a checkout cannot render at all. Re-capture and
+# commit them whenever you change a screen the video covers.
 #
 # THIS FILE IS GENERIC — it is the same in every product repo. Everything
 # repo-specific lives in video/stage.sh, which defines stage_up and stage_down.
