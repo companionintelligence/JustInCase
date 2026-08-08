@@ -148,7 +148,8 @@
         {
           "id": "question-typed",
           "url": "just-in-case.local",
-          "alt": "A question of the viewer's own — how long to boil creek water — typed into the composer, with the six suggested-question chips still offered above it",
+          "alt": "A question of the viewer's own — how long to boil creek water — typed into the composer, with the suggested-question chips still offered above it",
+          "_altNote": "No count here, deliberately. The app renders six chips at desktop width and three at portrait — `.chip-extra { display: none }` under 620px — so one alt string cannot name a number that is true of both plates, and this one is read against both. Verified in the 9:16 cut: three chips.",
           "motion": "drift-down",
           "capture": {
             "path": "/?stage=ready",
@@ -313,7 +314,8 @@
       "seconds": 6,
       "title": "Runs on your hardware",
       "caption": "One Docker stack. No accounts, no cloud.",
-      "narration": "One Docker stack. No accounts, no cloud. It keeps working when the network does not.",
+      "narration": "Your documents, your questions, your answers. It keeps working when the network does not.",
+      "_narrationNote": "The line used to be \"One Docker stack. No accounts, no cloud. It keeps working when the network does not.\" — whose first seven words were the caption, verbatim, read aloud while the caption was on screen. The voice now spends that time on the only thing this scene has left to say. The three nouns are the film's own arc in order — the shelf, the typed question, the cited answer — so the recap recaps something the viewer watched rather than introducing a fourth claim in the last six seconds.",
       "items": [
         {
           "label": "Network",
@@ -324,14 +326,15 @@
           "value": "$0"
         },
         {
-          "label": "Retrieval",
-          "value": "Hybrid search"
+          "label": "Data leaves home",
+          "value": "Never"
         },
         {
           "label": "Answers",
           "value": "Cited"
         }
       ],
+      "_itemsNote": "This is MESSAGING.md's \"ownership tally\", which is the sanctioned shape for a closing feature scene. The chip it replaces was `Retrieval · Hybrid search` — the one chip of four that named a mechanism rather than a stake, and the only one a viewer could not check against anything the film had shown.\n\n`Data leaves home · Never` is a claim, so it was verified rather than assumed, because the fleet review caught exactly this chip being false on Spellbook (\"the published Docker image bakes a Sentry DSN\"). Here: CMakeLists.txt line 125 defaults `JIC_SENTRY` to OFF, the Dockerfile defaults `ARG JIC_SENTRY=0` and in that state \"downloads nothing, links nothing, and produces binaries with no Sentry code in them at all\", and .github/workflows/docker-publish.yml passes no build-args — so the PUBLISHED image is the no-Sentry build. The DSN is never baked in; it arrives at runtime via SENTRY_DSN or not at all.\n\nRe-check this chip if docker-publish.yml ever grows a `build-args:` block, or if the JIC_SENTRY default flips. It is the one line in this film that a build-system change can silently make untrue.",
       "reveal": "paced"
     },
     {
