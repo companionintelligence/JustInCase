@@ -3,6 +3,7 @@
 // Serves the web UI and handles /query (RAG), /status and /api/library.
 // Uses SQLite hybrid search (vector + BM25 via RRF) for retrieval.
 
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -30,6 +31,7 @@
 #include "embeddings.h"
 #include "llm.h"
 #include "sqlite_vec_index.h"
+#include "kiwix_client.h"
 
 namespace fs = std::filesystem;
 using json = nlohmann::json;
@@ -61,6 +63,46 @@ static void refresh_counts() {
     if (g_index) {
         g_chunk_count.store(g_index->chunk_count());
         g_file_count.store(g_index->processed_file_count());
+    }
+}
+
+// Optional ZIM library. Disabled unless JIC_KIWIX_URL is set; see
+// src/kiwix_client.h for the licence reason it is a service and not a library.
+static KiwixClient g_kiwix;
+
+// One retrieved passage, whatever produced it. `origin` is carried through to
+// the citation so the UI — and the reader — can tell a curated field manual
+// from an encyclopedia article.
+struct Passage {
+    std::string label;   // filename, or "<Book> — <Article>"
+    std::string text;
+    float       score = 0.0f;
+    std::string origin;  // "library" | "zim"
+};
+
+// Fold ZIM hits into an existing passage list on the SAME RRF scale the local
+// retrievers use, so one comparable ordering comes out.
+//
+// This deliberately does NOT rank neutrally. A local chunk can be scored by two
+// retrievers (vector AND BM25) and so tops out near 2/(k+1), while a ZIM hit
+// has one retriever and tops out near 1/(k+1). The curated emergency corpus
+// therefore outranks the encyclopedia whenever both match, which is the
+// behaviour we want: FM 21-76 should beat a Wikipedia article on boiling water.
+// The library is reach, not the primary source.
+static void append_zim_passages(const std::string& query, std::vector<Passage>& out) {
+    if (!g_kiwix.healthy()) return;
+
+    const float rrf_k = 60.0f;
+    for (const auto& hit : g_kiwix.search(query, KIWIX_CANDIDATES)) {
+        std::string text = g_kiwix.article_text(hit, KIWIX_MAX_ARTICLE_CHARS);
+        if (text.empty()) text = hit.snippet;   // snippet is better than nothing
+        if (trim(text).empty()) continue;       // …but an empty hit is dropped
+
+        const std::string book = hit.book.empty() ? std::string("library") : hit.book;
+        out.push_back({book + " — " + hit.title,
+                       text,
+                       1.0f / (rrf_k + static_cast<float>(hit.rank)),
+                       "zim"});
     }
 }
 
@@ -180,31 +222,49 @@ static void handle_query(const httplib::Request& req, httplib::Response& res) {
         json matches = json::array();
 
         EmbeddingGenerator* emb = g_embeddings.load(std::memory_order_acquire);
-        if (use_context && emb && g_chunk_count.load() > 0) {
-            auto q_emb = emb->get_embedding(query);
+        if (use_context) {
+            std::vector<Passage> passages;
 
-            // Empty = the query could not be embedded; skip vector search
-            // rather than feeding a bad vector into the index (answer the
-            // question without retrieved context).
-            if (!q_emb.empty()) {
-                auto results = g_index->hybrid_search(
-                        q_emb, query, MAX_CONTEXT_CHUNKS, SEARCH_CANDIDATES);
+            // ── Local corpus: vector + BM25, already fused by RRF ────
+            if (emb && g_chunk_count.load() > 0) {
+                auto q_emb = emb->get_embedding(query);
 
-                std::set<std::string> seen_files;
-                for (int i = 0; i < static_cast<int>(results.size()); i++) {
-                    auto& r = results[i];
-                    context += "[REFERENCE " + std::to_string(i + 1)
-                            + " from " + r.filename + "]\n"
-                            + r.text + "\n"
-                            + "[END REFERENCE " + std::to_string(i + 1) + "]\n\n";
+                // Empty = the query could not be embedded; skip vector search
+                // rather than feeding a bad vector into the index (answer the
+                // question without retrieved context).
+                if (!q_emb.empty()) {
+                    for (auto& r : g_index->hybrid_search(
+                                 q_emb, query, MAX_CONTEXT_CHUNKS, SEARCH_CANDIDATES))
+                        passages.push_back({r.filename, r.text, r.score, "library"});
+                }
+            }
 
-                    if (seen_files.insert(r.filename).second) {
-                        matches.push_back({
-                            {"filename", r.filename},
-                            {"text", r.text.substr(0, 250) + "..."},
-                            {"score", r.score}
-                        });
-                    }
+            // ── ZIM library: a third retriever, when one is mounted ──
+            // Outside the emb/chunk_count guard on purpose: a box with an empty
+            // local index but a Wikipedia ZIM attached can still answer, and
+            // that is precisely the fresh-install case.
+            append_zim_passages(query, passages);
+
+            std::stable_sort(passages.begin(), passages.end(),
+                             [](const Passage& a, const Passage& b) { return a.score > b.score; });
+            if (passages.size() > static_cast<size_t>(MAX_CONTEXT_CHUNKS))
+                passages.resize(MAX_CONTEXT_CHUNKS);
+
+            std::set<std::string> seen_labels;
+            for (int i = 0; i < static_cast<int>(passages.size()); i++) {
+                auto& p = passages[i];
+                context += "[REFERENCE " + std::to_string(i + 1)
+                        + " from " + p.label + "]\n"
+                        + p.text + "\n"
+                        + "[END REFERENCE " + std::to_string(i + 1) + "]\n\n";
+
+                if (seen_labels.insert(p.label).second) {
+                    matches.push_back({
+                        {"filename", p.label},
+                        {"text", p.text.substr(0, 250) + "..."},
+                        {"score", p.score},
+                        {"origin", p.origin}
+                    });
                 }
             }
         }
@@ -302,6 +362,35 @@ static void handle_status(const httplib::Request&, httplib::Response& res) {
                           jic::telemetry::settings().crash_handler ? "inproc" : "off"},
         {"minidumps", false},
     };
+    // Inference backend. `backend` is compiled in (see CMakeLists
+    // jic_configure_gpu) and `requested_gpu_layers` is what the environment
+    // asked for — reported as two fields precisely because they can disagree:
+    // llama.cpp ignores n_gpu_layers on a CPU-only build without complaining,
+    // so "off" plus a non-zero request is the signature of an operator who
+    // thinks they have GPU acceleration and does not.
+    status["inference"] = {
+        {"backend", JIC_GPU_BACKEND},
+        {"requested_gpu_layers", env_or_int("JIC_N_GPU_LAYERS", 0)},
+    };
+    // The optional ZIM library. `configured` and `reachable` are reported
+    // separately on purpose: "you asked for a library and it is not answering"
+    // is a different operator problem from "you never asked for one", and the
+    // UI must not show a broken-looking library to someone who never mounted
+    // one. Book titles come from kiwix's own catalog, so the panel names what
+    // is actually mounted rather than what a config file claims.
+    {
+        const bool configured = g_kiwix.configured();
+        const bool reachable  = configured && g_kiwix.healthy();
+        json zim;
+        zim["configured"] = configured;
+        zim["reachable"]  = reachable;
+        zim["url"]        = g_kiwix.base_url();
+        json titles = json::array();
+        if (reachable) for (const auto& b : g_kiwix.books()) titles.push_back(b);
+        zim["books"]      = titles;
+        zim["book_count"] = titles.size();
+        status["zim_library"] = zim;
+    }
     res.set_content(status.dump(), "application/json");
 }
 
@@ -536,6 +625,24 @@ int main() {
     refresh_counts();
     std::cout << "Index: " << g_chunk_count.load() << " chunks, "
               << g_file_count.load() << " files" << std::endl;
+
+    // ── Optional ZIM library ────────────────────────────────────────
+    // Unset by default, so the shipped behaviour is unchanged. The probe here
+    // is only so the startup log tells an operator the truth once; a library
+    // that goes away later just stops contributing hits.
+    g_kiwix.configure(env_or("JIC_KIWIX_URL", ""));
+    if (g_kiwix.configured()) {
+        const bool up = g_kiwix.healthy();
+        std::cout << "ZIM library: " << g_kiwix.base_url()
+                  << (up ? "" : " (not reachable — answers will use the local corpus only)")
+                  << std::endl;
+        if (up) {
+            const auto b = g_kiwix.books();
+            std::cout << "ZIM library: " << b.size() << " book(s)";
+            for (size_t i = 0; i < b.size() && i < 5; i++) std::cout << (i ? ", " : ": ") << b[i];
+            std::cout << std::endl;
+        }
+    }
 
     // Background workers (joined on shutdown): count refresher + model loader.
     // The loader is started before listen() so the UI/degraded mode is served

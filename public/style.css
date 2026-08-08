@@ -606,6 +606,30 @@ body {
 
 .source-item a:hover { text-decoration: underline; }
 
+/* An encyclopedia citation. Same weight and size as a document citation so it
+   reads as an equal source, but in body colour rather than accent — the accent
+   is this UI's affordance for "this opens", and a ZIM article has no local file
+   to open. Nothing here should imply a link that is not there. */
+.source-name {
+  color: var(--fg);
+  font-size: 0.82rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.source-origin {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
 .source-score {
   font-family: var(--mono);
   font-size: 0.66rem;

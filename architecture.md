@@ -288,5 +288,9 @@ flowchart LR
 - No OCR for scanned PDFs (MuPDF extracts text layers only)
 - Page-level citation anchors (per-page text already available)
 - Re-index on file change (hash-based) rather than name-based dedupe
-- Kiwix ZIM ingestion and offline map tiles as sibling services
+- ~~Kiwix ZIM ingestion and offline map tiles as sibling services~~ — done, as the
+  `library` and `maps` compose profiles. ZIM content is **not** ingested: `src/kiwix_client.h`
+  queries kiwix-serve's own index at answer time and folds the hits into the same RRF as the
+  local retrievers, so an answer can cite a Wikipedia article without an embedding pass over
+  100 GB. See [`docs/1800-project-nomad-parity.md`](docs/1800-project-nomad-parity.md).
 - pgvector escape hatch if collections outgrow one SQLite file

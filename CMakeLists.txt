@@ -142,6 +142,16 @@ function(jic_configure_telemetry target)
     endif()
 endfunction()
 
+# Which ggml GPU backend this binary was COMPILED against. Baked in at build
+# time rather than read from the environment on purpose: asking for GPU layers
+# on a CPU-only build is silently ignored by llama.cpp, so the only honest way
+# for /status to answer "will this machine actually use the GPU" is a value
+# that a runtime env var cannot contradict.
+set(JIC_GPU "off" CACHE STRING "GPU backend llama.cpp was built with (off|vulkan|cuda|hip)")
+function(jic_configure_gpu target)
+    target_compile_definitions(${target} PRIVATE JIC_GPU_BACKEND="${JIC_GPU}")
+endfunction()
+
 # ── Executables ──────────────────────────────────────────────────────
 
 add_executable(jic-server    src/server.cpp)
@@ -158,15 +168,26 @@ set(JIC_INCLUDES
 
 # Common link libraries
 if(EXISTS "/llama-install/lib/libllama.a")
+    # GGML's archives are GLOBBED, not listed. A GPU build emits an extra
+    # backend archive next to the CPU ones — libggml-vulkan.a, libggml-cuda.a,
+    # libggml-hip.a — and the previous hard-coded list of base/cpu/ggml would
+    # simply not link it. That failure is silent in the worst way: ggml still
+    # builds, the binary still runs, and inference quietly stays on the CPU
+    # while JIC_N_GPU_LAYERS says otherwise. Globbing keeps the link set
+    # honest for whatever the llama-builder stage actually produced.
+    file(GLOB LLAMA_GGML_ARCHIVES "/llama-install/lib/libggml*.a")
     set(LLAMA_LINK_LIBS
         -Wl,--whole-archive
         /llama-install/lib/libllama.a
         /llama-install/lib/libcommon.a
-        /llama-install/lib/libggml-base.a
-        /llama-install/lib/libggml-cpu.a
-        /llama-install/lib/libggml.a
+        ${LLAMA_GGML_ARCHIVES}
         -Wl,--no-whole-archive
     )
+    # The Vulkan loader is dynamic and is not inside any ggml archive.
+    if(JIC_GPU STREQUAL "vulkan")
+        find_library(JIC_VULKAN_LIB vulkan REQUIRED)
+        list(APPEND LLAMA_LINK_LIBS ${JIC_VULKAN_LIB})
+    endif()
 else()
     set(LLAMA_LINK_LIBS llama ggml)
 endif()
@@ -186,11 +207,13 @@ set(COMMON_LIBS
 target_include_directories(jic-server PRIVATE ${JIC_INCLUDES})
 target_link_libraries(jic-server PRIVATE ${COMMON_LIBS})
 jic_configure_telemetry(jic-server)
+jic_configure_gpu(jic-server)
 
 # ── jic-ingestion ────────────────────────────────────────────────────
 target_include_directories(jic-ingestion PRIVATE ${JIC_INCLUDES})
 target_link_libraries(jic-ingestion PRIVATE ${COMMON_LIBS})
 jic_configure_telemetry(jic-ingestion)
+jic_configure_gpu(jic-ingestion)
 
 # ── Build info ───────────────────────────────────────────────────────
 message(STATUS "JIC build configuration:")

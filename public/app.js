@@ -161,8 +161,18 @@
       const item = document.createElement('div');
       item.className = 'source-item';
       const score = m.score ? `<span class="source-score">match ${(m.score * 100).toFixed(0)}%</span>` : '';
+      // A ZIM citation names an ENCYCLOPEDIA ARTICLE, not a file in the
+      // sources volume, so it is deliberately not a link: /sources/<title>
+      // would 404, and a citation that 404s is worse than one that does not
+      // offer to open. It is labelled instead, so the reader can still see
+      // which claims came from the field manuals and which from the library.
+      const isZim = m.origin === 'zim';
+      const label = isZim
+        ? `<span class="source-name">${escapeHtml(m.filename)}</span>` +
+          `<span class="source-origin">encyclopedia</span>`
+        : `<a href="/sources/${encodeURI(m.filename)}" target="_blank" rel="noopener">${escapeHtml(m.filename)}</a>`;
       item.innerHTML =
-        `<a href="/sources/${encodeURI(m.filename)}" target="_blank" rel="noopener">${escapeHtml(m.filename)}</a>` +
+        label +
         score +
         `<p class="source-snippet">${escapeHtml(m.text || '')}</p>`;
       details.appendChild(item);
@@ -291,6 +301,20 @@
       $('st-model').textContent = s.llm_model || '—';
       $('st-model').className = s.llm_loaded ? '' : 'idle';
       $('st-embed').textContent = s.embedding_model || '—';
+
+      // Optional ZIM library. `configured` and `reachable` are separate fields
+      // for a reason: the row appears only for a deployment that asked for a
+      // library, and then tells the truth about whether it answered.
+      const zim = s.zim_library || {};
+      const zimRow = $('st-zim-row');
+      if (zimRow) zimRow.hidden = !zim.configured;
+      if (zim.configured) {
+        const n = zim.book_count || 0;
+        $('st-zim').textContent = zim.reachable
+          ? `${formatCount(n)} archive${n === 1 ? '' : 's'}`
+          : 'not reachable';
+        $('st-zim').className = zim.reachable && n > 0 ? 'ok' : 'warn';
+      }
       $('st-version').textContent = 'v' + (s.version || '?');
       $('sidebar-footer').title = s.uptime_seconds
         ? 'Server up ' + formatUptime(s.uptime_seconds)
