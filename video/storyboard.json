@@ -28,7 +28,7 @@
       "seconds": 4.5,
       "title": "Just In Case",
       "caption": "Emergency knowledge, offline.",
-      "narration": "Just In Case is an offline emergency knowledge assistant.",
+      "narration": "There is no signal. How long do you boil creek water?",
       "mark": "./assets/app-icon.png",
       "reveal": "paced"
     },
