@@ -322,16 +322,26 @@ if [ -z "$PW_PIN" ]; then
 fi
 
 say "installing Chromium for Playwright"
-# Idempotent and cached under ~/Library/Caches/ms-playwright, so a no-op after
-# the first run. No --with-deps: that is an apt path and does nothing on macOS.
+# Through the kit, which resolves Playwright the way capture does. NOT
+# `npx --yes playwright install chromium`, which this file used to run.
 #
-# npx, not a hardcoded path: it walks up the same way node does, so it works
-# whether playwright came from video/node_modules (the block above installed it)
-# or from the repo root (the root already had the pinned version, so nothing was
-# installed here). Either way the guard above has already established that the
-# resolved version IS the pin, so the browser this downloads matches the
-# playwright that will drive it. It is a public package, so no auth is needed.
-npx --yes playwright install chromium
+# The old line was defended here on the grounds that npx "walks up the same way
+# node does". It does not. npx resolves a BINARY: it looks for a command called
+# `playwright` in node_modules/.bin, walking up — and @playwright/test provides
+# that command too, at whatever version the repo root pins for its e2e suite. If
+# it finds none it downloads the LATEST Playwright from the registry and runs
+# that. The version guard above proves which MODULE resolves; it says nothing
+# about which binary answers, so it could not have covered the difference.
+#
+# Any of those three installs a browser revision belonging to a Playwright that
+# is not the one about to shoot, and capture is byte-stable only within one
+# build: the wrong one rewrites every committed shot with different text
+# antialiasing, which reads in review as a real UI change. `ci-video
+# install-browser` derives the CLI from `require.resolve('playwright')` out of
+# video/ — the same lookup capture.mjs performs — so the browser and the driver
+# are the same installation by construction. It prints both, and says so when a
+# differing binary is on the path.
+kit install-browser
 
 say "capturing the UI"
 # Some repos cannot capture in one pass — a shot may need a different identity,
