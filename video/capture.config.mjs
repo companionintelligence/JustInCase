@@ -44,6 +44,8 @@
  *   ?stage=empty      fresh install — models loaded, nothing indexed yet
  *   ?stage=ready      32 documents indexed, engine online   (default)
  *   ?stage=degraded   llm_loaded:false — the offline / LLM-missing branch
+ *   ?stage=offline    the ready appliance with a ZIM library mounted, captured
+ *                     with ALL EGRESS BLOCKED — see below
  *
  * Python's SimpleHTTPRequestHandler strips the query before resolving the path,
  * so every one of those URLs serves public/index.html unchanged.
@@ -167,6 +169,7 @@ const STATUS = {
   empty: fixture("status.empty.json"),
   ready: fixture("status.ready.json"),
   degraded: fixture("status.degraded.json"),
+  offline: fixture("status.offline.json"),
 };
 
 const LIBRARY = {
@@ -175,9 +178,18 @@ const LIBRARY = {
   // Degraded means the chat model is absent, not the index: the library stays
   // browsable, exactly as the app's own banner promises.
   degraded: fixture("library.ready.json"),
+  // Same 32 documents; the ZIM library is reported through /status, not here.
+  offline: fixture("library.ready.json"),
 };
 
-const QUERY = fixture("query.water.json");
+const QUERY = {
+  empty: fixture("query.water.json"),
+  ready: fixture("query.water.json"),
+  degraded: fixture("query.water.json"),
+  // The offline beat's answer cites a field manual AND an encyclopedia
+  // article — the mix the ZIM retriever exists to produce.
+  offline: fixture("query.water.offline.json"),
+};
 
 /**
  * Which fixture set a request belongs to, read off the requesting page's URL.
@@ -191,7 +203,7 @@ const stageOf = (route) => {
     /* no frame — service worker or a detached frame */
   }
   if (!from) from = route.request().headers().referer ?? "";
-  const m = /[?&]stage=(empty|ready|degraded)/.exec(from);
+  const m = /[?&]stage=(empty|ready|degraded|offline)/.exec(from);
   return m ? m[1] : "ready";
 };
 
@@ -218,12 +230,60 @@ export default {
   // account concept, so there is no storageState to prepare.
 
   async onContext(context) {
+    // ── The egress guard ─────────────────────────────────────────────────
+    //
+    // The film claims this appliance works with no network. That claim is
+    // ENFORCED here rather than asserted in a caption: every request whose
+    // origin is not the local stage is ABORTED, and any that occurs is
+    // recorded and thrown at the end of the capture.
+    //
+    // So the frames are not a dramatisation of being offline — the page that
+    // was photographed genuinely could not reach anything, and if a future
+    // change ever made the UI fetch a font, an analytics beacon or a CDN
+    // script, the capture FAILS instead of quietly filming a product that
+    // phones home while the narration says it does not.
+    //
+    // This runs for every stage, not just ?stage=offline. There is no shot in
+    // this film that should be contacting the internet.
+    const egress = [];
+    const localOrigin = new URL(process.env.APP_URL ?? "http://localhost:8080").origin;
+    await context.route("**/*", (route) => {
+      const url = route.request().url();
+      // data: and blob: never leave the page; the stage origin is the app.
+      if (url.startsWith("data:") || url.startsWith("blob:") || url.startsWith(localOrigin)) {
+        return route.fallback();
+      }
+      const line = `${route.request().method()} ${url}`;
+      if (!egress.includes(line)) {
+        egress.push(line);
+        // Reported the INSTANT it happens, not only at teardown. A throw from
+        // a route callback or a "close" listener is swallowed by Playwright,
+        // so a violation that only surfaced at the end could be lost entirely
+        // — and a silently-passing honesty check is worse than none.
+        console.error(`  ✗ EGRESS BLOCKED — the offline claim would be false: ${line}`);
+      }
+      return route.abort();
+    });
+    context.on("close", () => {
+      if (egress.length) {
+        console.error(
+          `\n  ✗ ${egress.length} external request(s) were attempted during capture:\n    ` +
+            egress.join("\n    ") +
+            `\n    Every frame in this film claims the appliance needs no network.\n` +
+            `    Fix the app or stop making the claim — do not ship these shots.\n`
+        );
+        // Best-effort hard failure. Playwright may swallow this; the lines
+        // above are the guarantee, this is the belt.
+        process.exitCode = 1;
+      }
+    });
+
     // The three JSON endpoints a static file server cannot answer.
     await context.route("**/status", (route) => json(route, STATUS[stageOf(route)]));
     await context.route("**/api/library", (route) => json(route, LIBRARY[stageOf(route)]));
     await context.route("**/query", (route) => {
       if (route.request().method() !== "POST") return route.fallback();
-      return json(route, QUERY);
+      return json(route, QUERY[stageOf(route)]);
     });
 
     // An unstyled capture looks like a UI regression but is usually a network

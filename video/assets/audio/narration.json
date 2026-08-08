@@ -49,6 +49,10 @@
       "text": "Just In Case, from Companion Intelligence. UnCloud your life.",
       "seconds": 5.4,
       "adopted": true
+    },
+    "no-network": {
+      "text": "The network is gone and nothing changes. The encyclopedia is on the box too.",
+      "seconds": 5.904
     }
   }
 }

@@ -15,7 +15,7 @@
   "chapters": {
     "first-run": "First run",
     "ask": "Ask and verify",
-    "offline": "When a piece is missing"
+    "offline": "When it is on its own"
   },
   "media": {
     "music": null,
@@ -189,11 +189,21 @@
           "motion": "push-in",
           "_focusNote": "The film's first punch-in, and it arrives late on purpose: four earlier scenes are this same app shell, so the wide read is long since established and this scene can spend its dwell on the conversation instead of re-introducing the furniture. It ends on the question, the answer and the collapsed SOURCES row — the narration, line for line.\n\nThe 16:9 window is always SQUARE in normalised image coordinates, because the capture and the canvas are both 16:9. So the only lever a landscape rectangle has is its longer side: scale = 1.263 / max(w, h), clamped to [1.263, 2.4]. max here is 0.65, giving 1.943x. An earlier attempt pointed at the answer bubble alone (0.51) was therefore pointless — it asks for 2.48x, clamps to 2.4, and the extra 0.14 of window it wins slices the question bubble instead.\n\nPortrait is a different instrument. The mobile capture is already legible at rest, and its window is square-ish too, so any tight crop slices full-width body copy — there is no honest close-up available. What IS available is the reframe coverScale gives for free: w 1.0 asks for nothing tighter than full-bleed, the phone frame drops away and the screen grows 39%. That is the portrait shot-size change; a portrait crop is not.",
           "focus": {
-            "landscape": { "x": 0.3, "y": 0.091, "w": 0.65, "h": 0.4 },
-            "portrait": { "x": 0.0, "y": 0.06, "w": 1.0, "h": 0.86 }
+            "landscape": {
+              "x": 0.3,
+              "y": 0.091,
+              "w": 0.65,
+              "h": 0.4
+            },
+            "portrait": {
+              "x": 0.0,
+              "y": 0.06,
+              "w": 1.0,
+              "h": 0.86
+            }
           },
           "capture": {
-            "path": "/?stage=ready",
+            "path": "/?stage=offline",
             "waitFor": ".chips .chip",
             "waitUntil": "networkidle",
             "settle": 600,
@@ -234,14 +244,19 @@
         {
           "id": "sources-open",
           "url": "just-in-case.local",
-          "alt": "The expanded sources accordion listing the three documents the answer was drawn from, each with the passage that matched",
+          "alt": "The expanded sources accordion listing the documents the answer was drawn from — two field manuals and, marked as encyclopedia, a Wikipedia article served from the offline ZIM library — each with the passage that matched",
           "motion": "drift-down",
           "_focusNote": "The credibility beat, and the one frame in this film that is genuinely unreadable wide: the filenames the caption promises — 100_Survival/FM21-76-US-Army-Survival.pdf and the two engineering handbooks — are about 13px on a 1080-tall canvas at rest. At 1.974x they are 26px and the claim is verifiable rather than asserted.\n\ndrift-down rather than push-in, and it has room: headroomDown is 100px against a 107px request, so the shot travels 0.063 of the plate down through the three cards instead of stalling. That matters — a focus that lands hard against the coverage clamp leaves drift-down with nowhere to go and renders DEAD STILL while the storyboard claims it moves. Worth re-checking with the kit's own focusState after any change to this rectangle.\n\nLANDSCAPE ONLY, deliberately. On mobile the source list is full-bleed body copy that is already comfortable to read, so the only portrait framing available would crop the card text at the sides. A format left out keeps the legacy move, which is the right answer here: 'this screen does not need a camera on 9:16' should render as a plain shot, not a confidently wrong one.",
           "focus": {
-            "landscape": { "x": 0.3, "y": 0.28, "w": 0.64, "h": 0.6 }
+            "landscape": {
+              "x": 0.3,
+              "y": 0.28,
+              "w": 0.64,
+              "h": 0.6
+            }
           },
           "capture": {
-            "path": "/?stage=ready",
+            "path": "/?stage=offline",
             "waitFor": ".chips .chip",
             "waitUntil": "networkidle",
             "settle": 600,
@@ -275,6 +290,54 @@
               }
             ]
           }
+        }
+      ]
+    },
+    {
+      "id": "no-network",
+      "kind": "screen",
+      "chapter": "offline",
+      "seconds": 6,
+      "transition": "cut",
+      "_transitionNote": "Same reason check-the-sources cuts: the scene before it ends full-bleed on this very app screen at nearly the same scale, and a half-second cross-dissolve between two shots of the SAME screen renders as a double-exposure ghost of overlapping body copy rather than as a transition. AUTHORING.md predicts it; the focus on the outgoing scene is what makes it unmissable.",
+      "caption": "No connection. Wikipedia, on the box, in the answers.",
+      "narration": "The network is gone and nothing changes. The encyclopedia is on the box too.",
+      "shots": [
+        {
+          "id": "offline-library",
+          "url": "just-in-case.local",
+          "alt": "The appliance with a ZIM library mounted: the System panel reads Encyclopedia, three archives, beside the local index, and the sidebar footer reads Runs 100% offline",
+          "motion": "push-in",
+          "_shotNote": "Captured with EVERY external request blocked and recorded — see the egress guard in capture.config.mjs. If this app ever fetches a font, a script or a beacon, the capture fails instead of quietly filming a product that phones home under a narration saying it does not. The offline claim in this film is enforced, not asserted.",
+          "capture": {
+            "path": "/?stage=offline",
+            "waitFor": "#status-pill.ok",
+            "waitUntil": "networkidle",
+            "settle": 500,
+            "before": [
+              {
+                "waitFor": "#st-zim-row:not([hidden])"
+              },
+              {
+                "waitFor": ".lib-file"
+              },
+              {
+                "eval": "(() => { const t = document.getElementById('sidebar-toggle'); if (getComputedStyle(t).display !== 'none') { t.click(); } else { document.getElementById('sidebar').classList.add('open'); } })()"
+              },
+              {
+                "wait": 150
+              }
+            ]
+          },
+          "focus": {
+            "landscape": {
+              "x": 0.0,
+              "y": 0.07,
+              "w": 0.54,
+              "h": 0.54
+            }
+          },
+          "_focusNote": "Lands on the System panel, where the two facts this scene asserts are actually written: ENCYCLOPEDIA / 3 archives, and the footer's offline dot. At rest they are ~11px on a 1080-tall canvas — legible on a desktop monitor, not in a 16:9 video.\n\n0.54 SQUARE IS DELIBERATE, and was measured with `ci-video focus-preview` rather than guessed. An earlier 0.42x0.50 asked for scale 3.0, clamped to the 2.4 ceiling, and past the ceiling the rectangle stops being read at all — moving its centre changes nothing, so the framing was the kit's rather than mine. 0.54 gives the same picture at scale 2.34, under control, and leaves the window free to sit against the left canvas edge where the sidebar is.\n\nLANDSCAPE ONLY. In portrait the sidebar is off-canvas below 920px (style.css) and the drawer eval opens it full-bleed, so the panel is already large and a crop would only slice it. A format left out keeps the legacy move, which is the right answer when a screen does not need a camera on 9:16."
         }
       ]
     },
@@ -322,8 +385,8 @@
           "value": "Not required"
         },
         {
-          "label": "Monthly fee",
-          "value": "$0"
+          "label": "Encyclopedia",
+          "value": "On disk"
         },
         {
           "label": "Data leaves home",
@@ -334,7 +397,7 @@
           "value": "Cited"
         }
       ],
-      "_itemsNote": "This is MESSAGING.md's \"ownership tally\", which is the sanctioned shape for a closing feature scene. The chip it replaces was `Retrieval · Hybrid search` — the one chip of four that named a mechanism rather than a stake, and the only one a viewer could not check against anything the film had shown.\n\n`Data leaves home · Never` is a claim, so it was verified rather than assumed, because the fleet review caught exactly this chip being false on Spellbook (\"the published Docker image bakes a Sentry DSN\"). Here: CMakeLists.txt line 125 defaults `JIC_SENTRY` to OFF, the Dockerfile defaults `ARG JIC_SENTRY=0` and in that state \"downloads nothing, links nothing, and produces binaries with no Sentry code in them at all\", and .github/workflows/docker-publish.yml passes no build-args — so the PUBLISHED image is the no-Sentry build. The DSN is never baked in; it arrives at runtime via SENTRY_DSN or not at all.\n\nRe-check this chip if docker-publish.yml ever grows a `build-args:` block, or if the JIC_SENTRY default flips. It is the one line in this film that a build-system change can silently make untrue.",
+      "_itemsNote": "MESSAGING.md's \"ownership tally\". `Monthly fee - $0` gave up its slot to `Encyclopedia - On disk` when the ZIM library landed: four chips fit one landscape row and five wrap, and of the five candidates the price is the one the outro's own argument already implies while the encyclopedia is a capability the viewer has just watched being cited.\n\n`Data leaves home - Never` is a claim, so it was verified rather than assumed, because the fleet review caught this exact chip being false on Spellbook. CMakeLists.txt defaults JIC_SENTRY OFF, the Dockerfile defaults ARG JIC_SENTRY=0 and in that state links no Sentry code at all, and docker-publish.yml passes no build-args. It is now ALSO enforced at capture time by the egress guard in video/capture.config.mjs.",
       "reveal": "paced"
     },
     {

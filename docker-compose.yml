@@ -15,6 +15,32 @@
 #
 # Add your own documents:
 #   docker compose cp my-manual.pdf jic-server:/app/public/sources/100_Survival/
+#
+# ── Optional stacks ───────────────────────────────────────────────────
+# Both are off unless their profile is named, so the default deployment is
+# exactly what it always was.
+#
+#   ZIM library (Wikipedia, medical, repair — answers can cite it):
+#     docker compose --profile library run --rm zim-fetch  # content, needs internet
+#     echo 'JIC_KIWIX_URL=http://kiwix:8080' >> .env       # tell the server it exists
+#     docker compose --profile library up -d
+#
+#   The fetch runs INSIDE a container that has the jic-zim volume mounted,
+#   so it works the same on Linux, macOS and Windows — a named volume's
+#   mountpoint is not writable from the host on Docker Desktop. It pulls
+#   over BitTorrent by default, using Kiwix's own .torrent + webseeds, and
+#   verifies the published SHA-256 before the file becomes visible to
+#   kiwix-serve. `./helper-scripts/fetch-zim.sh` is a wrapper for the same
+#   command.
+#
+#   Offline maps:
+#     ./helper-scripts/fetch-maps.sh
+#     docker compose --profile maps up -d                 # → http://localhost:8082
+#
+# JIC_KIWIX_URL is set through .env rather than defaulted to http://kiwix:8080,
+# because a default would make every deployment that never wanted a library
+# report a library it cannot reach. Opting in is one line; a status panel that
+# cries wolf is forever.
 # ══════════════════════════════════════════════════════════════════════
 
 x-jic-env: &jic-env
@@ -36,6 +62,17 @@ x-jic-env: &jic-env
   # Set to `off` to keep handled-error reporting but install no fatal-signal
   # handler at all.
   JIC_SENTRY_CRASH_HANDLER: ${JIC_SENTRY_CRASH_HANDLER:-}
+  # ── Optional ZIM library (profile: library) ──────────────────────
+  # Empty by default, which disables the feature entirely. Set by the
+  # `library` profile to http://kiwix:8080. When it points at a reachable
+  # kiwix-serve, ZIM articles join the local corpus as a third retriever and
+  # can be CITED in an answer — see src/kiwix_client.h.
+  JIC_KIWIX_URL: ${JIC_KIWIX_URL:-}
+  # ── GPU offload ──────────────────────────────────────────────────
+  # Layers pushed to the GPU. 0 (the default) is pure CPU and is what a
+  # default image can do — a GPU build needs --build-arg JIC_GPU=cuda|vulkan|hip
+  # AND the matching device passed through. 999 means "as many as fit".
+  JIC_N_GPU_LAYERS: ${JIC_N_GPU_LAYERS:-0}
 
 x-jic-hardening: &jic-hardening
   init: true
@@ -118,6 +155,115 @@ services:
               "--dest", "/app/public/sources",
               "--seed", "/app/seed-sources"]
 
+  # ── ZIM library: Wikipedia & friends, offline (opt-in) ─────────────
+  # Project NOMAD ships this as one of four bundled stacks. The difference
+  # here is that JIC does not merely sit next to it: `jic-server` retrieves
+  # from it at query time, so an answer can quote and CITE a Wikipedia
+  # article. A library beside a chat box is two products; this is one.
+  #
+  # Run:  docker compose --profile library up -d
+  #       (fetch content first: ./helper-scripts/fetch-zim.sh)
+  #
+  # kiwix-serve is a SEPARATE PROCESS on purpose, not a linked library:
+  # libzim is GPLv2-or-later and JIC is MIT. Talking over a socket keeps the
+  # two works separate. This is not a packaging preference, it is the licence.
+  kiwix:
+    image: ghcr.io/kiwix/kiwix-serve:${KIWIX_VERSION:-3.7.0}
+    container_name: jic-kiwix
+    profiles: ["library"]
+    restart: unless-stopped
+    volumes:
+      - jic-zim:/data:ro
+    ports:
+      # Exposed so the ZIM library is browsable directly too, not only
+      # through JIC's answers.
+      - "${KIWIX_PORT:-8081}:8080"
+    # kiwix-serve takes ZIM paths as arguments and does no globbing of its
+    # own, so a shell expands them. The guard matters: with an empty volume
+    # the glob would expand to a literal "/data/*.zim", kiwix would exit, and
+    # `restart: unless-stopped` would turn a missing download into a crash
+    # loop that looks like a broken image. Instead it says what to run and
+    # idles, JIC's probe finds nothing to search, and answers quietly fall
+    # back to the local corpus.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -- /data/*.zim
+        if [ ! -e "$$1" ]; then
+          echo "No .zim files in /data."
+          echo "Fetch some first:  ./helper-scripts/fetch-zim.sh"
+          echo "Idling — JIC will answer from its local corpus until content arrives."
+          exec sleep infinity
+        fi
+        echo "Serving $$# ZIM file(s)"
+        exec kiwix-serve --port 8080 --address 0.0.0.0 "$$@"
+    healthcheck:
+      # /catalog/v2/entries is what JIC itself probes, so an unhealthy mark
+      # here means exactly "JIC will not get hits from this".
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/catalog/v2/entries >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+  # ── ZIM downloader (opt-in, needs internet) ────────────────────────
+  # Fills the jic-zim volume FROM INSIDE a container, which is the whole
+  # point: a named volume's mountpoint is not writable from the host on
+  # Docker Desktop, so a host-side download either fails partway through
+  # several gigabytes or needs a second copy step.
+  #
+  #   docker compose --profile library run --rm zim-fetch --list
+  #   docker compose --profile library run --rm zim-fetch
+  #   docker compose --profile library run --rm zim-fetch medicine ifixit
+  #
+  # Fetches over BitTorrent by default. That is not a side channel: Kiwix
+  # publishes .torrent, .magnet, .sha256 and Metalink4 for every archive,
+  # and the torrents carry WEBSEEDS, so a download runs at full mirror
+  # speed with zero peers and gets faster if any exist. Set
+  # ZIM_METHOD=http for a plain mirror pull.
+  zim-fetch:
+    build:
+      context: .
+      dockerfile: Dockerfile.fetch
+    image: jic-zim-fetch:latest
+    container_name: jic-zim-fetch
+    profiles: ["library"]
+    volumes:
+      - jic-zim:/data
+    environment:
+      ZIM_METHOD: ${ZIM_METHOD:-torrent}
+      # Minutes to keep seeding after a torrent completes. 0 by default:
+      # an appliance should not start spending its owner's upstream
+      # bandwidth because a download finished. Set it deliberately.
+      ZIM_SEED_MINUTES: ${ZIM_SEED_MINUTES:-0}
+      ZIM_DEFAULT_PACKS: ${ZIM_DEFAULT_PACKS:-}
+    # Not read_only: this service exists to write to the volume. It still
+    # drops every capability — a downloader needs none of them.
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  # ── Offline maps (opt-in) ──────────────────────────────────────────
+  # Street-level OpenStreetMap data with no network, from an .mbtiles file.
+  # Deliberately NOT wired into retrieval: a map is something you look at, and
+  # pretending the LLM can read tiles would be a claim the product cannot keep.
+  #
+  # Run:  docker compose --profile maps up -d   →  http://localhost:8082
+  maps:
+    image: maptiler/tileserver-gl:${TILESERVER_VERSION:-v4.11.1}
+    container_name: jic-maps
+    profiles: ["maps"]
+    restart: unless-stopped
+    volumes:
+      - jic-maps:/data
+    ports:
+      - "${MAPS_PORT:-8082}:8080"
+    command: ["--port", "8080"]
+
 volumes:
   jic-sources:
   jic-data:
+  jic-zim:
+  jic-maps:
