@@ -21,9 +21,17 @@
 # exactly what it always was.
 #
 #   ZIM library (Wikipedia, medical, repair — answers can cite it):
-#     ./helper-scripts/fetch-zim.sh                       # content, needs internet
-#     echo 'JIC_KIWIX_URL=http://kiwix:8080' >> .env      # tell the server it exists
+#     docker compose --profile library run --rm zim-fetch  # content, needs internet
+#     echo 'JIC_KIWIX_URL=http://kiwix:8080' >> .env       # tell the server it exists
 #     docker compose --profile library up -d
+#
+#   The fetch runs INSIDE a container that has the jic-zim volume mounted,
+#   so it works the same on Linux, macOS and Windows — a named volume's
+#   mountpoint is not writable from the host on Docker Desktop. It pulls
+#   over BitTorrent by default, using Kiwix's own .torrent + webseeds, and
+#   verifies the published SHA-256 before the file becomes visible to
+#   kiwix-serve. `./helper-scripts/fetch-zim.sh` is a wrapper for the same
+#   command.
 #
 #   Offline maps:
 #     ./helper-scripts/fetch-maps.sh
@@ -197,6 +205,45 @@ services:
       timeout: 5s
       start_period: 20s
       retries: 3
+
+  # ── ZIM downloader (opt-in, needs internet) ────────────────────────
+  # Fills the jic-zim volume FROM INSIDE a container, which is the whole
+  # point: a named volume's mountpoint is not writable from the host on
+  # Docker Desktop, so a host-side download either fails partway through
+  # several gigabytes or needs a second copy step.
+  #
+  #   docker compose --profile library run --rm zim-fetch --list
+  #   docker compose --profile library run --rm zim-fetch
+  #   docker compose --profile library run --rm zim-fetch medicine ifixit
+  #
+  # Fetches over BitTorrent by default. That is not a side channel: Kiwix
+  # publishes .torrent, .magnet, .sha256 and Metalink4 for every archive,
+  # and the torrents carry WEBSEEDS, so a download runs at full mirror
+  # speed with zero peers and gets faster if any exist. Set
+  # ZIM_METHOD=http for a plain mirror pull.
+  zim-fetch:
+    build:
+      context: .
+      dockerfile: Dockerfile.fetch
+    image: jic-zim-fetch:latest
+    container_name: jic-zim-fetch
+    profiles: ["library"]
+    volumes:
+      - jic-zim:/data
+    environment:
+      ZIM_METHOD: ${ZIM_METHOD:-torrent}
+      # Minutes to keep seeding after a torrent completes. 0 by default:
+      # an appliance should not start spending its owner's upstream
+      # bandwidth because a download finished. Set it deliberately.
+      ZIM_SEED_MINUTES: ${ZIM_SEED_MINUTES:-0}
+      ZIM_DEFAULT_PACKS: ${ZIM_DEFAULT_PACKS:-}
+    # Not read_only: this service exists to write to the volume. It still
+    # drops every capability — a downloader needs none of them.
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
   # ── Offline maps (opt-in) ──────────────────────────────────────────
   # Street-level OpenStreetMap data with no network, from an .mbtiles file.
