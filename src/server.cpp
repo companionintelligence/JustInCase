@@ -372,6 +372,14 @@ static void handle_status(const httplib::Request&, httplib::Response& res) {
         {"backend", JIC_GPU_BACKEND},
         {"requested_gpu_layers", env_or_int("JIC_N_GPU_LAYERS", 0)},
     };
+    // Retrieval-space health. `dim` is what this build indexes; `mismatch`
+    // is non-empty when the index on disk was written by a different
+    // embedding model — vectors from two models are not comparable even at
+    // the same width, and that is otherwise invisible at query time.
+    status["embedding_space"] = {
+        {"dim", EMBEDDING_DIM},
+        {"mismatch", g_index ? g_index->meta_get("mismatch") : std::string("")},
+    };
     // The optional ZIM library. `configured` and `reachable` are reported
     // separately on purpose: "you asked for a library and it is not answering"
     // is a different operator problem from "you never asked for one", and the
