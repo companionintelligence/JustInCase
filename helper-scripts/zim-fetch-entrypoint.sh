@@ -43,17 +43,56 @@ SEED_MINUTES="${ZIM_SEED_MINUTES:-0}"
 # full speed with zero peers.
 METHOD="${ZIM_METHOD:-torrent}"
 
-# name|directory|filename-prefix|approx size|licence
-# Resolved against download.kiwix.org on 2026-08-08. sources.yaml also lists
-# a WikiHow ZIM: it is absent because it does not exist to download —
-# /zim/wikihow/ 404s and the catalogue returns zero entries for it.
+# name|directory|filename-prefix|approx size|licence|tier
+#
+# Every entry was RESOLVED against download.kiwix.org and its size read from
+# the library catalogue's own `length` on 2026-08-08 — not copied from a
+# wishlist. sources.yaml lists a WikiHow ZIM: it is absent because it does
+# not exist to download (/zim/wikihow/ 404s, catalogue returns nothing).
+#
+# ── THE TIERS ARE ABOUT FULL-TEXT INDEXES, NOT SIZE ───────────────────
+#
+# JIC reaches the library through kiwix-serve's /search, which is backed by
+# a Xapian FULL-TEXT index built into the ZIM. An archive without one
+# (`_ftindex:no` in its catalogue tags) matches on TITLES ONLY, so it is
+# perfectly good to browse and nearly worthless for grounding an answer.
+#
+# That is not a detail — it is the difference between content that improves
+# answers and content that only costs disk. Measured, not assumed:
+#   zimgit-water_en   _ftindex:no   "boil" -> 0 hits
+#   wikem_en_all      _ftindex:yes  "treat a severe burn" -> 200 hits
+#
+# NOTE the tag lives on the ZIM's INTERNAL name, which is not the filename:
+# wikem_en_all_maxi_2026-07.zim reports itself as `wikem_en_all`. Check it
+# by mounting the file and reading /catalog/v2/entries, not by guessing from
+# the download name.
+#
+# `answers` = feeds retrieval.   `browse` = library only, no grounding.
 PACKS="
-simple-wikipedia|wikipedia|wikipedia_en_simple_all_nopic|~1 GB|CC BY-SA
-medicine|wikipedia|wikipedia_en_medicine_nopic|~1.7 GB|CC BY-SA
-ifixit|ifixit|ifixit_en_all|~3 GB|CC BY-NC-SA
-gutenberg|gutenberg|gutenberg_en_all|~65 GB|PD / mixed
-wikipedia|wikipedia|wikipedia_en_all_nopic|~97 GB|CC BY-SA
+wikem|other|wikem_en_all_maxi|375 MB|CC BY-SA|answers
+medlineplus|zimit|medlineplus.gov_en_all|1.9 GB|PD (US Government)|answers
+mdwiki|other|mdwiki_en_all_maxi|2.3 GB|CC BY-SA|answers
+energypedia|other|energypedia_en_all_maxi|800 MB|CC BY-SA|answers
+simple-wikipedia|wikipedia|wikipedia_en_simple_all_nopic|~1 GB|CC BY-SA|answers
+medicine|wikipedia|wikipedia_en_medicine_nopic|1.7 GB|CC BY-SA|answers
+water|other|zimgit-water_en|21 MB|CC BY-SA|browse
+med-basics|other|zimgit-medicine_en|70 MB|CC BY-SA|browse
+ifixit|ifixit|ifixit_en_all|3.6 GB|CC BY-NC-SA|browse
+self-reliance|videos|lrnselfreliance_en_all|4.0 GB|see per-video licence|browse
+gutenberg|gutenberg|gutenberg_en_all|65 GB|PD / mixed|browse
+wikipedia|wikipedia|wikipedia_en_all_nopic|97 GB|CC BY-SA|answers
 "
+
+# Default: the packs that actually improve answers, minus the 97 GB one.
+DEFAULT_TIER="${ZIM_DEFAULT_TIER:-answers}"
+
+tier_packs() {
+  echo "$PACKS" | while IFS='|' read -r n d p s l t; do
+    [ -z "${n:-}" ] && continue
+    [ "$n" = "wikipedia" ] && continue   # 97 GB is never a default
+    [ "$t" = "$1" ] && printf '%s ' "$n"
+  done
+}
 
 usage() {
   echo "JIC — ZIM library fetcher"
@@ -61,17 +100,23 @@ usage() {
   echo "  docker compose --profile library run --rm zim-fetch [pack...]"
   echo "  docker compose --profile library run --rm zim-fetch --list"
   echo
-  printf "  %-18s %-10s %s\n" PACK SIZE LICENCE
-  echo "$PACKS" | while IFS='|' read -r n d p s l; do
-    [ -z "${n:-}" ] && continue
-    printf "  %-18s %-10s %s\n" "$n" "$s" "$l"
+  printf "  %-9s %-17s %-10s %s\n" USE PACK SIZE LICENCE
+  for t in answers browse; do
+    echo "$PACKS" | while IFS='|' read -r n d p s l tt; do
+      [ -z "${n:-}" ] && continue
+      [ "$tt" = "$t" ] && printf "  %-9s %-17s %-10s %s\n" "$tt" "$n" "$s" "$l"
+    done
   done
   echo
-  echo "  Default set: ${ZIM_DEFAULT_PACKS:-simple-wikipedia medicine ifixit}"
-  echo "  gutenberg and wikipedia are excluded from it — 65-97 GB is a"
-  echo "  deliberate choice, not a default."
+  echo "  answers   has a full-text index — kiwix /search finds passages, so"
+  echo "            JIC can retrieve from it and CITE it in an answer."
+  echo "  browse    no full-text index (_ftindex:no). Title matches only:"
+  echo "            good to read, it will not improve a single answer."
   echo
-  echo "  Env:  ZIM_METHOD=torrent|http   ZIM_SEED_MINUTES=0"
+  echo "  Default  ->  $(tier_packs "$DEFAULT_TIER")"
+  echo "  (~8 GB. 'wikipedia' is 97 GB and is never a default.)"
+  echo
+  echo "  Env:  ZIM_METHOD=torrent|http  ZIM_SEED_MINUTES=0  ZIM_ENABLE_DHT=0"
 }
 
 case "${1:-}" in
@@ -91,7 +136,11 @@ resolve() {
 }
 
 REQUESTED="$*"
-[ -z "$REQUESTED" ] && REQUESTED="${ZIM_DEFAULT_PACKS:-simple-wikipedia medicine ifixit}"
+# A bare `core` / `standard` / `archive` expands to that whole tier.
+case "${REQUESTED}" in
+  core|standard|archive) REQUESTED="$(tier_packs "$REQUESTED")" ;;
+esac
+[ -z "$REQUESTED" ] && REQUESTED="${ZIM_DEFAULT_PACKS:-$(tier_packs "$DEFAULT_TIER")}"
 
 echo "═══════════════════════════════════════════"
 echo "  JIC — ZIM library fetch"
