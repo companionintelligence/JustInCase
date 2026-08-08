@@ -1,0 +1,55 @@
+{
+  "_": "Written by `ci-video narrate`. Records which line each mp3 is a read of, so a later edit to scene.narration can be detected instead of silently keeping the old recording. Commit this with the mp3s.",
+  "voice": "en-GB-SoniaNeural",
+  "scenes": {
+    "open": {
+      "text": "There is no signal. How long do you boil creek water?",
+      "seconds": 4.104
+    },
+    "first-launch": {
+      "text": "On first launch the library is empty, and the panel says so plainly.",
+      "seconds": 4.632,
+      "adopted": true
+    },
+    "field-library": {
+      "text": "Copy reference documents into the sources volume. Ingestion indexes them.",
+      "seconds": 5.64,
+      "adopted": true
+    },
+    "library-shelf": {
+      "text": "The whole shelf stays browsable offline, on hardware you own.",
+      "seconds": 4.248,
+      "adopted": true
+    },
+    "type-a-question": {
+      "text": "Type any question in plain language; nothing leaves the device to answer it.",
+      "seconds": 4.944,
+      "adopted": true
+    },
+    "ask-a-question": {
+      "text": "Ask a question. Retrieval finds the passages, and a model on this device answers.",
+      "seconds": 6.096,
+      "adopted": true
+    },
+    "check-the-sources": {
+      "text": "See exactly which documents the answer came from. Verify before you act.",
+      "seconds": 5.544,
+      "adopted": true
+    },
+    "no-model-no-panic": {
+      "text": "With no language model installed it says so, and the library stays browsable.",
+      "seconds": 5.088,
+      "adopted": true
+    },
+    "recap": {
+      "text": "One Docker stack. No accounts, no cloud. It keeps working when the network does not.",
+      "seconds": 6.84,
+      "adopted": true
+    },
+    "close": {
+      "text": "Just In Case, from Companion Intelligence. UnCloud your life.",
+      "seconds": 5.4,
+      "adopted": true
+    }
+  }
+}
