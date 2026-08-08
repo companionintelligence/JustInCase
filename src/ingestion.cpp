@@ -128,6 +128,9 @@ int main() {
     // ── Main ingestion loop ──────────────────────────────────────────
     while (g_running.load()) {
         std::vector<std::pair<std::string, std::string>> files_to_process;
+        // Everything seen on disk this pass, to diff against the index below.
+        std::set<std::string> seen_on_disk;
+        bool scan_complete = false;
 
         // Discover new files
         if (fs::exists(sources_dir)) {
@@ -144,6 +147,7 @@ int main() {
                     if (ext != ".pdf" && ext != ".txt") continue;
 
                     std::string rel = fs::relative(entry.path(), sources_dir).string();
+                    seen_on_disk.insert(rel);
                     if (index.is_file_processed(rel)) continue;
 
                     if (!file_is_settled(entry.path())) continue; // retry next scan
@@ -155,8 +159,33 @@ int main() {
                         index.mark_file_processed(rel, 0);
                     }
                 }
+                scan_complete = true;
             } catch (const std::exception& e) {
                 std::cerr << "Error scanning sources: " << e.what() << std::endl;
+            }
+        }
+
+        // ── Prune documents that have left the volume ───────────────
+        //
+        // The index used to be append-only, so deleting a PDF left its
+        // chunks behind forever: /query kept retrieving from a document
+        // that no longer exists and citing it, and the citation link 404s.
+        // On an appliance whose promise is "answers cite their sources",
+        // a citation to a deleted document is the worst kind of failure —
+        // it looks exactly like a working one.
+        //
+        // ONLY ON A COMPLETE SCAN. If the directory walk threw halfway
+        // through — an unreadable file, a volume being remounted — then
+        // `seen_on_disk` is a partial list, and pruning against it would
+        // delete documents that are simply further down the tree. A
+        // failed scan must cost nothing, not most of the library.
+        if (scan_complete) {
+            for (const auto& indexed : index.indexed_filenames()) {
+                if (!g_running.load()) break;
+                if (seen_on_disk.count(indexed)) continue;
+                const int gone = index.remove_file(indexed);
+                std::cout << "Removed from index (file no longer present): "
+                          << indexed << "  (" << gone << " chunk(s))" << std::endl;
             }
         }
 
