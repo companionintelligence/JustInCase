@@ -54,7 +54,7 @@ volumes are writable.
 
 | # | Actor step | System response |
 |---|---|---|
-| 1 | `./helper-scripts/fetch-models.sh` | GGUF models land in `./gguf_models/` (LLM ~2 GB, embeddings ~260 MB) |
+| 1 | `./helper-scripts/fetch-models.sh` | GGUF models land in `./gguf_models/` (LLM ~2 GB, embeddings ~84 MB) |
 | 2 | `docker compose up --build -d` | Image builds; server + ingestion start; UI live at `:8080` (degraded if models missing) |
 | 3 | `docker compose --profile fetch run --rm content-fetch` | Library volume seeded + curated catalog downloaded with integrity checks |
 | 4 | *(wait ≤ 30 s)* | Ingestion discovers settled files, indexes them; library panel fills in live |
