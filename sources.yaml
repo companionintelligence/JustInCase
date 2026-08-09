@@ -3,11 +3,32 @@
 #
 # Run `helper-scripts/fetch-source-data.sh` (host) or
 # `docker compose --profile fetch run --rm content-fetch` (container)
-# to download these into the content library.  All items listed here are
-# public-domain, Creative Commons, or explicitly free for redistribution.
+# to download these into the content library.
+#
+# ── REDISTRIBUTION IS NOT THE SAME AS "FREE" ─────────────────────────
+# This header used to say every item was "public-domain, Creative Commons,
+# or explicitly free for redistribution", which conflates two different
+# permissions and is misleading for the one that matters commercially:
+# CC BY-NC *is* Creative Commons and is NOT redistributable in a product
+# Lifescope sells or bundles.
+#
+# Every entry now carries a `redistribution:` tag:
+#
+#   clean        PD, CC BY, CC BY-SA. Safe to ship inside a product, a
+#                published bundle, or a torrent Lifescope seeds.
+#   local-only   Non-commercial terms. Fine for an END USER to download
+#                onto their own box; NOT for us to redistribute.
+#   unverified   The licence line is an assertion nobody has substantiated
+#                against the document's own copyright page. Treat as
+#                local-only until checked.
+#
+# Counts at time of writing: see docs/1800 §content. The practical effect
+# is that a future `--profile clean` fetch can build a bundle that is
+# actually shippable, which was not previously possible to determine from
+# this file.
 #
 # Every URL below was verified (HTTP 200 + correct content type) on
-# 2026-06-11.  Catalog scope follows what comparable offline-knowledge
+# 2026-06-11, EXCEPT the NREL entry — see its note.  Catalog scope follows what comparable offline-knowledge
 # builds ship (Project NOMAD, PrepperDisk, Kiwix prepper packs): field
 # survival, austere medicine, food production/preservation, water and
 # power engineering, emergency comms, open textbooks, civic texts.
@@ -32,6 +53,7 @@ sources:
     category: 100_Survival
     title: "FEMA — Emergency Supply Checklist"
     license: PD (US Government)
+    redistribution: clean
     size: ~150 KB
 
   - url: https://www.ready.gov/sites/default/files/2020-03/ready_emergency-financial-first-aid-toolkit.pdf
@@ -39,6 +61,7 @@ sources:
     category: 100_Survival
     title: "FEMA — Emergency Financial First Aid Kit"
     license: PD (US Government)
+    redistribution: clean
     size: ~1.7 MB
 
   - url: https://archive.org/download/Fm21-76SurvivalManual/FM21-76_SurvivalManual.pdf
@@ -46,6 +69,7 @@ sources:
     category: 100_Survival
     title: "US Army Survival Manual FM 21-76 (shelter, water, foraging, trapping)"
     license: PD (US Government)
+    redistribution: clean
     size: ~3 MB
 
   - url: https://archive.org/download/milmanual-fm-3-25.26-map-reading-and-land-navigation/fm_3-25.26_map_reading_and_land_navigation.pdf
@@ -53,6 +77,7 @@ sources:
     category: 100_Survival
     title: "US Army FM 3-25.26 — Map Reading and Land Navigation"
     license: PD (US Government)
+    redistribution: clean
     size: ~24 MB
 
   - url: https://archive.org/download/pdfy-ULdTVDxCZR1mXh25/Nuclear%20War%20Survival%20Skills%20-%20Cresson%20H%20Kearney.pdf
@@ -60,6 +85,7 @@ sources:
     category: 100_Survival
     title: "Nuclear War Survival Skills (Kearney, Oak Ridge National Laboratory)"
     license: PD (US Government research; author authorized free reproduction)
+    redistribution: clean
     size: ~6.4 MB
 
   - url: https://www.weather.gov/media/owlie/SGJune6-11.pdf
@@ -67,6 +93,7 @@ sources:
     category: 100_Survival
     title: "NOAA/NWS — Weather Spotter's Field Guide"
     license: PD (US Government)
+    redistribution: clean
     size: ~28 MB
 
   - url: https://www.gutenberg.org/cache/epub/17093/pg17093.txt
@@ -74,6 +101,7 @@ sources:
     category: 100_Survival
     title: "Camp Life in the Woods and the Tricks of Trapping (Gibson, 1881)"
     license: PD (Project Gutenberg #17093)
+    redistribution: clean
     size: ~500 KB
 
   - url: https://www.gutenberg.org/cache/epub/28255/pg28255.txt
@@ -81,6 +109,7 @@ sources:
     category: 100_Survival
     title: "Shelters, Shacks and Shanties (D.C. Beard, 1914)"
     license: PD (Project Gutenberg #28255)
+    redistribution: clean
     size: ~400 KB
 
   # ── 200 Medical ───────────────────────────────────────────────────
@@ -89,6 +118,7 @@ sources:
     category: 200_Medical
     title: "Where There Is No Doctor (Hesperian)"
     license: Hesperian open copyright (free non-commercial reproduction)
+    redistribution: local-only
     size: ~8.7 MB
 
   - url: https://archive.org/download/where-there-is-no-dentist-hesperian-2010/Where_there_is_no_dentist_-_Hesperian_2010.pdf
@@ -96,6 +126,7 @@ sources:
     category: 200_Medical
     title: "Where There Is No Dentist (Hesperian)"
     license: Hesperian open copyright (free non-commercial reproduction)
+    redistribution: local-only
     size: ~6.8 MB
 
   - url: https://archive.org/download/WhereWomenHaveNoDoctor/18.HersperianFoundation-WhereWomenHaveNoDoctor.pdf
@@ -103,6 +134,7 @@ sources:
     category: 200_Medical
     title: "Where Women Have No Doctor (Hesperian)"
     license: Hesperian open copyright (free non-commercial reproduction)
+    redistribution: local-only
     size: ~12 MB
 
   - url: https://archive.org/download/UsArmyFirstAidManualFm4-25.11/UsArmyFirstAidManual.pdf
@@ -110,6 +142,7 @@ sources:
     category: 200_Medical
     title: "US Army FM 4-25.11 — First Aid"
     license: PD (US Government)
+    redistribution: clean
     size: ~2.6 MB
 
   - url: https://archive.org/download/emergency-war-surgery-5th-edition/Emergency%20War%20Surgery%205th%20Edition.pdf
@@ -117,6 +150,7 @@ sources:
     category: 200_Medical
     title: "Emergency War Surgery, 5th Edition (Borden Institute)"
     license: PD (US Government)
+    redistribution: clean
     size: ~30 MB
 
   - url: https://archive.org/download/survival-and-austere-medicine-3rd-ed-2017/Survival%20and%20Austere%20Medicine%203rd%20Ed%20%282017%29.pdf
@@ -124,6 +158,7 @@ sources:
     category: 200_Medical
     title: "Survival and Austere Medicine: An Introduction (3rd ed., 2017)"
     license: Free distribution (authors permit non-commercial copying)
+    redistribution: local-only
     size: ~23 MB
 
   - url: https://www.nctsn.org/sites/default/files/resources/pfa_field_operations_guide.pdf
@@ -131,6 +166,7 @@ sources:
     category: 200_Medical
     title: "Psychological First Aid — Field Operations Guide (NCTSN/NCPTSD)"
     license: Free distribution (US Government funded)
+    redistribution: unverified
     size: ~3.4 MB
 
   # ── 300 Food & Agriculture ────────────────────────────────────────
@@ -139,6 +175,7 @@ sources:
     category: 300_Food
     title: "USDA Complete Guide to Home Canning (2015 revision, all 7 guides)"
     license: PD (US Government)
+    redistribution: clean
     size: ~17 MB
 
   - url: https://www.gutenberg.org/cache/epub/9550/pg9550.txt
@@ -146,14 +183,21 @@ sources:
     category: 300_Food
     title: "Manual of Gardening, 2nd ed. (L.H. Bailey)"
     license: PD (Project Gutenberg #9550)
+    redistribution: clean
     size: ~900 KB
 
   # ── 400 Engineering, Water & Power ────────────────────────────────
+  # DEAD LINK as of 2026-08-08: www.nrel.gov returns no A/AAAA records and
+  # curl cannot connect (exit 6, code 000). The name resolves but has no
+  # address — a delegation problem rather than a 404, so it may be
+  # transient. Re-check before deleting; if it persists, source from an
+  # NREL mirror or the Internet Archive.
   - url: https://www.nrel.gov/docs/fy04osti/36178.pdf
     filename: NREL-PV-Solar-Systems.pdf
     category: 400_Engineering
     title: "NREL — Photovoltaic Solar Resource of the United States"
     license: PD (US Government)
+    redistribution: clean
     size: ~1 MB
 
   - url: https://archive.org/download/VillageTechnologyHandbook/Village%20Technology%20Handbook.pdf
@@ -161,6 +205,7 @@ sources:
     category: 400_Engineering
     title: "VITA — Village Technology Handbook (water, agriculture, construction)"
     license: PD / freely distributed (USAID-funded)
+    redistribution: unverified
     size: ~15 MB
 
   - url: https://archive.org/download/fa_Handbook_of_Gravity-Flow_Water_Systems/Handbook_of_Gravity-Flow_Water_Systems.pdf
@@ -168,6 +213,7 @@ sources:
     category: 400_Engineering
     title: "A Handbook of Gravity-Flow Water Systems (Jordan)"
     license: Freely distributed (Appropriate Technology Library)
+    redistribution: unverified
     size: ~18 MB
 
   - url: https://archive.org/download/fa_Solar_Disinfection_of_Water/Solar_Disinfection_of_Water.pdf
@@ -175,6 +221,7 @@ sources:
     category: 400_Engineering
     title: "Solar Disinfection of Water (SODIS)"
     license: Freely distributed (Appropriate Technology Library)
+    redistribution: unverified
     size: ~13 MB
 
   # ── 500 Communications ────────────────────────────────────────────
@@ -183,6 +230,7 @@ sources:
     category: 500_Comms
     title: "ARRL — Emergency Communications"
     license: Freely distributed (ARRL)
+    redistribution: unverified
     size: ~540 KB
 
   - url: https://archive.org/download/national-interoperability-field-operations-guide-nifog-version-2.02/National%20Interoperability%20Field%20Operations%20Guide%20%28NIFOG%29%20Version%202.02.pdf
@@ -190,6 +238,7 @@ sources:
     category: 500_Comms
     title: "CISA — National Interoperability Field Operations Guide (NIFOG) v2.02"
     license: PD (US Government)
+    redistribution: clean
     size: ~6.7 MB
 
   # ── 600 Education ─────────────────────────────────────────────────
@@ -198,6 +247,7 @@ sources:
     category: 600_Education
     title: "OpenStax — Elementary Algebra 2e"
     license: CC BY 4.0
+    redistribution: clean
     size: ~45 MB
 
   # ── 700 Social, Civic & Resilience ────────────────────────────────
@@ -206,6 +256,7 @@ sources:
     category: 700_Social
     title: "Universal Declaration of Human Rights"
     license: PD (United Nations)
+    redistribution: clean
     size: ~100 KB
 
   - url: https://www.govinfo.gov/content/pkg/CDOC-110hdoc50/pdf/CDOC-110hdoc50.pdf
@@ -213,6 +264,7 @@ sources:
     category: 700_Social
     title: "The Constitution of the United States (pocket edition)"
     license: PD (US Government)
+    redistribution: clean
     size: ~4 MB
 
   - url: https://www.gutenberg.org/cache/epub/1404/pg1404.txt
@@ -220,6 +272,7 @@ sources:
     category: 700_Social
     title: "The Federalist Papers"
     license: PD (Project Gutenberg #1404)
+    redistribution: clean
     size: ~1.2 MB
 
   - url: https://www.gutenberg.org/cache/epub/10/pg10.txt
@@ -227,6 +280,7 @@ sources:
     category: 700_Social
     title: "King James Bible"
     license: PD (Project Gutenberg #10)
+    redistribution: clean
     size: ~4.4 MB
 
   # ── 800 Software / Technical Reference ────────────────────────────
@@ -235,6 +289,7 @@ sources:
     category: 800_Software
     title: "Think Python, 2nd Edition (Downey)"
     license: CC BY-NC
+    redistribution: local-only
     size: ~920 KB
 
   - url: https://greenteapress.com/thinkos/thinkos.pdf
@@ -242,6 +297,7 @@ sources:
     category: 800_Software
     title: "Think OS: A Brief Introduction to Operating Systems (Downey)"
     license: CC BY-NC
+    redistribution: local-only
     size: ~370 KB
 
   - url: https://eloquentjavascript.net/Eloquent_JavaScript.pdf
@@ -249,6 +305,7 @@ sources:
     category: 800_Software
     title: "Eloquent JavaScript, 3rd Edition (Haverbeke)"
     license: CC BY-NC
+    redistribution: local-only
     size: ~2 MB
 
   - url: https://github.com/progit/progit2/releases/download/2.1.426/progit.pdf
@@ -256,6 +313,7 @@ sources:
     category: 800_Software
     title: "Pro Git, 2nd Edition (Chacon & Straub)"
     license: CC BY-NC-SA
+    redistribution: local-only
     size: ~19 MB
 
 # ══════════════════════════════════════════════════════════════════════

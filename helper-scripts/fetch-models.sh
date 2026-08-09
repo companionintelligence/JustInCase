@@ -20,7 +20,7 @@ NOMIC_URL="https://huggingface.co/${NOMIC_REPO}/resolve/main/${NOMIC_FILE}"
 
 echo "Required models:"
 echo "  LLM        : ${LLM_FILE}  (~2.0 GB)"
-echo "  Embeddings : ${NOMIC_FILE}  (~260 MB)"
+echo "  Embeddings : ${NOMIC_FILE}  (~84 MB)"
 echo ""
 
 mkdir -p gguf_models
