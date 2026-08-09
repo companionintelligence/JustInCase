@@ -5,7 +5,7 @@
   "scenes": {
     "open": {
       "text": "There is no signal. How long do you boil creek water?",
-      "seconds": 4.344,
+      "seconds": 3.996,
       "prosody": {
         "rate": "-6%",
         "pitch": "-2Hz",
@@ -14,7 +14,7 @@
     },
     "first-launch": {
       "text": "On first launch the library is empty, and the panel says so plainly.",
-      "seconds": 4.776,
+      "seconds": 4.649,
       "prosody": {
         "rate": "-3%",
         "pitch": "+0Hz",
@@ -23,7 +23,7 @@
     },
     "field-library": {
       "text": "Copy reference documents into the sources volume. Ingestion indexes them.",
-      "seconds": 5.832,
+      "seconds": 5.546,
       "prosody": {
         "rate": "-3%",
         "pitch": "+0Hz",
@@ -32,7 +32,7 @@
     },
     "library-shelf": {
       "text": "The whole shelf stays browsable offline, on hardware you own.",
-      "seconds": 4.392,
+      "seconds": 4.27,
       "prosody": {
         "rate": "-3%",
         "pitch": "+0Hz",
@@ -41,7 +41,7 @@
     },
     "type-a-question": {
       "text": "Type any question in plain language; nothing leaves the device to answer it.",
-      "seconds": 5.088,
+      "seconds": 4.946,
       "prosody": {
         "rate": "-3%",
         "pitch": "+0Hz",
@@ -50,7 +50,7 @@
     },
     "ask-a-question": {
       "text": "Ask a question. Retrieval finds the passages, and a model on this device answers.",
-      "seconds": 6.288,
+      "seconds": 5.954,
       "prosody": {
         "rate": "-3%",
         "pitch": "+0Hz",
@@ -59,7 +59,7 @@
     },
     "check-the-sources": {
       "text": "See exactly which documents the answer came from. Verify before you act.",
-      "seconds": 5.712,
+      "seconds": 5.382,
       "prosody": {
         "rate": "-3%",
         "pitch": "+0Hz",
@@ -68,7 +68,7 @@
     },
     "no-model-no-panic": {
       "text": "With no language model installed it says so, and the library stays browsable.",
-      "seconds": 5.256,
+      "seconds": 5.079,
       "prosody": {
         "rate": "-3%",
         "pitch": "+0Hz",
@@ -77,7 +77,7 @@
     },
     "recap": {
       "text": "Your documents, your questions, your answers. It keeps working when the network does not.",
-      "seconds": 6.888,
+      "seconds": 6.578,
       "prosody": {
         "rate": "-5%",
         "pitch": "-1Hz",
@@ -86,7 +86,7 @@
     },
     "close": {
       "text": "Just In Case, from Companion Intelligence. UnCloud your life.",
-      "seconds": 5.856,
+      "seconds": 5.52,
       "prosody": {
         "rate": "-8%",
         "pitch": "-2Hz",
@@ -95,7 +95,7 @@
     },
     "no-network": {
       "text": "The network is gone and nothing changes. The encyclopedia is on the box too.",
-      "seconds": 6.072,
+      "seconds": 5.73,
       "prosody": {
         "rate": "-3%",
         "pitch": "+0Hz",
@@ -104,7 +104,7 @@
     },
     "what-you-can-ask": {
       "text": "First aid, power, water, food. The suggestions come from the shelf itself.",
-      "seconds": 6.48
+      "seconds": 6.122
     }
   }
 }
