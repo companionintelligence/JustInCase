@@ -136,10 +136,10 @@
           },
           "focus": {
             "landscape": {
-              "x": 0.0,
-              "y": 0.3,
-              "w": 0.54,
-              "h": 0.54
+              "x": 0,
+              "y": 0.187,
+              "w": 0.538,
+              "h": 0.538
             }
           },
           "_focusNote": "The caption has always said 'Eight categories, thirty-two documents' while the category headers sat at ~10px on a 1080-tall canvas — the claim was in the words and not in the picture. This lands on the shelf itself so SURVIVAL & PREPAREDNESS, ENGINEERING & WATER and their neighbours are legible, which is the whole point of a scene about breadth.\n\n0.54 square because that is the tightest the kit will honour: MAX_SCALE is 2.4 and the window is square in normalised coordinates, so anything smaller clamps and the framing stops being mine. Measured with `ci-video focus-preview`, not guessed.\n\nLANDSCAPE ONLY — in portrait the drawer is already full-bleed."
@@ -162,10 +162,10 @@
           "_shotNote": "These are the app's OWN suggestions (SUGGESTED_PROMPTS, public/app.js), not a list written for the video. That is the point: the breadth on screen is breadth the product actually has, and it moves when the product moves.\n\nThe corpus does NOT cover vehicle transportation, and device repair only through the iFixit ZIM — which is `_ftindex:no`, so it is browsable but cannot be retrieved from. Neither is claimed here, in the caption or the narration.",
           "focus": {
             "landscape": {
-              "x": 0.22,
-              "y": 0.27,
-              "w": 0.66,
-              "h": 0.66
+              "x": 0.171,
+              "y": 0.211,
+              "w": 0.538,
+              "h": 0.538
             }
           },
           "capture": {
@@ -246,16 +246,16 @@
           "_focusNote": "The film's first punch-in, and it arrives late on purpose: four earlier scenes are this same app shell, so the wide read is long since established and this scene can spend its dwell on the conversation instead of re-introducing the furniture. It ends on the question, the answer and the collapsed SOURCES row — the narration, line for line.\n\nThe 16:9 window is always SQUARE in normalised image coordinates, because the capture and the canvas are both 16:9. So the only lever a landscape rectangle has is its longer side: scale = 1.263 / max(w, h), clamped to [1.263, 2.4]. max here is 0.65, giving 1.943x. An earlier attempt pointed at the answer bubble alone (0.51) was therefore pointless — it asks for 2.48x, clamps to 2.4, and the extra 0.14 of window it wins slices the question bubble instead.\n\nPortrait is a different instrument. The mobile capture is already legible at rest, and its window is square-ish too, so any tight crop slices full-width body copy — there is no honest close-up available. What IS available is the reframe coverScale gives for free: w 1.0 asks for nothing tighter than full-bleed, the phone frame drops away and the screen grows 39%. That is the portrait shot-size change; a portrait crop is not.",
           "focus": {
             "landscape": {
-              "x": 0.3,
-              "y": 0.091,
-              "w": 0.65,
-              "h": 0.4
+              "x": 0.231,
+              "y": 0,
+              "w": 0.538,
+              "h": 0.538
             },
             "portrait": {
-              "x": 0.0,
-              "y": 0.06,
-              "w": 1.0,
-              "h": 0.86
+              "x": 0,
+              "y": 0.023,
+              "w": 0.8,
+              "h": 0.738
             }
           },
           "capture": {
@@ -305,10 +305,10 @@
           "_focusNote": "The credibility beat, and the one frame in this film that is genuinely unreadable wide: the filenames the caption promises — 100_Survival/FM21-76-US-Army-Survival.pdf and the two engineering handbooks — are about 13px on a 1080-tall canvas at rest. At 1.974x they are 26px and the claim is verifiable rather than asserted.\n\ndrift-down rather than push-in, and it has room: headroomDown is 100px against a 107px request, so the shot travels 0.063 of the plate down through the three cards instead of stalling. That matters — a focus that lands hard against the coverage clamp leaves drift-down with nowhere to go and renders DEAD STILL while the storyboard claims it moves. Worth re-checking with the kit's own focusState after any change to this rectangle.\n\nLANDSCAPE ONLY, deliberately. On mobile the source list is full-bleed body copy that is already comfortable to read, so the only portrait framing available would crop the card text at the sides. A format left out keeps the legacy move, which is the right answer here: 'this screen does not need a camera on 9:16' should render as a plain shot, not a confidently wrong one.",
           "focus": {
             "landscape": {
-              "x": 0.3,
-              "y": 0.28,
-              "w": 0.64,
-              "h": 0.6
+              "x": 0.227,
+              "y": 0.195,
+              "w": 0.538,
+              "h": 0.538
             }
           },
           "capture": {
@@ -387,10 +387,10 @@
           },
           "focus": {
             "landscape": {
-              "x": 0.0,
-              "y": 0.07,
-              "w": 0.54,
-              "h": 0.54
+              "x": 0,
+              "y": 0.003,
+              "w": 0.538,
+              "h": 0.538
             }
           },
           "_focusNote": "Lands on the System panel, where the two facts this scene asserts are actually written: ENCYCLOPEDIA / 3 archives, and the footer's offline dot. At rest they are ~11px on a 1080-tall canvas — legible on a desktop monitor, not in a 16:9 video.\n\n0.54 SQUARE IS DELIBERATE, and was measured with `ci-video focus-preview` rather than guessed. An earlier 0.42x0.50 asked for scale 3.0, clamped to the 2.4 ceiling, and past the ceiling the rectangle stops being read at all — moving its centre changes nothing, so the framing was the kit's rather than mine. 0.54 gives the same picture at scale 2.34, under control, and leaves the window free to sit against the left canvas edge where the sidebar is.\n\nLANDSCAPE ONLY. In portrait the sidebar is off-canvas below 920px (style.css) and the drawer eval opens it full-bleed, so the panel is already large and a crop would only slice it. A format left out keeps the legacy move, which is the right answer when a screen does not need a camera on 9:16."
