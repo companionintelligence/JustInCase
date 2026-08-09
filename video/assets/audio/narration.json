@@ -1,5 +1,6 @@
 {
-  "_": "Written by `ci-video narrate`. Records which line each mp3 is a read of, so a later edit to scene.narration can be detected instead of silently keeping the old recording. Commit this with the mp3s.",
+  "_": "Written by `ci-video narrate`. Records which line each mp3 is a read of, in which voice, on which engine, at what prosody — so a later edit to any of those can be detected instead of silently keeping the old recording. Commit this with the mp3s.",
+  "engine": "edge",
   "voice": "en-GB-SoniaNeural",
   "scenes": {
     "open": {
@@ -53,6 +54,10 @@
     "no-network": {
       "text": "The network is gone and nothing changes. The encyclopedia is on the box too.",
       "seconds": 5.904
+    },
+    "what-you-can-ask": {
+      "text": "First aid, power, water, food. The suggestions come from the shelf itself.",
+      "seconds": 6.48
     }
   }
 }

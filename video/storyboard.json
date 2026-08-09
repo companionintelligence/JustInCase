@@ -103,7 +103,7 @@
       "kind": "screen",
       "chapter": "first-run",
       "seconds": 6,
-      "caption": "Scroll the shelf. Eight categories, thirty-two documents.",
+      "caption": "Eight categories. Medicine, water, power, food, comms.",
       "narration": "The whole shelf stays browsable offline, on hardware you own.",
       "shots": [
         {
@@ -133,9 +133,65 @@
                 "wait": 150
               }
             ]
-          }
+          },
+          "focus": {
+            "landscape": {
+              "x": 0.0,
+              "y": 0.3,
+              "w": 0.54,
+              "h": 0.54
+            }
+          },
+          "_focusNote": "The caption has always said 'Eight categories, thirty-two documents' while the category headers sat at ~10px on a 1080-tall canvas — the claim was in the words and not in the picture. This lands on the shelf itself so SURVIVAL & PREPAREDNESS, ENGINEERING & WATER and their neighbours are legible, which is the whole point of a scene about breadth.\n\n0.54 square because that is the tightest the kit will honour: MAX_SCALE is 2.4 and the window is square in normalised coordinates, so anything smaller clamps and the framing stops being mine. Measured with `ci-video focus-preview`, not guessed.\n\nLANDSCAPE ONLY — in portrait the drawer is already full-bleed."
         }
       ]
+    },
+    {
+      "id": "what-you-can-ask",
+      "kind": "screen",
+      "chapter": "ask",
+      "seconds": 6,
+      "caption": "Water, burns, wounds, solar wiring, food — before you type a word.",
+      "narration": "First aid, power, water, food. The suggestions come from the shelf itself.",
+      "shots": [
+        {
+          "id": "suggestions",
+          "url": "just-in-case.local",
+          "alt": "The six suggested questions the app offers on a ready appliance — purifying water, first aid for a burn, a seventy-two hour kit, treating a wound, wiring a solar panel to a battery, and preserving food without refrigeration",
+          "motion": "drift-down",
+          "_shotNote": "These are the app's OWN suggestions (SUGGESTED_PROMPTS, public/app.js), not a list written for the video. That is the point: the breadth on screen is breadth the product actually has, and it moves when the product moves.\n\nThe corpus does NOT cover vehicle transportation, and device repair only through the iFixit ZIM — which is `_ftindex:no`, so it is browsable but cannot be retrieved from. Neither is claimed here, in the caption or the narration.",
+          "focus": {
+            "landscape": {
+              "x": 0.22,
+              "y": 0.27,
+              "w": 0.66,
+              "h": 0.66
+            }
+          },
+          "capture": {
+            "path": "/?stage=ready",
+            "waitFor": "#status-pill.ok",
+            "waitUntil": "networkidle",
+            "settle": 500,
+            "before": [
+              {
+                "waitFor": ".chips .chip"
+              },
+              {
+                "waitFor": ".lib-file"
+              }
+            ]
+          },
+          "_focusNote": "Sized to the CHIP ROW, which is ~0.65 of the plate wide. An earlier 0.62 window clipped the leading 'H' off 'How do I purify water in the field?' — the row is wider than the tightest focus the kit will honour, so the choice is fit-the-row or clip an end, and a half-read question is worse than a slightly looser frame.\n\ny is 0.35 because the window must end inside the plate: an earlier y+h of 1.24 was refused outright by focus-preview, which is the check that caught it before build did."
+        }
+      ],
+      "prosody": {
+        "rate": "+0%",
+        "pitch": "+0Hz",
+        "volume": "+0%"
+      },
+      "_prosodyNote": "Pinned NEUTRAL to match the eleven tracks already in this film. Kit 0.14.0 introduced per-kind default prosody, and 0.15.0 reports that every existing recording here was made before it — so a new line taking the new default would be the only one in the cut read at a different rate. The kit calls that acceptable and it is probably inaudible at -3%, but a film carrying two registers is a worse defect than a film carrying one slightly stale one.\n\nAdopting the new register is a real improvement and should happen — as `ci-video narrate --restyle` across all twelve lines, in its own change, where the re-recorded audio can be verified as a set. Not smuggled in under a content edit.",
+      "_captionNote": "Names ONLY what is in this frame. The first version read 'Burns, wounds, solar wiring, canning, radio, navigation' — and radio and navigation appear in no chip on screen. The shelf does carry ARRL Emergency Comms and FM3-25-26 Map Reading, so the words were true of the PRODUCT and false of the PICTURE, which is the exact defect the fleet review named when it warned not to let a count migrate into a caption. Caught by reading the rendered caption band, not the storyboard."
     },
     {
       "id": "type-a-question",
