@@ -16,6 +16,18 @@
 #
 #   clean        PD, CC BY, CC BY-SA. Safe to ship inside a product, a
 #                published bundle, or a torrent Lifescope seeds.
+#
+#                A US GOVERNMENT DOCUMENT IS NOT AUTOMATICALLY CLEAN. Three
+#                ways it fails, all found in this manifest by reading the
+#                PDFs' own front matter rather than trusting the agency:
+#                  · third-party figures licensed to the AGENCY, not to you
+#                    (TM 9-237 reprints American Welding Society material;
+#                    FM 5-499 reprints Deere & Company, all rights reserved)
+#                  · a contractor wrote it, so 17 USC 105 never attached
+#                    (Peace Corps ICE titles under contract 79-043-0129)
+#                  · a copyright notice a grep cannot see - ED242565's title
+#                    page is "(C) VITA, 1976", which no search for the word
+#                    "copyright" will ever match
 #   local-only   Non-commercial terms. Fine for an END USER to download
 #                onto their own box; NOT for us to redistribute.
 #   unverified   The licence line is an assertion nobody has substantiated
@@ -112,6 +124,24 @@ sources:
     redistribution: clean
     size: ~400 KB
 
+  # ── added 2026-08-09: see PR notes ──
+  - url: https://www.epa.gov/sites/default/files/2017-09/documents/emergency_disinfection_of_drinking_water_sept2017.pdf
+    filename: EPA-Emergency-Disinfection-Drinking-Water.pdf
+    category: 100_Survival
+    title: "EPA — Emergency Disinfection of Drinking Water"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105), from the issuing agency
+    size: ~1 MB
+  - url: https://www.epa.gov/sites/default/files/2015-10/documents/2003_06_03_privatewells_pdfs_household_wells.pdf
+    filename: EPA-Drinking-Water-From-Household-Wells.pdf
+    category: 100_Survival
+    title: "EPA — Drinking Water From Household Wells"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105), from the issuing agency
+    size: ~2 MB
+
   # ── 200 Medical ───────────────────────────────────────────────────
   - url: https://archive.org/download/where-there-is-no-doctor/Where%20There%20Is%20No%20Doctor.pdf
     filename: Where-There-Is-No-Doctor.pdf
@@ -169,6 +199,24 @@ sources:
     redistribution: unverified
     size: ~3.4 MB
 
+  # ── added 2026-08-09: see PR notes ──
+  - url: https://archive.org/download/FM21-10_2000/FM21-10_2000.pdf
+    filename: FM21-10-Field-Hygiene-And-Sanitation.pdf
+    category: 200_Medical
+    title: "FM 21-10 — Field Hygiene and Sanitation (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~3 MB
+  - url: https://archive.org/download/field-hygiene-and-sanitation-tc-4-02.3-may-2015/Field%20Hygiene%20and%20Sanitation%20-%20TC-4-02.3%20%28May%202015%29.pdf
+    filename: TC4-02-3-Field-Hygiene-And-Sanitation.pdf
+    category: 200_Medical
+    title: "TC 4-02.3 — Field Hygiene and Sanitation (US Army, 2015)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~1 MB
+
   # ── 300 Food & Agriculture ────────────────────────────────────────
   - url: https://archive.org/download/usda-guide-home-canning/USDA-Complete-Guide-to-Home-Canning-2015-revision.pdf
     filename: USDA-Complete-Guide-Home-Canning.pdf
@@ -185,6 +233,80 @@ sources:
     license: PD (Project Gutenberg #9550)
     redistribution: clean
     size: ~900 KB
+
+  # ── added 2026-08-09: see PR notes ──
+  - url: https://files.eric.ed.gov/fulltext/ED241773.pdf
+    filename: PeaceCorps-Traditional-Field-Crops.pdf
+    category: 300_Food
+    title: "Traditional Field Crops (Peace Corps ICE Manual M-13)"
+    license: PD (US Government)
+    redistribution: local-only
+    basis: Peace Corps ICE under contract 79-043-0129 - contractor-produced, so 17 USC 105 does not attach - and acknowledges reused third-party material
+    size: ~5 MB
+  - url: https://files.eric.ed.gov/fulltext/ED241778.pdf
+    filename: PeaceCorps-Soils-Crops-Fertilizer-Use.pdf
+    category: 300_Food
+    title: "Soils, Crops and Fertilizer Use (Peace Corps ICE)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105); hosted on ERIC, which is an archive not the author
+    size: ~3 MB
+  - url: https://files.eric.ed.gov/fulltext/ED241766.pdf
+    filename: PeaceCorps-Small-Farm-Grain-Storage.pdf
+    category: 300_Food
+    title: "Small Farm Grain Storage (Peace Corps ICE Manual M-2)"
+    license: PD (US Government)
+    redistribution: unverified
+    basis: VITA Publications Manual Series 35E, sibling of the VITA-copyrighted 36E; ERIC lists the institution as Burton International School, not a federal agency
+    size: ~6 MB
+  - url: https://files.eric.ed.gov/fulltext/ED241772.pdf
+    filename: PeaceCorps-Animal-Traction.pdf
+    category: 300_Food
+    title: "Animal Traction (Peace Corps ICE Manual M-12)"
+    license: PD (US Government)
+    redistribution: local-only
+    basis: contract 79-043-0129, contractor-produced; reproduces material by permission of the publishers, Hastings House
+    size: ~3 MB
+  - url: https://files.eric.ed.gov/fulltext/ED242565.pdf
+    filename: PeaceCorps-Freshwater-Fish-Pond-Culture.pdf
+    category: 300_Food
+    title: "Freshwater Fish Pond Culture and Management (Peace Corps ICE)"
+    license: PD (US Government)
+    redistribution: local-only
+    basis: title page reads (C) VITA 1976, may be reproduced without royalty for official U.S. Government purposes - a privately held copyright under a government-purpose-only licence, NOT public domain
+    size: ~5 MB
+  - url: https://files.eric.ed.gov/fulltext/ED242921.pdf
+    filename: PeaceCorps-Small-Scale-Beekeeping.pdf
+    category: 300_Food
+    title: "Small Scale Beekeeping — A Manual for Trainers (Peace Corps ICE)"
+    license: PD (US Government)
+    redistribution: local-only
+    basis: authored by CHP International Inc. under contract PC-282-1011 - a contractor, so 17 USC 105 does not attach
+    size: ~8 MB
+  - url: https://www.ars.usda.gov/ARSUserFiles/oc/np/CommercialStorage/CommercialStorage.pdf
+    filename: USDA-Storage-Of-Fruits-Vegetables.pdf
+    category: 300_Food
+    title: "USDA — The Commercial Storage of Fruits, Vegetables and Florist Stocks"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105), from the issuing agency
+    size: ~4 MB
+  - url: https://www.gutenberg.org/cache/epub/59977/pg59977.txt
+    filename: USDA-Canning-Freezing-Storing-Garden-Produce.txt
+    category: 300_Food
+    title: "USDA — Canning, Freezing, Storing Garden Produce (1977)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: USDA bulletin, PD as a US Government work; text from Project Gutenberg
+    size: <1 MB
+  - url: https://www.gutenberg.org/cache/epub/63056/pg63056.txt
+    filename: USDA-Home-Canning-Of-Meat-And-Poultry.txt
+    category: 300_Food
+    title: "USDA — Home Canning of Meat and Poultry (1966)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: USDA bulletin, PD as a US Government work; text from Project Gutenberg
+    size: <1 MB
 
   # ── 400 Engineering, Water & Power ────────────────────────────────
   # DEAD LINK as of 2026-08-08: www.nrel.gov returns no A/AAAA records and
@@ -224,6 +346,120 @@ sources:
     redistribution: unverified
     size: ~13 MB
 
+  # ── added 2026-08-09: see PR notes ──
+  - url: https://archive.org/download/TM9-243/TM9-243.pdf
+    filename: TM9-243-Use-And-Care-Of-Hand-Tools.pdf
+    category: 400_Engineering
+    title: "TM 9-243 — Use and Care of Hand Tools and Measuring Tools"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~11 MB
+  - url: https://archive.org/download/TM9-237/TM9-237.pdf
+    filename: TM9-237-Welding-Theory-And-Application.pdf
+    category: 400_Engineering
+    title: "TM 9-237 — Welding Theory and Application (US Army)"
+    license: PD (US Government)
+    redistribution: local-only
+    basis: federal work, BUT carries an explicit copyright notice reprinting American Welding Society material by permission - permission ran to the Army, not to downstream redistributors
+    size: ~28 MB
+  - url: https://archive.org/download/tc9-524/tc9_524.pdf
+    filename: TC9-524-Fundamentals-Of-Machine-Tools.pdf
+    category: 400_Engineering
+    title: "TC 9-524 — Fundamentals of Machine Tools (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~7 MB
+  - url: https://archive.org/download/fm-5-499-hydraulics-1997/FM%205-499%20Hydraulics%20%201997.pdf
+    filename: FM5-499-Hydraulics.pdf
+    category: 400_Engineering
+    title: "FM 5-499 — Hydraulics (US Army)"
+    license: PD (US Government)
+    redistribution: local-only
+    basis: ACKNOWLEDGEMENTS reproduces Deere & Company material (c) 1997, all rights reserved, plus the Vickers Industrial Hydraulics Manual
+    size: ~2 MB
+  - url: https://archive.org/download/fm-5-424-theater-of-operations-electrical-systems-1997/FM%205-424%20Theater%20Of%20Operations%20Electrical%20Systems%20%201997.pdf
+    filename: FM5-424-Electrical-Systems.pdf
+    category: 400_Engineering
+    title: "FM 5-424 — Theater of Operations Electrical Systems"
+    license: PD (US Government)
+    redistribution: local-only
+    basis: contains material used with permission from Basic Home Wiring (c) 1987 Sunset Publishing Corporation, and other third-party figures
+    size: ~4 MB
+  - url: https://archive.org/download/FM5-426/FM5-426.pdf
+    filename: FM5-426-Carpentry.pdf
+    category: 400_Engineering
+    title: "FM 5-426 — Carpentry (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105); the Internet Archive item carries NO licence declaration
+    size: ~4 MB
+  - url: https://archive.org/download/ost-military-engineering-tm5_685/tm5_685.pdf
+    filename: TM5-685-Generators-And-Switchgear.pdf
+    category: 400_Engineering
+    title: "TM 5-685 — Operation, Maintenance and Repair of Generators"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105); the Internet Archive item carries NO licence declaration
+    size: ~4 MB
+  - url: https://archive.org/download/fm-5-34-engineer-field-data-w-change-3-1999/FM%205-34%20Engineer%20Field%20Data%20w-change%203%20%201999.pdf
+    filename: FM5-34-Engineer-Field-Data.pdf
+    category: 400_Engineering
+    title: "FM 5-34 — Engineer Field Data (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~9 MB
+  - url: https://archive.org/download/fm-5-125-rigging-techniques-procedures-and-applications-1995/FM%205-125%20Rigging%20Techniques%2C%20Procedures%2C%20And%20Applications%20%201995.pdf
+    filename: FM5-125-Rigging-Techniques.pdf
+    category: 400_Engineering
+    title: "FM 5-125 — Rigging Techniques, Procedures and Applications"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~4 MB
+  - url: https://files.eric.ed.gov/fulltext/ED132362.pdf
+    filename: Navy-Tools-And-Their-Uses.pdf
+    category: 400_Engineering
+    title: "Tools and Their Uses (US Navy Rate Training Manual)"
+    license: PD (US Government)
+    redistribution: local-only
+    basis: CREDITS page licenses figures from Buckingham Mfg, General Motors, Imperial Brass, Rockwell and Ingersoll-Rand to the Navy, not downstream
+    size: ~5 MB
+  - url: https://files.eric.ed.gov/fulltext/ED132306.pdf
+    filename: Navy-Construction-Electrician-3-2.pdf
+    category: 400_Engineering
+    title: "Construction Electrician 3 & 2 (US Navy Rate Training Manual)"
+    license: PD (US Government)
+    redistribution: local-only
+    basis: CREDITS page licenses figures from Associated Research, Daystrom Weston, Multi-Amp, Bacharach and others to the Navy, not downstream
+    size: ~14 MB
+  - url: https://www.usbr.gov/power/data/fist/fist3_30/fist3_30.pdf
+    filename: USBR-FIST-3-30-Transformer-Maintenance.pdf
+    category: 400_Engineering
+    title: "Reclamation FIST 3-30 — Transformer Maintenance"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105), from the issuing agency
+    size: ~3 MB
+  - url: https://www.epa.gov/sites/default/files/2015-09/documents/guide_smallsystems_pou-poe_june6-2006.pdf
+    filename: EPA-Point-Of-Use-Water-Treatment.pdf
+    category: 400_Engineering
+    title: "EPA — Point-of-Use and Point-of-Entry Treatment Options"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105), from the issuing agency
+    size: ~1 MB
+  - url: https://www.energy.gov/sites/prod/files/2013/12/f5/small_wind_guide.pdf
+    filename: DOE-Small-Wind-Electric-Systems.pdf
+    category: 400_Engineering
+    title: "Small Wind Electric Systems — A U.S. Consumer's Guide (DOE)"
+    license: PD (US Government)
+    redistribution: unverified
+    basis: no rights statement of any kind; NREL/contractor-produced with photo credits to commercial parties. Agency-published is not agency-authored
+    size: ~2 MB
+
   # ── 500 Communications ────────────────────────────────────────────
   - url: https://www.arrl.org/files/file/Technology/tis/info/pdf/0209038.pdf
     filename: ARRL-Emergency-Comms.pdf
@@ -240,6 +476,24 @@ sources:
     license: PD (US Government)
     redistribution: clean
     size: ~6.7 MB
+
+  # ── added 2026-08-09: see PR notes ──
+  - url: https://www.cisa.gov/sites/default/files/publications/AUXFOG%20June%202016%20-%20508%20Reviewed%20-%20Final%20(2-16-17).pdf
+    filename: CISA-AUXFOG-Auxiliary-Comms.pdf
+    category: 500_Comms
+    title: "CISA — Auxiliary Communications Field Operations Guide (AUXFOG)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105), from the issuing agency
+    size: ~3 MB
+  - url: https://www.govinfo.gov/content/pkg/CFR-2023-title47-vol5/pdf/CFR-2023-title47-vol5-part97.pdf
+    filename: FCC-47CFR97-Amateur-Radio-Service.pdf
+    category: 500_Comms
+    title: "47 CFR Part 97 — Amateur Radio Service (2023 edition)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105), from the issuing agency
+    size: <1 MB
 
   # ── 600 Education ─────────────────────────────────────────────────
   - url: https://assets.openstax.org/oscms-prodcms/media/documents/ElementaryAlgebra2e-WEB.pdf
@@ -315,6 +569,68 @@ sources:
     license: CC BY-NC-SA
     redistribution: local-only
     size: ~19 MB
+
+  # ── 900 Transport & Mobility ──────────────────────────────────────
+  # New category. The corpus had no vehicle, marine or road content at
+  # all; "how do I get there, and what do I do when it stops" is a
+  # first-order emergency question and nothing here could answer it.
+
+  - url: https://archive.org/download/tm-9-8000-principles-of-automotive-vehicles-1985/TM9-8000_Principles_of_automotive_vehicles_1985.pdf
+    filename: TM9-8000-Principles-Of-Automotive-Vehicles.pdf
+    category: 900_Transport
+    title: "TM 9-8000 — Principles of Automotive Vehicles (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105); the Internet Archive item carries NO licence declaration
+    size: ~17 MB
+  - url: https://archive.org/download/fm-21-305-manual-for-the-wheeled-vehicle-driver-1993/FM%2021-305%20Manual%20For%20The%20Wheeled%20Vehicle%20Driver%20%201993.pdf
+    filename: FM21-305-Wheeled-Vehicle-Driver.pdf
+    category: 900_Transport
+    title: "FM 21-305 — Manual for the Wheeled Vehicle Driver (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~4 MB
+  - url: https://archive.org/download/Fm20-22VehicleRecoveryOperations/Fm20-22VehicleRecoveryOperations.pdf
+    filename: FM20-22-Vehicle-Recovery-Operations.pdf
+    category: 900_Transport
+    title: "FM 20-22 — Vehicle Recovery Operations (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~3 MB
+  - url: https://archive.org/download/navedtra-14050-construction-mechanic-advanced-1992/NAVEDTRA14050_Construction_mechanic_advanced_1992.pdf
+    filename: NAVEDTRA-14050-Construction-Mechanic.pdf
+    category: 900_Transport
+    title: "NAVEDTRA 14050 — Construction Mechanic, Advanced (US Navy)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105); the Internet Archive item carries NO licence declaration
+    size: ~10 MB
+  - url: https://archive.org/download/boat-crew-handbook-seamanship-fundamentals/Boat%20Crew%20Handbook%20-%20Seamanship%20Fundamentals.pdf
+    filename: USCG-Boat-Crew-Seamanship.pdf
+    category: 900_Transport
+    title: "USCG Boat Crew Handbook — Seamanship Fundamentals"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~13 MB
+  - url: https://archive.org/download/boat-crew-handbook-navigation-and-piloting/Boat%20Crew%20Handbook%20-%20Navigation%20and%20Piloting.pdf
+    filename: USCG-Boat-Crew-Navigation.pdf
+    category: 900_Transport
+    title: "USCG Boat Crew Handbook — Navigation and Piloting"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~11 MB
+  - url: https://archive.org/download/bicyclerepairing00burr/bicyclerepairing00burr.pdf
+    filename: Bicycle-Repairing-Burr-1896.pdf
+    category: 900_Transport
+    title: "Bicycle Repairing (S. D. V. Burr, 1896)"
+    license: PD (published 1896, copyright expired)
+    redistribution: clean
+    basis: published 1896; US copyright expired
+    size: ~13 MB
 
 # ══════════════════════════════════════════════════════════════════════
 # External resources — valuable but NOT auto-fetched (too large, not
