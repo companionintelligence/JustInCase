@@ -1,86 +1,96 @@
 {
   "version": 1,
-  "at": "2026-08-08T22:41:30.908Z",
-  "kit": "0.13.1",
+  "at": "2026-08-09T00:03:25.852Z",
+  "kit": "0.15.0",
   "shots": {
     "answer.mobile.png": {
       "ok": true,
-      "at": "2026-08-08T22:41:30.908Z",
+      "at": "2026-08-09T00:03:25.852Z",
       "sha256": "efb3b1968a2bd9212db399ecf132bd7c993781b22e34c1fe91f375504c743aa1"
     },
     "answer.png": {
       "ok": true,
-      "at": "2026-08-08T22:41:30.908Z",
+      "at": "2026-08-09T00:03:25.852Z",
       "sha256": "fb161682ad6f21052d03e78a72376920ff9a0c331488b1a23f75fc47d4680a72"
     },
     "degraded.mobile.png": {
       "ok": true,
-      "at": "2026-08-08T22:41:30.908Z",
+      "at": "2026-08-09T00:03:25.852Z",
       "sha256": "af0d02cfb2835ae5cb365e675298ebc9f901b079b9c65942e0707c7067ed1529"
     },
     "degraded.png": {
       "ok": true,
-      "at": "2026-08-08T22:41:30.908Z",
+      "at": "2026-08-09T00:03:25.852Z",
       "sha256": "da5da4cf0dea6066614fe02a17640f3c3adbc857d8242f1675b815b6c4ef1ace"
     },
     "library-indexed.mobile.png": {
       "ok": true,
-      "at": "2026-08-08T22:41:30.908Z",
+      "at": "2026-08-09T00:03:25.852Z",
       "sha256": "4100fbd2d36f27616fa9c82d06cf63a1da180c0df1f5801537a4f1ff24e2ea11"
     },
     "library-indexed.png": {
       "ok": true,
-      "at": "2026-08-08T22:41:30.908Z",
+      "at": "2026-08-09T00:03:25.852Z",
       "sha256": "748b948b5e0ea9a60979a2f5fca236d51bfd1813e566c5f77b84b4b90c755331"
     },
     "library-scrolled.mobile.png": {
       "ok": true,
-      "at": "2026-08-08T22:41:30.908Z",
+      "at": "2026-08-09T00:03:25.852Z",
       "sha256": "cc3ea26da8e4e503ec0cd78eb7b9cbb329d1dfd24186a1036af14ba38011d1cd"
     },
     "library-scrolled.png": {
       "ok": true,
-      "at": "2026-08-08T22:41:30.908Z",
+      "at": "2026-08-09T00:03:25.852Z",
       "sha256": "52926bc7ec3c047fbaaeed0a69f234d81b506a5c57e7beb1eb9749c80888c4ea"
     },
     "offline-library.mobile.png": {
       "ok": true,
-      "at": "2026-08-08T22:41:30.908Z",
+      "at": "2026-08-09T00:03:25.852Z",
       "sha256": "b430e9a1cdd2432a075e2877b78ef249376446f49a7adbd2dbeb54d80e2fda33"
     },
     "offline-library.png": {
       "ok": true,
-      "at": "2026-08-08T22:41:30.908Z",
+      "at": "2026-08-09T00:03:25.852Z",
       "sha256": "0d2b06eb7ff6a1a17ce8355bc645f5e59a09d22bd676f14588a2f10c8a092805"
     },
     "question-typed.mobile.png": {
       "ok": true,
-      "at": "2026-08-08T22:41:30.908Z",
+      "at": "2026-08-09T00:03:25.852Z",
       "sha256": "e536f6fecf53ddd6742e77458e8af53c4435b8b49001e434a0668f2e93bda182"
     },
     "question-typed.png": {
       "ok": true,
-      "at": "2026-08-08T22:41:30.908Z",
+      "at": "2026-08-09T00:03:25.852Z",
       "sha256": "68b0f6641fc60ffc0edd107f70bbb2f0b02c3a85a4907e16590b394f7a66f47e"
     },
     "sources-open.mobile.png": {
       "ok": true,
-      "at": "2026-08-08T22:41:30.908Z",
+      "at": "2026-08-09T00:03:25.852Z",
       "sha256": "c403671f5c65808e1e63206ee58776c09e7ed050d997cde441930e4a7be65cae"
     },
     "sources-open.png": {
       "ok": true,
-      "at": "2026-08-08T22:41:30.908Z",
+      "at": "2026-08-09T00:03:25.852Z",
       "sha256": "fcf690b634c6daf2d37144b2d31dcef7a43a3cb6b80fae13dc5763dfc81de39b"
+    },
+    "suggestions.mobile.png": {
+      "ok": true,
+      "at": "2026-08-09T00:03:25.852Z",
+      "sha256": "db389e6028da957f0b13bc301cf26e3e5ba31e6f8cbe453b4e5bc23b4516c753"
+    },
+    "suggestions.png": {
+      "ok": true,
+      "at": "2026-08-09T00:03:25.852Z",
+      "sha256": "748b948b5e0ea9a60979a2f5fca236d51bfd1813e566c5f77b84b4b90c755331"
     },
     "welcome-empty.mobile.png": {
       "ok": true,
-      "at": "2026-08-08T22:41:30.908Z",
+      "at": "2026-08-09T00:03:25.852Z",
       "sha256": "b49920fa1bfdb2f57d7558276be086447e9b6648d3acee4f551ab359f905da80"
     },
     "welcome-empty.png": {
       "ok": true,
-      "at": "2026-08-08T22:41:30.908Z",
+      "at": "2026-08-09T00:03:25.852Z",
       "sha256": "54492e767e49a0f0bd47e92e4227bbef00f1752ae9ff4768091cec88d8da538f"
     }
   }
