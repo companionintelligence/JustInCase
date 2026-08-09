@@ -16,6 +16,18 @@
 #
 #   clean        PD, CC BY, CC BY-SA. Safe to ship inside a product, a
 #                published bundle, or a torrent Lifescope seeds.
+#
+#                A US GOVERNMENT DOCUMENT IS NOT AUTOMATICALLY CLEAN. Three
+#                ways it fails, all found in this manifest by reading the
+#                PDFs' own front matter rather than trusting the agency:
+#                  · third-party figures licensed to the AGENCY, not to you
+#                    (TM 9-237 reprints American Welding Society material;
+#                    FM 5-499 reprints Deere & Company, all rights reserved)
+#                  · a contractor wrote it, so 17 USC 105 never attached
+#                    (Peace Corps ICE titles under contract 79-043-0129)
+#                  · a copyright notice a grep cannot see - ED242565's title
+#                    page is "(C) VITA, 1976", which no search for the word
+#                    "copyright" will ever match
 #   local-only   Non-commercial terms. Fine for an END USER to download
 #                onto their own box; NOT for us to redistribute.
 #   unverified   The licence line is an assertion nobody has substantiated
@@ -228,8 +240,8 @@ sources:
     category: 300_Food
     title: "Traditional Field Crops (Peace Corps ICE Manual M-13)"
     license: PD (US Government)
-    redistribution: clean
-    basis: federal authorship (17 USC 105); hosted on ERIC, which is an archive not the author
+    redistribution: local-only
+    basis: Peace Corps ICE under contract 79-043-0129 - contractor-produced, so 17 USC 105 does not attach - and acknowledges reused third-party material
     size: ~5 MB
   - url: https://files.eric.ed.gov/fulltext/ED241778.pdf
     filename: PeaceCorps-Soils-Crops-Fertilizer-Use.pdf
@@ -244,32 +256,32 @@ sources:
     category: 300_Food
     title: "Small Farm Grain Storage (Peace Corps ICE Manual M-2)"
     license: PD (US Government)
-    redistribution: clean
-    basis: federal authorship (17 USC 105); hosted on ERIC, which is an archive not the author
+    redistribution: unverified
+    basis: VITA Publications Manual Series 35E, sibling of the VITA-copyrighted 36E; ERIC lists the institution as Burton International School, not a federal agency
     size: ~6 MB
   - url: https://files.eric.ed.gov/fulltext/ED241772.pdf
     filename: PeaceCorps-Animal-Traction.pdf
     category: 300_Food
     title: "Animal Traction (Peace Corps ICE Manual M-12)"
     license: PD (US Government)
-    redistribution: clean
-    basis: federal authorship (17 USC 105); hosted on ERIC, which is an archive not the author
+    redistribution: local-only
+    basis: contract 79-043-0129, contractor-produced; reproduces material by permission of the publishers, Hastings House
     size: ~3 MB
   - url: https://files.eric.ed.gov/fulltext/ED242565.pdf
     filename: PeaceCorps-Freshwater-Fish-Pond-Culture.pdf
     category: 300_Food
     title: "Freshwater Fish Pond Culture and Management (Peace Corps ICE)"
     license: PD (US Government)
-    redistribution: clean
-    basis: federal authorship (17 USC 105); hosted on ERIC, which is an archive not the author
+    redistribution: local-only
+    basis: title page reads (C) VITA 1976, may be reproduced without royalty for official U.S. Government purposes - a privately held copyright under a government-purpose-only licence, NOT public domain
     size: ~5 MB
   - url: https://files.eric.ed.gov/fulltext/ED242921.pdf
     filename: PeaceCorps-Small-Scale-Beekeeping.pdf
     category: 300_Food
     title: "Small Scale Beekeeping — A Manual for Trainers (Peace Corps ICE)"
     license: PD (US Government)
-    redistribution: clean
-    basis: federal authorship (17 USC 105); hosted on ERIC, which is an archive not the author
+    redistribution: local-only
+    basis: authored by CHP International Inc. under contract PC-282-1011 - a contractor, so 17 USC 105 does not attach
     size: ~8 MB
   - url: https://www.ars.usda.gov/ARSUserFiles/oc/np/CommercialStorage/CommercialStorage.pdf
     filename: USDA-Storage-Of-Fruits-Vegetables.pdf
@@ -348,8 +360,8 @@ sources:
     category: 400_Engineering
     title: "TM 9-237 — Welding Theory and Application (US Army)"
     license: PD (US Government)
-    redistribution: clean
-    basis: Internet Archive Public Domain Mark on the item
+    redistribution: local-only
+    basis: federal work, BUT carries an explicit copyright notice reprinting American Welding Society material by permission - permission ran to the Army, not to downstream redistributors
     size: ~28 MB
   - url: https://archive.org/download/tc9-524/tc9_524.pdf
     filename: TC9-524-Fundamentals-Of-Machine-Tools.pdf
@@ -364,16 +376,16 @@ sources:
     category: 400_Engineering
     title: "FM 5-499 — Hydraulics (US Army)"
     license: PD (US Government)
-    redistribution: clean
-    basis: Internet Archive Public Domain Mark on the item
+    redistribution: local-only
+    basis: ACKNOWLEDGEMENTS reproduces Deere & Company material (c) 1997, all rights reserved, plus the Vickers Industrial Hydraulics Manual
     size: ~2 MB
   - url: https://archive.org/download/fm-5-424-theater-of-operations-electrical-systems-1997/FM%205-424%20Theater%20Of%20Operations%20Electrical%20Systems%20%201997.pdf
     filename: FM5-424-Electrical-Systems.pdf
     category: 400_Engineering
     title: "FM 5-424 — Theater of Operations Electrical Systems"
     license: PD (US Government)
-    redistribution: clean
-    basis: Internet Archive Public Domain Mark on the item
+    redistribution: local-only
+    basis: contains material used with permission from Basic Home Wiring (c) 1987 Sunset Publishing Corporation, and other third-party figures
     size: ~4 MB
   - url: https://archive.org/download/FM5-426/FM5-426.pdf
     filename: FM5-426-Carpentry.pdf
@@ -412,16 +424,16 @@ sources:
     category: 400_Engineering
     title: "Tools and Their Uses (US Navy Rate Training Manual)"
     license: PD (US Government)
-    redistribution: clean
-    basis: federal authorship (17 USC 105); hosted on ERIC, which is an archive not the author
+    redistribution: local-only
+    basis: CREDITS page licenses figures from Buckingham Mfg, General Motors, Imperial Brass, Rockwell and Ingersoll-Rand to the Navy, not downstream
     size: ~5 MB
   - url: https://files.eric.ed.gov/fulltext/ED132306.pdf
     filename: Navy-Construction-Electrician-3-2.pdf
     category: 400_Engineering
     title: "Construction Electrician 3 & 2 (US Navy Rate Training Manual)"
     license: PD (US Government)
-    redistribution: clean
-    basis: federal authorship (17 USC 105); hosted on ERIC, which is an archive not the author
+    redistribution: local-only
+    basis: CREDITS page licenses figures from Associated Research, Daystrom Weston, Multi-Amp, Bacharach and others to the Navy, not downstream
     size: ~14 MB
   - url: https://www.usbr.gov/power/data/fist/fist3_30/fist3_30.pdf
     filename: USBR-FIST-3-30-Transformer-Maintenance.pdf
@@ -444,8 +456,8 @@ sources:
     category: 400_Engineering
     title: "Small Wind Electric Systems — A U.S. Consumer's Guide (DOE)"
     license: PD (US Government)
-    redistribution: clean
-    basis: work of the US federal government (17 USC 105), from the issuing agency
+    redistribution: unverified
+    basis: no rights statement of any kind; NREL/contractor-produced with photo credits to commercial parties. Agency-published is not agency-authored
     size: ~2 MB
 
   # ── 500 Communications ────────────────────────────────────────────
