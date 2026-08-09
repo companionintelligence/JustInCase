@@ -24,6 +24,7 @@
     '600_Education':   'Education',
     '700_Social':      'Civic & social',
     '800_Software':    'Software & technical',
+    '900_Transport':   'Transport & mobility',
   };
 
   const SUGGESTED_PROMPTS = [
