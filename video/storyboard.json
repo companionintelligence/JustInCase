@@ -44,7 +44,16 @@
           "id": "welcome-empty",
           "url": "just-in-case-living-room-server-acme.ci.computer",
           "alt": "Just In Case on first launch: brand hero, suggested questions, and an empty field library",
-          "motion": "push-in",
+          "motion": "pull-back",
+          "focus": {
+            "landscape": {
+              "x": 0,
+              "y": 0,
+              "w": 0.538,
+              "h": 0.5
+            }
+          },
+          "_focusNote": "The scene's evidence is three numbers and a sentence, all in the left rail: the `index empty` pill, INDEX `0 chunks · 0 files`, FIELD LIBRARY `0`, and 'No documents indexed yet. Run the content fetcher or drop PDFs into the sources volume.' At rest they are 8-11px on a 1080-tall canvas — the narration says 'the panel says so plainly' over a panel nobody can read.\n\nh IS 0.5 AND NOT 0.538, ON PURPOSE. The window is square in plate coordinates and its size is set by max(w,h), so h only moves the CENTRE — and the centre matters here because the stage sits above canvas centre by half the caption allowance, which slides the window down about 0.029 of the plate. At h 0.538 the window starts at plate y 0.029 and the status pill (0.021..0.037) is sliced in half; at h 0.5 it starts at 0.010 and the pill is whole. Measured with `ci-video focus-preview`, both values, looking at the pictures.\n\nPULL-BACK, not push-in. This is the film's first screen scene, so it still owes the viewer a wide establishing read of the whole appliance — and it can have both: open full-bleed on the empty panel, then reveal the app around it. It is also the only pull-back in the first half of the film, and a 4.5% default push on the opening screen is the exact 'screenshot being panned' read this pass exists to remove.\n\nLANDSCAPE ONLY. In portrait the drawer is closed on this stage, so the only evidence on the plate is the `Index empty` pill at the very top — 2% of the frame, and portrait's tightest honoured window is 73.8%, which does not get near it. A format left out keeps the legacy move rather than pretending.",
           "capture": {
             "path": "/?stage=empty",
             "waitFor": ".welcome h1",
@@ -78,6 +87,15 @@
           "url": "just-in-case-living-room-server-acme.ci.computer",
           "alt": "The field library sidebar listing thirty-two indexed documents grouped by category",
           "motion": "drift-down",
+          "focus": {
+            "landscape": {
+              "x": 0,
+              "y": 0,
+              "w": 0.538,
+              "h": 0.5
+            }
+          },
+          "_focusNote": "The same rectangle as `welcome-empty`, deliberately: these two scenes are a before/after of one panel, and framing them identically is what turns `0 chunks · 0 files` into `11,490 chunks · 32 files` and `index empty` into `Ready · 32 docs` as a comparison the viewer can actually make. Different framings would have made it two unrelated shots.\n\nSame reason for h 0.5 — see the note on `welcome-empty`. At h 0.538 the caption-allowance offset slides the window down and halves the `Ready · 32 docs` pill, which is one of the two things this caption claims.\n\nDRIFT-DOWN keeps its authored motion and now has something to travel through. A drift STARTS at the focus, so `ci-video focus-preview --scene field-library --at start` is the frame that has to be checked: window 0.010..0.548, pill whole, `11,490 chunks · 32 files` legible. The `--at end` frame is 0.073..0.611 — the pill has scrolled off the top and four filenames have arrived at the bottom, which is the move doing its job. The full 0.063 of travel was taken, so this is not the headroom-starved case that renders dead still while the storyboard claims it moves.\n\nLANDSCAPE ONLY: in portrait the drawer opens full-bleed and the panel is already large.",
           "capture": {
             "path": "/?stage=ready",
             "waitFor": "#status-pill.ok",
@@ -151,6 +169,8 @@
       "kind": "screen",
       "chapter": "ask",
       "seconds": 6,
+      "transition": "cut",
+      "_transitionNote": "The one place in this film where a cut is punctuation rather than damage control. It is the chapter boundary — `first-run` ends and `ask` begins — and the film had no cut at any chapter boundary at all: both existing cuts (`check-the-sources`, `no-network`) are there to stop a double-exposure ghost, so the grammar was being used only as a repair and never as an edit. The subject changes hard here too: the scene before ends full-bleed on the shelf's category headers, this one opens wide on the composer end of the app.",
       "caption": "Water, burns, wounds, solar wiring, food — before you type a word.",
       "narration": "First aid, power, water, food. The suggestions come from the shelf itself.",
       "shots": [
@@ -158,14 +178,24 @@
           "id": "suggestions",
           "url": "just-in-case-living-room-server-acme.ci.computer",
           "alt": "The six suggested questions the app offers on a ready appliance — purifying water, first aid for a burn, a seventy-two hour kit, treating a wound, wiring a solar panel to a battery, and preserving food without refrigeration",
-          "motion": "drift-down",
+          "motion": "push-in",
           "_shotNote": "These are the app's OWN suggestions (SUGGESTED_PROMPTS, public/app.js), not a list written for the video. That is the point: the breadth on screen is breadth the product actually has, and it moves when the product moves.\n\nThe corpus does NOT cover vehicle transportation, and device repair only through the iFixit ZIM — which is `_ftindex:no`, so it is browsable but cannot be retrieved from. Neither is claimed here, in the caption or the narration.",
           "focus": {
             "landscape": {
-              "x": 0.171,
-              "y": 0.211,
+              "x": 0.303,
+              "y": 0.462,
               "w": 0.538,
               "h": 0.538
+            }
+          },
+          "pointer": {
+            "landscape": {
+              "x": 0.4,
+              "y": 0.84
+            },
+            "portrait": {
+              "x": 0.288,
+              "y": 0.83
             }
           },
           "capture": {
@@ -182,7 +212,8 @@
               }
             ]
           },
-          "_focusNote": "Sized to the CHIP ROW, which is ~0.65 of the plate wide. An earlier 0.62 window clipped the leading 'H' off 'How do I purify water in the field?' — the row is wider than the tightest focus the kit will honour, so the choice is fit-the-row or clip an end, and a half-read question is worse than a slightly looser frame.\n\ny is 0.35 because the window must end inside the plate: an earlier y+h of 1.24 was refused outright by focus-preview, which is the check that caught it before build did."
+          "_focusNote": "RETARGETED — the rectangle this shot carried framed no chips at all. It was (0.171, 0.211), which resolves to a window over plate y 0.303..0.841 while both chip rows sit at 0.821..0.886. `ci-video focus-preview --scene what-you-can-ask` reconstructs the end frame as an empty dark rectangle with the chips sliced off along the bottom edge, under the caption band, i.e. the caption enumerated five subjects over a frame containing none of them. The prose note that used to sit here described a 0.65-wide rectangle at y 0.35; the numbers beside it were 0.538 at 0.211, so the note and the value had come apart at some point and the note was the thing being read.\n\nThe chip block is x 0.337..0.808 by y 0.821..0.886 — 0.47 on its longer side, under the 0.538 landscape floor, so 0.538 square is the tightest available and the shape of the block cannot be honoured. x 0.303 centres that square on the block (0.035 of margin left, 0.032 right, so no chip is clipped at either end — the clipped-'H' failure the old note describes is avoided by centring, not by widening).\n\ny 0.462 IS THE MAXIMUM the plate allows: y + h must stay inside the screenshot, so the window is bottom-anchored at 0.462..1.0. That is also the only placement that clears the caption band — the chips land at 0.69 and 0.76 of canvas height and the band starts at ~0.85. Anything higher pushes the second row under the caption.\n\nPUSH-IN, changed from drift-down, and forced: a bottom-anchored focus has zero headroomDown, so drift-down would hit the degradation path in cameraMove and silently become a push anyway. Declaring the push is honest, and it is the better move regardless — the shot opens wide and ends with the six questions filling the frame at the moment the cursor picks one.",
+          "_pointerNote": "The chip 'How do I purify water in the field?' — a real control, the app's own SUGGESTED_PROMPTS button, and the first subject the caption names ('Water'). Clicking it is also the film's argument: you can ask this thing without typing.\n\nLANDSCAPE (0.400, 0.840): inside the pill, which spans x 0.337..0.482 by y 0.821..0.847 on the committed plate. Left of the pill's centre and low in it on purpose — the arrow's hotspot is its tip and its body hangs down-right, so this puts the body across the pill's lower edge instead of across the words. Inside the focus window (0.302..0.840 x 0.461..0.999), so the cursor is on canvas for the whole push rather than sliding off the end of it.\n\nPORTRAIT (0.288, 0.830): the same chip on the mobile plate, where it spans x 0.032..0.545 by y 0.815..0.845. Centred, because a phone frame gets a tap ripple and a ripple has no body to keep off the label.\n\nBoth measured off the committed PNGs at 0.05 gridding, not derived from the landscape numbers — the app is responsive and the chip is 51% of the width on mobile against 15% on desktop."
         }
       ],
       "prosody": {
@@ -207,6 +238,18 @@
           "alt": "A question of the viewer's own — how long to boil creek water — typed into the composer, with the suggested-question chips still offered above it",
           "_altNote": "No count here, deliberately. The app renders six chips at desktop width and three at portrait — `.chip-extra { display: none }` under 620px — so one alt string cannot name a number that is true of both plates, and this one is read against both. Verified in the 9:16 cut: three chips.",
           "motion": "drift-down",
+          "pointer": {
+            "landscape": {
+              "x": 0.6,
+              "y": 0.925
+            },
+            "portrait": {
+              "x": 0.76,
+              "y": 0.93
+            }
+          },
+          "_pointerNote": "The composer. The caption is 'Type your own' and the narration is 'Type any question in plain language', so the named control is the field — and this plate is the one that has a question sitting in it. A cursor arriving at the field, settling and clicking is the beat.\n\nLANDSCAPE (0.600, 0.925): inside the input, which spans x 0.337..0.795 by y 0.898..0.955. Placed past the end of the typed text (which stops at x 0.545) so the arrow does not sit on top of the sentence the shot exists to show — a click into the empty part of a field is where a caret goes anyway. x is under 0.62, which is the threshold at which pointer.mjs flips the approach direction, so the arrow enters from the right and travels left across the field: the correct read for a cursor arriving at something.\n\nPORTRAIT (0.760, 0.930): the mobile input spans x 0.028..0.865 by y 0.902..0.958 and the typed text stops at 0.68, so this is the same idea on the phone plate — clear of the words, well inside the field, and clear of the Send button at 0.885..0.975.",
+          "_focusNote": "NO FOCUS IN EITHER FORMAT, and this one is a measured refusal rather than an omission.\n\nThe subject is the composer at plate y 0.898..0.955 — the bottom 7% of the screenshot. A focus move ends with the frame full-bleed and the plate's bottom edge no further up than the canvas bottom, so anything in that last 7% lands in the bottom 13% of the canvas. The caption band starts at ~0.85. Solving for a window that puts the typed question above it needs a window under 0.47 of the plate; the landscape floor is 0.538. There is no rectangle. Checked with `ci-video focus-preview` at the bottom-anchored (0.326, 0.462): the reconstruction puts 'How long do I boil creek water to make it safe?' directly under the band marker.\n\nSo the shot stays wide and the cursor carries it. That is the honest split: the camera has nothing to say about this beat and the pointer has everything.",
           "capture": {
             "path": "/?stage=ready",
             "waitFor": ".chips .chip",
@@ -311,6 +354,17 @@
               "h": 0.538
             }
           },
+          "pointer": {
+            "landscape": {
+              "x": 0.3455,
+              "y": 0.421
+            },
+            "portrait": {
+              "x": 0.12,
+              "y": 0.4445
+            }
+          },
+          "_pointerNote": "The SOURCES disclosure. The caption says the answer 'opens onto the documents behind it' and the narration says 'See exactly which documents' — the control that does the opening is `details.sources > summary`, and this shot's own capture script clicks it. Pointing at it is the film showing the click it already performed off-screen.\n\nLANDSCAPE (0.3455, 0.421): on the ▾ triangle, which sits at x 0.3435..0.3475 with the row's text centred on y 0.4245. The tip goes on the triangle rather than on the word SOURCES so the arrow's body falls into the gap before the label instead of across it. Inside the focus window (0.227..0.765 x 0.195..0.733), so the cursor tracks the drift instead of leaving frame.\n\nPORTRAIT (0.120, 0.4445): the same row on the mobile plate, where the triangle is at x 0.065 and SOURCES runs 0.083..0.200. The tap ripple is centred between them; its radius is 7.5% of the screen width, which at x 0.12 stays clear of the left edge.\n\nThe accordion is already open on this plate, so the press reads as 'this row is the thing you open' rather than as a state change — which is what the caption claims and all it claims.",
           "capture": {
             "path": "/?stage=offline",
             "waitFor": ".chips .chip",
@@ -402,6 +456,8 @@
       "kind": "screen",
       "chapter": "offline",
       "seconds": 6,
+      "transition": "cut",
+      "_transitionNote": "Two reasons, one of them measured. The subject changes hard — the scene before is about the network being gone while everything still works, this one is about the language model being absent, a different failure and a different panel. And with this scene now opening full-bleed on the banner while `no-network` ends full-bleed on the System panel, the default half-second dissolve would cross two copies of the same app screen at nearly the same scale: the double-exposure ghost AUTHORING.md names, and the same one that already forced cuts on `check-the-sources` and `no-network`. Changing the motion here is what created the hazard, so the cut goes in with it rather than after somebody screenshots it.",
       "caption": "No model on the box? It says so, and keeps going.",
       "narration": "With no language model installed it says so, and the library stays browsable.",
       "shots": [
@@ -409,7 +465,22 @@
           "id": "degraded",
           "url": "just-in-case-living-room-server-acme.ci.computer",
           "alt": "The degraded state: an LLM missing status pill and a banner naming the directory the model files belong in",
-          "motion": "push-in",
+          "motion": "pull-back",
+          "focus": {
+            "landscape": {
+              "x": 0.195,
+              "y": 0,
+              "w": 0.62,
+              "h": 0.58
+            },
+            "portrait": {
+              "x": 0,
+              "y": 0,
+              "w": 1,
+              "h": 0.62
+            }
+          },
+          "_focusNote": "PULL-BACK IS THE CAPTION. 'It says so, and keeps going' is two beats in order: open on the thing that says so — the `LLM missing` pill and the banner naming /app/gguf_models — then pull back to the appliance with its thirty-two documents still listed underneath. A push-in would have run the sentence backwards.\n\nLANDSCAPE 0.62 wide, not the 0.538 floor, because the banner runs x 0.203..0.813 and a 0.538 window slices it mid-sentence. Half a sentence in frame is worse than 13% less magnification, and the whole point of the shot is that the app tells you what to do. x 0.195 puts the window at 0.194..0.814 — both ends of the banner inside it with a pixel to spare. h 0.58 is doing the same job h 0.5 does on `welcome-empty`: it only moves the window's centre, and at 0.58 the window starts at plate 0.014 so the status pill (0.021..0.045) is whole rather than sliced by the caption-allowance offset. scale lands at 2.081, honoured exactly, no clamp. Verified with `ci-video focus-preview`.\n\nPORTRAIT w 1.0 asks for nothing tighter than full-bleed, which is the only thing worth asking for on this plate: the banner wraps to three lines running x 0.02..0.95, so any window narrower than the plate cuts words off both ends, and portrait's floor is 73.8%. What the declaration buys is the coverScale reframe the `answer` shot uses — the phone frame drops away and the screen grows 39%, which is the whole legibility gain available here. h 0.62 keeps the centre high so the window anchors to the top of the plate where the banner is.",
           "capture": {
             "path": "/?stage=degraded",
             "waitFor": "#status-pill.err",
