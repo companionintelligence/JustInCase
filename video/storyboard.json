@@ -42,7 +42,7 @@
       "shots": [
         {
           "id": "welcome-empty",
-          "url": "just-in-case.local",
+          "url": "just-in-case-living-room-server-acme.ci.computer",
           "alt": "Just In Case on first launch: brand hero, suggested questions, and an empty field library",
           "motion": "push-in",
           "capture": {
@@ -75,7 +75,7 @@
       "shots": [
         {
           "id": "library-indexed",
-          "url": "just-in-case.local",
+          "url": "just-in-case-living-room-server-acme.ci.computer",
           "alt": "The field library sidebar listing thirty-two indexed documents grouped by category",
           "motion": "drift-down",
           "capture": {
@@ -108,7 +108,7 @@
       "shots": [
         {
           "id": "library-scrolled",
-          "url": "just-in-case.local",
+          "url": "just-in-case-living-room-server-acme.ci.computer",
           "alt": "The field library scrolled past its first categories, showing later category headers and their reference filenames with per-document chunk counts",
           "motion": "push-in",
           "capture": {
@@ -156,7 +156,7 @@
       "shots": [
         {
           "id": "suggestions",
-          "url": "just-in-case.local",
+          "url": "just-in-case-living-room-server-acme.ci.computer",
           "alt": "The six suggested questions the app offers on a ready appliance — purifying water, first aid for a burn, a seventy-two hour kit, treating a wound, wiring a solar panel to a battery, and preserving food without refrigeration",
           "motion": "drift-down",
           "_shotNote": "These are the app's OWN suggestions (SUGGESTED_PROMPTS, public/app.js), not a list written for the video. That is the point: the breadth on screen is breadth the product actually has, and it moves when the product moves.\n\nThe corpus does NOT cover vehicle transportation, and device repair only through the iFixit ZIM — which is `_ftindex:no`, so it is browsable but cannot be retrieved from. Neither is claimed here, in the caption or the narration.",
@@ -203,7 +203,7 @@
       "shots": [
         {
           "id": "question-typed",
-          "url": "just-in-case.local",
+          "url": "just-in-case-living-room-server-acme.ci.computer",
           "alt": "A question of the viewer's own — how long to boil creek water — typed into the composer, with the suggested-question chips still offered above it",
           "_altNote": "No count here, deliberately. The app renders six chips at desktop width and three at portrait — `.chip-extra { display: none }` under 620px — so one alt string cannot name a number that is true of both plates, and this one is read against both. Verified in the 9:16 cut: three chips.",
           "motion": "drift-down",
@@ -240,7 +240,7 @@
       "shots": [
         {
           "id": "answer",
-          "url": "just-in-case.local",
+          "url": "just-in-case-living-room-server-acme.ci.computer",
           "alt": "The typed question — how long to boil creek water — asked and answered in the chat, with a collapsed sources accordion",
           "motion": "push-in",
           "_focusNote": "The film's first punch-in, and it arrives late on purpose: four earlier scenes are this same app shell, so the wide read is long since established and this scene can spend its dwell on the conversation instead of re-introducing the furniture. It ends on the question, the answer and the collapsed SOURCES row — the narration, line for line.\n\nThe 16:9 window is always SQUARE in normalised image coordinates, because the capture and the canvas are both 16:9. So the only lever a landscape rectangle has is its longer side: scale = 1.263 / max(w, h), clamped to [1.263, 2.4]. max here is 0.65, giving 1.943x. An earlier attempt pointed at the answer bubble alone (0.51) was therefore pointless — it asks for 2.48x, clamps to 2.4, and the extra 0.14 of window it wins slices the question bubble instead.\n\nPortrait is a different instrument. The mobile capture is already legible at rest, and its window is square-ish too, so any tight crop slices full-width body copy — there is no honest close-up available. What IS available is the reframe coverScale gives for free: w 1.0 asks for nothing tighter than full-bleed, the phone frame drops away and the screen grows 39%. That is the portrait shot-size change; a portrait crop is not.",
@@ -299,7 +299,7 @@
       "shots": [
         {
           "id": "sources-open",
-          "url": "just-in-case.local",
+          "url": "just-in-case-living-room-server-acme.ci.computer",
           "alt": "The expanded sources accordion listing the documents the answer was drawn from — two field manuals and, marked as encyclopedia, a Wikipedia article served from the offline ZIM library — each with the passage that matched",
           "motion": "drift-down",
           "_focusNote": "The credibility beat, and the one frame in this film that is genuinely unreadable wide: the filenames the caption promises — 100_Survival/FM21-76-US-Army-Survival.pdf and the two engineering handbooks — are about 13px on a 1080-tall canvas at rest. At 1.974x they are 26px and the claim is verifiable rather than asserted.\n\ndrift-down rather than push-in, and it has room: headroomDown is 100px against a 107px request, so the shot travels 0.063 of the plate down through the three cards instead of stalling. That matters — a focus that lands hard against the coverage clamp leaves drift-down with nowhere to go and renders DEAD STILL while the storyboard claims it moves. Worth re-checking with the kit's own focusState after any change to this rectangle.\n\nLANDSCAPE ONLY, deliberately. On mobile the source list is full-bleed body copy that is already comfortable to read, so the only portrait framing available would crop the card text at the sides. A format left out keeps the legacy move, which is the right answer here: 'this screen does not need a camera on 9:16' should render as a plain shot, not a confidently wrong one.",
@@ -361,7 +361,7 @@
       "shots": [
         {
           "id": "offline-library",
-          "url": "just-in-case.local",
+          "url": "just-in-case-living-room-server-acme.ci.computer",
           "alt": "The appliance with a ZIM library mounted: the System panel reads Encyclopedia, three archives, beside the local index, and the sidebar footer reads Runs 100% offline",
           "motion": "push-in",
           "_shotNote": "Captured with EVERY external request blocked and recorded — see the egress guard in capture.config.mjs. If this app ever fetches a font, a script or a beacon, the capture fails instead of quietly filming a product that phones home under a narration saying it does not. The offline claim in this film is enforced, not asserted.",
@@ -407,7 +407,7 @@
       "shots": [
         {
           "id": "degraded",
-          "url": "just-in-case.local",
+          "url": "just-in-case-living-room-server-acme.ci.computer",
           "alt": "The degraded state: an LLM missing status pill and a banner naming the directory the model files belong in",
           "motion": "push-in",
           "capture": {
