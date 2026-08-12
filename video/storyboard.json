@@ -49,11 +49,11 @@
             "landscape": {
               "x": 0,
               "y": 0,
-              "w": 0.538,
-              "h": 0.5
+              "w": 0.82,
+              "h": 0.7
             }
           },
-          "_focusNote": "The scene's evidence is three numbers and a sentence, all in the left rail: the `index empty` pill, INDEX `0 chunks · 0 files`, FIELD LIBRARY `0`, and 'No documents indexed yet. Run the content fetcher or drop PDFs into the sources volume.' At rest they are 8-11px on a 1080-tall canvas — the narration says 'the panel says so plainly' over a panel nobody can read.\n\nh IS 0.5 AND NOT 0.538, ON PURPOSE. The window is square in plate coordinates and its size is set by max(w,h), so h only moves the CENTRE — and the centre matters here because the stage sits above canvas centre by half the caption allowance, which slides the window down about 0.029 of the plate. At h 0.538 the window starts at plate y 0.029 and the status pill (0.021..0.037) is sliced in half; at h 0.5 it starts at 0.010 and the pill is whole. Measured with `ci-video focus-preview`, both values, looking at the pictures.\n\nPULL-BACK, not push-in. This is the film's first screen scene, so it still owes the viewer a wide establishing read of the whole appliance — and it can have both: open full-bleed on the empty panel, then reveal the app around it. It is also the only pull-back in the first half of the film, and a 4.5% default push on the opening screen is the exact 'screenshot being panned' read this pass exists to remove.\n\nLANDSCAPE ONLY. In portrait the drawer is closed on this stage, so the only evidence on the plate is the `Index empty` pill at the very top — 2% of the frame, and portrait's tightest honoured window is 73.8%, which does not get near it. A format left out keeps the legacy move rather than pretending.",
+          "_focusNote": "MEASURED WITH `ci-video focus-preview` AGAINST THE COMMITTED PLATE, 2026-08-12. Widened from 0.538 x 0.5 at (0, 0).\n\nThe scene's evidence is three numbers and a sentence, all in the left rail: the `Index empty` pill, INDEX `0 chunks · 0 files`, FIELD LIBRARY `0`, and \"No documents indexed yet. Run the content fetcher or drop PDFs into the sources volume.\" At rest they are 8-11px on a 1080-tall canvas — the narration says \"the panel says so plainly\" over a panel nobody can read. That part was right and is unchanged.\n\nWHAT WAS WRONG. A 0.538 window anchored at the left edge ends at plate x 0.537. The main pane's hero block sits at x 0.425..0.765 — so the paragraph was sliced mid-glyph along the right canvas edge (\"Offline emergency knowledge\", \"aid, water, shelter, power, c\") and the hero JUST IN CASE wordmark, which starts at x 0.540, was cut off entirely bar a sliver of its first letter. A frame edge through the middle of a word reads as a broken render. The window cannot be moved to avoid it: 0.538 is the tightest the kit honours in 16:9 and the rail starts at x 0, so there is no placement that both keeps the rail and misses the hero.\n\nTHE FIX IS TO ASK FOR LESS. (0, 0, 0.82, 0.70) -> scale 1.574, honoured exactly, window 0.820 square from plate (-0.001, -0.015). It ends past the hero paragraph's right edge at 0.765, so nothing is cut; the rail is still 2.2x its resting size and every one of the four pieces of evidence is legible in the reconstruction.\n\nh IS 0.70 AND NOT 0.82, ON PURPOSE. The window is square in plate coordinates and its size is set by max(w, h), so h only moves the CENTRE — and the centre matters here because the stage sits above canvas centre by half the caption allowance, which slides the window down. h 0.70 puts the window top a hair above the plate, which keeps the status pill (plate y 0.021..0.037) whole.\n\nPULL-BACK, not push-in. This is the film's first screen scene, so it still owes the viewer a wide establishing read of the whole appliance — and it can have both: open on the rail and the hero together, then reveal the app around them. A pull-back STARTS at the focus, so `ci-video focus-preview --scene first-launch --at start` is the frame to check.\n\nLANDSCAPE ONLY. In portrait the drawer is closed on this stage, so the only evidence on the plate is the `Index empty` pill at the very top — 2% of the frame, and portrait's tightest honoured window is 73.8%, which does not get near it. A format left out keeps the legacy move rather than pretending.",
           "capture": {
             "path": "/?stage=empty",
             "waitFor": ".welcome h1",
@@ -286,19 +286,19 @@
           "url": "just-in-case-living-room-server-acme.ci.computer",
           "alt": "The typed question — how long to boil creek water — asked and answered in the chat, with a collapsed sources accordion",
           "motion": "push-in",
-          "_focusNote": "The film's first punch-in, and it arrives late on purpose: four earlier scenes are this same app shell, so the wide read is long since established and this scene can spend its dwell on the conversation instead of re-introducing the furniture. It ends on the question, the answer and the collapsed SOURCES row — the narration, line for line.\n\nThe 16:9 window is always SQUARE in normalised image coordinates, because the capture and the canvas are both 16:9. So the only lever a landscape rectangle has is its longer side: scale = 1.263 / max(w, h), clamped to [1.263, 2.4]. max here is 0.65, giving 1.943x. An earlier attempt pointed at the answer bubble alone (0.51) was therefore pointless — it asks for 2.48x, clamps to 2.4, and the extra 0.14 of window it wins slices the question bubble instead.\n\nPortrait is a different instrument. The mobile capture is already legible at rest, and its window is square-ish too, so any tight crop slices full-width body copy — there is no honest close-up available. What IS available is the reframe coverScale gives for free: w 1.0 asks for nothing tighter than full-bleed, the phone frame drops away and the screen grows 39%. That is the portrait shot-size change; a portrait crop is not.",
+          "_focusNote": "MEASURED WITH `ci-video focus-preview` AGAINST THE COMMITTED PLATES, 2026-08-12. Both rectangles were retargeted because both sliced the beat the whole film builds to; the numbers below are the reconstructed end frames, not arithmetic.\n\nWHAT WAS WRONG. Landscape asked for 0.538 square at (0.231, 0), the tightest window the kit will honour in 16:9. The delivered window is plate x 0.230..0.768, and the question bubble runs to x 0.851 — so the setup for the payoff read \"How long do I boil creek wate\". Portrait asked for 0.8 x 0.738 at (0, 0.023), which resolves to a 0.797 window over a plate whose content spans x 0.046..0.954: the question AND every line of the answer were cut mid-word at the right edge (\"to make\", \"three minute\", \"and bact\", \"per lit\", \"through clo\").\n\nWHY NEITHER NOTE CAUGHT IT. The prose here described a landscape max of 0.65 and a portrait w of 1.0. The values beside it were 0.538 and 0.8. The note and the number had come apart — the same failure the note on `what-you-can-ask` records, one scene earlier in this file.\n\nLANDSCAPE (0.314, 0.06, 0.56, 0.50) -> scale 2.304, honoured exactly, window 0.560 square from plate (0.313, 0.060). It holds YOU, the whole question bubble (x 0.338..0.851), the whole answer card and the collapsed SOURCES row at canvas y 0.65 — clear of the caption scrim, which starts at canvas 0.720. y 0.06 rather than 0.02 so the window starts below the header bar: at 0.02 the \"Use library\" checkbox is sliced mid-word along the top edge.\n\nPORTRAIT (0.03, 0, 0.94, 0.94) -> scale 1.483, honoured exactly, window 0.940 from plate (0.030, 0.056). The 0.908-wide content block cannot be framed tighter than that without cutting body copy, and 0.940 is the tightest window that clears it at both edges. The portrait floor is 0.738, so this is a real choice inside the reachable range and not a clamp.\n\nStill a punch-in in both cuts: 1.00 -> 2.30 in 16:9 and 1.00 -> 1.48 in 9:16.",
           "focus": {
             "landscape": {
-              "x": 0.231,
-              "y": 0,
-              "w": 0.538,
-              "h": 0.538
+              "x": 0.314,
+              "y": 0.06,
+              "w": 0.56,
+              "h": 0.5
             },
             "portrait": {
-              "x": 0,
-              "y": 0.023,
-              "w": 0.8,
-              "h": 0.738
+              "x": 0.03,
+              "y": 0,
+              "w": 0.94,
+              "h": 0.94
             }
           },
           "capture": {
@@ -344,14 +344,14 @@
           "id": "sources-open",
           "url": "just-in-case-living-room-server-acme.ci.computer",
           "alt": "The expanded sources accordion listing the documents the answer was drawn from — two field manuals and, marked as encyclopedia, a Wikipedia article served from the offline ZIM library — each with the passage that matched",
-          "motion": "drift-down",
-          "_focusNote": "The credibility beat, and the one frame in this film that is genuinely unreadable wide: the filenames the caption promises — 100_Survival/FM21-76-US-Army-Survival.pdf and the two engineering handbooks — are about 13px on a 1080-tall canvas at rest. At 1.974x they are 26px and the claim is verifiable rather than asserted.\n\ndrift-down rather than push-in, and it has room: headroomDown is 100px against a 107px request, so the shot travels 0.063 of the plate down through the three cards instead of stalling. That matters — a focus that lands hard against the coverage clamp leaves drift-down with nowhere to go and renders DEAD STILL while the storyboard claims it moves. Worth re-checking with the kit's own focusState after any change to this rectangle.\n\nLANDSCAPE ONLY, deliberately. On mobile the source list is full-bleed body copy that is already comfortable to read, so the only portrait framing available would crop the card text at the sides. A format left out keeps the legacy move, which is the right answer here: 'this screen does not need a camera on 9:16' should render as a plain shot, not a confidently wrong one.",
+          "motion": "push-in",
+          "_focusNote": "MEASURED WITH `ci-video focus-preview` AND AGAINST THE RENDERED CUT, 2026-08-12. Retargeted from 0.538 square at (0.227, 0.195), and the motion changed with it.\n\nWHAT WAS WRONG. The old window delivered plate x 0.226..0.764 by y 0.287..0.825 at the end of the drift. The Wikipedia row — `wikipedia_en_simple_all_nopic — Boiling  ENCYCLOPEDIA  match 2%`, which is the ONLY on-screen proof for the NEXT scene's caption, \"No connection. Wikipedia, on the box, in the answers.\" — landed at canvas y 0.73. The caption scrim's gradient starts at canvas 0.720 and is solid from 0.853, so the row and its snippet rendered under the scrim, greyed to the point of illegibility. That is how this was found: in the delivered frame, not in the reconstruction, which draws no scrim. Every card was also cut off at the right edge mid-sentence, because the cards run to plate x 0.850 and the window stopped at 0.764.\n\nTHE FIX IS TO LET THE SOURCES LIST BE THE WHOLE SHOT. (0.314, 0.35, 0.56, 0.50) -> scale 2.304, honoured exactly, window 0.560 square from plate (0.313, 0.350). The three cards span plate x 0.339..0.850 by y 0.426..0.740, so they sit inside it with margin at both ends: nothing is cut at the right edge, the Wikipedia row lands at canvas y 0.58 and its last snippet line at 0.66 — both clear of the scrim. y 0.35 rather than 0.36-0.40 so the window top falls just ABOVE the answer card's last line instead of through it; at 0.36 that line is sliced in half along the top edge, which is the same defect one edge over.\n\nPUSH-IN, changed from drift-down, and the reason is arithmetic rather than taste. The pointer sits on the SOURCES triangle at plate y 0.421 and the last card ends at 0.740 — 0.319 of plate that must be held between a top margin the cursor needs and the scrim line at canvas 0.72, i.e. inside 0.70 x 0.56 = 0.392 of plate. A drift-down adds its 0.063 of travel to that requirement (0.410) and it no longer fits: every candidate y either drops the cursor off the top edge by the end or pushes the Wikipedia snippet back under the scrim. The drift existed because the old window could not hold three cards at once; this one can, so there is nothing left to travel through.\n\nLANDSCAPE ONLY, unchanged. On mobile the source list is full-bleed body copy that is already comfortable to read, so the only portrait framing available would crop the card text at the sides. A format left out keeps the legacy move.",
           "focus": {
             "landscape": {
-              "x": 0.227,
-              "y": 0.195,
-              "w": 0.538,
-              "h": 0.538
+              "x": 0.314,
+              "y": 0.35,
+              "w": 0.56,
+              "h": 0.5
             }
           },
           "pointer": {
