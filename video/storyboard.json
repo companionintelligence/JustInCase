@@ -18,9 +18,58 @@
     "offline": "When it is on its own"
   },
   "media": {
-    "music": null,
-    "musicVolume": 0.14
+    "music": "assets/media/ci-campaign-bed.mp3",
+    "musicLufs": -22
   },
+  "master": [
+    {
+      "ref": "ask-a-question",
+      "caption": "Ask from your offline field library.",
+      "narration": "Ask from your offline field library. A model you run writes the answer.",
+      "minSeconds": 7
+    },
+    {
+      "ref": "check-the-sources",
+      "caption": "Open the source passages before you act.",
+      "narration": "Open the source passages and verify the answer before you act.",
+      "minSeconds": 6.5
+    },
+    {
+      "ref": "first-launch",
+      "chapter": "ask",
+      "caption": "Start with an empty library you can understand.",
+      "narration": "Start with an empty library whose state is clear.",
+      "minSeconds": 6
+    },
+    {
+      "ref": "field-library",
+      "chapter": "ask",
+      "caption": "Copy reference documents in. Ingestion indexes them.",
+      "narration": "Copy your reference documents into the source volume and let ingestion index them.",
+      "minSeconds": 7
+    },
+    {
+      "ref": "no-model-no-panic",
+      "caption": "No model installed? The library stays browseable.",
+      "narration": "If no language model is installed, the app says so and the library stays browseable.",
+      "minSeconds": 7
+    },
+    {
+      "ref": "recap",
+      "caption": "Your documents. Your hardware. Your fallback.",
+      "narration": "Just In Case is designed to keep working when the network does not.",
+      "minSeconds": 6.5
+    },
+    {
+      "ref": "close",
+      "caption": "ci.computer",
+      "cta": "Build your offline field library",
+      "tagline": "UnCloud your life.",
+      "url": "ci.computer",
+      "narration": "Build your offline field library with Just In Case. Visit ci dot computer. UnCloud your life.",
+      "minSeconds": 7
+    }
+  ],
   "scenes": [
     {
       "id": "open",
