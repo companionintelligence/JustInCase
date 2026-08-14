@@ -18,68 +18,96 @@
     "offline": "When it is on its own"
   },
   "media": {
-    "music": "assets/media/ci-campaign-bed.mp3",
+    "music": "assets/media/ci-campaign-bed-110.mp3",
     "musicLufs": -22
   },
   "master": [
+    "the-manuals",
+    "open",
+    {
+      "ref": "what-you-can-ask"
+    },
+    "type-a-question",
     {
       "ref": "ask-a-question",
-      "caption": "Ask from your offline field library.",
-      "narration": "Ask from your offline field library. A model you run writes the answer.",
-      "minSeconds": 7
+      "caption": "Retrieval finds the passages. The answer is built from them.",
+      "narration": "Ask from your offline field library. A model you run writes the answer."
     },
     {
       "ref": "check-the-sources",
-      "caption": "Open the source passages before you act.",
-      "narration": "Open the source passages and verify the answer before you act.",
-      "minSeconds": 6.5
+      "caption": "Every answer opens onto the documents behind it.",
+      "narration": "Open the source passages and verify the answer before you act."
     },
     {
       "ref": "first-launch",
-      "chapter": "ask",
-      "caption": "Start with an empty library you can understand.",
-      "narration": "Start with an empty library whose state is clear.",
-      "minSeconds": 6
+      "caption": "First launch. Nothing indexed yet."
     },
     {
       "ref": "field-library",
-      "chapter": "ask",
-      "caption": "Copy reference documents in. Ingestion indexes them.",
-      "narration": "Copy your reference documents into the source volume and let ingestion index them.",
-      "minSeconds": 7
+      "caption": "32 documents. 11,490 passages, on disk."
     },
     {
+      "ref": "library-shelf",
+      "caption": "Solar power, water systems, emergency comms."
+    },
+    "no-network",
+    {
       "ref": "no-model-no-panic",
-      "caption": "No model installed? The library stays browseable.",
-      "narration": "If no language model is installed, the app says so and the library stays browseable.",
-      "minSeconds": 7
+      "caption": "No model on the box? It says so, and keeps going.",
+      "narration": "If no language model is installed, the app says so and the library stays browseable."
     },
     {
       "ref": "recap",
-      "caption": "Your documents. Your hardware. Your fallback.",
-      "narration": "Just In Case is designed to keep working when the network does not.",
-      "minSeconds": 6.5
+      "caption": "One Docker stack. No accounts, no cloud.",
+      "minSeconds": 5.2
     },
     {
       "ref": "close",
       "caption": "ci.computer",
       "cta": "Build your offline field library",
       "tagline": "UnCloud your life.",
-      "url": "ci.computer",
-      "narration": "Build your offline field library with Just In Case. Visit ci dot computer. UnCloud your life.",
-      "minSeconds": 7
+      "url": "ci.computer/jic",
+      "narration": "Build your offline field library with Just In Case, at ci dot computer slash J I C. UnCloud your life."
     }
   ],
   "scenes": [
     {
+      "id": "the-manuals",
+      "kind": "feature",
+      "seconds": 7.3,
+      "minSeconds": 6,
+      "reveal": "paced",
+      "title": "The manuals are not the problem.",
+      "caption": "Reaching them is.",
+      "narration": "FEMA, the US Army and Wikipedia publish all of this for free. Reading it still takes a network.",
+      "items": [
+        {
+          "label": "FEMA",
+          "value": "Emergency Checklist"
+        },
+        {
+          "label": "US Army",
+          "value": "FM 21-76 Survival"
+        },
+        {
+          "label": "Wikipedia",
+          "value": "Boiling"
+        }
+      ],
+      "_itemsNote": "Every chip is a document this film shows on screen later, so the card is a promise the rest of the cut keeps rather than a list written for a video. `FEMA Emergency Checklist` and `FM21-76 US Army Survival` are both rows in the FIELD LIBRARY sidebar on the `library-indexed` and `offline-library` plates; `wikipedia_en_simple_all_nopic — Boiling` is the third citation in the `sources-open` plate, which is the frame `check-the-sources` punches into.\n\nThe three publishers are named rather than hedged into \"reference material\", per MESSAGING.md. They are also deliberately NOT the villain: all three publish this for free and the card says so. The structural point is the last sentence of the narration — the document is free and the path to it is not yours — which is the \"structural, not moral\" framing the blog uses. It states the architecture and stops; `open` supplies the consequence one beat later with \"There is no signal.\"\n\nNo number is claimed. There is no outage statistic here because there is no sanctioned one; MESSAGING.md lists the numbers this company may quote and none of them are about networks."
+    },
+    {
       "id": "open",
       "kind": "intro",
-      "seconds": 4.5,
+      "seconds": 5,
       "title": "Just In Case",
       "caption": "Emergency knowledge, offline.",
       "narration": "There is no signal. How long do you boil creek water?",
       "mark": "./assets/app-icon.png",
-      "reveal": "paced"
+      "reveal": "paced",
+      "minSeconds": 4.6,
+      "transition": "hold",
+      "_transitionNote": "A hold, so the stakes card is not dissolved into the title but answered by it: `meta.holdSeconds` of bare ground, then the mark. The card before it ends on \"Reading it still takes a network\"; this one opens on \"There is no signal.\" The empty frame between them is the turn."
     },
     {
       "id": "first-launch",
@@ -140,11 +168,11 @@
             "landscape": {
               "x": 0,
               "y": 0,
-              "w": 0.538,
-              "h": 0.5
+              "w": 0.82,
+              "h": 0.7
             }
           },
-          "_focusNote": "The same rectangle as `welcome-empty`, deliberately: these two scenes are a before/after of one panel, and framing them identically is what turns `0 chunks · 0 files` into `11,490 chunks · 32 files` and `index empty` into `Ready · 32 docs` as a comparison the viewer can actually make. Different framings would have made it two unrelated shots.\n\nSame reason for h 0.5 — see the note on `welcome-empty`. At h 0.538 the caption-allowance offset slides the window down and halves the `Ready · 32 docs` pill, which is one of the two things this caption claims.\n\nDRIFT-DOWN keeps its authored motion and now has something to travel through. A drift STARTS at the focus, so `ci-video focus-preview --scene field-library --at start` is the frame that has to be checked: window 0.010..0.548, pill whole, `11,490 chunks · 32 files` legible. The `--at end` frame is 0.073..0.611 — the pill has scrolled off the top and four filenames have arrived at the bottom, which is the move doing its job. The full 0.063 of travel was taken, so this is not the headroom-starved case that renders dead still while the storyboard claims it moves.\n\nLANDSCAPE ONLY: in portrait the drawer opens full-bleed and the panel is already large.",
+          "_focusNote": "WIDENED FROM 0.538 x 0.50 AT (0, 0) TO 0.82 x 0.70, measured with `ci-video focus-preview` against the committed plate.\n\nThe old note said \"the same rectangle as `welcome-empty`, deliberately\" — a before/after of one panel, framed identically so `0 chunks · 0 files` against `11,490 chunks · 32 files` is a comparison the viewer can actually make. That was the right intent, and #63 broke it without noticing: it widened `welcome-empty` to 0.82 x 0.70 to stop the frame edge slicing the hero, and left this shot on the rectangle it had just declared broken. The two shots have not been the same rectangle since, and the note claiming they were is how it stayed hidden.\n\nWHAT IT LOOKED LIKE. A drift-down STARTS at its focus, and at 0.538 the start frame delivers plate x -0.001..0.562 against a hero block at x 0.425..0.765: \"JUS\", \"Offline emergency knowledge, groun\", \"aid, water, shelter, power, commun\", \"answ\" — four lines cut mid-glyph down the right canvas edge. Identical to the defect #63 wrote up on `welcome-empty`, on the plate one scene over.\n\n(0, 0, 0.82, 0.70) -> scale 1.574, honoured exactly, window 0.820 square from plate (-0.001, -0.001). It ends past the hero paragraph at 0.765 so nothing is cut, `11,490 chunks · 32 files` and the `Ready · 32 docs` pill are both whole and legible at 1.57x, and the rectangle is once again character-for-character the one on `welcome-empty` — so the before/after is a real comparison again.\n\nh 0.70 for the same reason it is 0.70 there: the window is square and sized by max(w, h), so h only moves the centre, and 0.70 keeps the window top above the plate rather than letting the caption-allowance offset slide it down onto the pill.\n\nDRIFT-DOWN keeps its authored motion and still has room — 0.18 of plate below the window against the 0.063 it travels, so it is not the headroom-starved case that renders dead still while the storyboard claims it moves.\n\nLANDSCAPE ONLY: in portrait the drawer opens full-bleed and the panel is already large.",
           "capture": {
             "path": "/?stage=ready",
             "waitFor": "#status-pill.ok",
@@ -204,12 +232,12 @@
           "focus": {
             "landscape": {
               "x": 0,
-              "y": 0.187,
-              "w": 0.538,
-              "h": 0.538
+              "y": 0,
+              "w": 0.82,
+              "h": 0.7
             }
           },
-          "_focusNote": "The caption has always said 'Eight categories, thirty-two documents' while the category headers sat at ~10px on a 1080-tall canvas — the claim was in the words and not in the picture. This lands on the shelf itself so SURVIVAL & PREPAREDNESS, ENGINEERING & WATER and their neighbours are legible, which is the whole point of a scene about breadth.\n\n0.54 square because that is the tightest the kit will honour: MAX_SCALE is 2.4 and the window is square in normalised coordinates, so anything smaller clamps and the framing stops being mine. Measured with `ci-video focus-preview`, not guessed.\n\nLANDSCAPE ONLY — in portrait the drawer is already full-bleed."
+          "_focusNote": "WIDENED FROM 0.538 SQUARE AT (0, 0.187) TO 0.82 x 0.70 AT (0, 0), measured with `ci-video focus-preview` against the committed plate.\n\nSame defect as `field-library` and for the same reason: any window tight enough to be honoured in 16:9 (0.538 is the floor, and on this plate it resolves to 0.606) starts at the left rail and therefore ends inside the hero block at plate x 0.425..0.765. The end frame read \"JUST IN\", \"grounded in the f\", \"communications, o\", \"answers cite the\" — a frame edge through four words. There is no placement that fixes it, because the subject starts at x 0; the only lever is asking for less, which is what #63 concluded on `welcome-empty`.\n\n(0, 0, 0.82, 0.70) -> scale 1.574, honoured exactly, window 0.820 square from plate (-0.001, -0.001). Nothing is cut at any edge. Above the caption band the frame holds `11,490 chunks · 32 files`, `FIELD LIBRARY 32`, ENGINEERING & WATER with all four of its documents, and COMMUNICATIONS with ARRL Emergency Comms — the filenames are ~1.6x their resting size and readable, which is the whole point of a scene about what is on the shelf.\n\nTHE CAPTION MOVED WITH IT. It read \"Eight categories. Medicine, water, power, food, comms.\" Eight categories are never on screen in any framing of this plate, and MEDICAL is above the scroll position the capture sets (`library-list.scrollTop = 640`) in both formats — so the count and the first subject were claims about the corpus being made over a picture that could not support either. The three subjects named now are `NREL PV Solar Systems`, `Handbook Of Gravity Flow Water Systems` / `Solar Disinfection Of Water`, and `ARRL Emergency Comms`, all whole and legible in both the landscape window and the portrait plate.\n\nLANDSCAPE ONLY — in portrait the drawer is already full-bleed."
         }
       ]
     },
@@ -219,8 +247,8 @@
       "chapter": "ask",
       "seconds": 6,
       "transition": "cut",
-      "_transitionNote": "The one place in this film where a cut is punctuation rather than damage control. It is the chapter boundary — `first-run` ends and `ask` begins — and the film had no cut at any chapter boundary at all: both existing cuts (`check-the-sources`, `no-network`) are there to stop a double-exposure ghost, so the grammar was being used only as a repair and never as an edit. The subject changes hard here too: the scene before ends full-bleed on the shelf's category headers, this one opens wide on the composer end of the app.",
-      "caption": "Water, burns, wounds, solar wiring, food — before you type a word.",
+      "_transitionNote": "The cut out of the title card and into the product, and the first frame of the app in the film. `open` holds on the mark and the question \"How long do you boil creek water?\"; this scene answers a different question — what can you even ask it — and answers it with the app's own suggestions rather than with a claim. A dissolve would soften a boundary that wants to be hard: the argument stops and the product starts.\n\n(It previously sat at the `first-run` -> `ask` chapter boundary and the note recorded that. The film no longer has a first-run section in front of the ask section, so the reason has changed even though the transition has not.)",
+      "caption": "Water, burns, a 72-hour kit — before you type a word.",
       "narration": "First aid, power, water, food. The suggestions come from the shelf itself.",
       "shots": [
         {
@@ -265,13 +293,8 @@
           "_pointerNote": "The chip 'How do I purify water in the field?' — a real control, the app's own SUGGESTED_PROMPTS button, and the first subject the caption names ('Water'). Clicking it is also the film's argument: you can ask this thing without typing.\n\nLANDSCAPE (0.400, 0.840): inside the pill, which spans x 0.337..0.482 by y 0.821..0.847 on the committed plate. Left of the pill's centre and low in it on purpose — the arrow's hotspot is its tip and its body hangs down-right, so this puts the body across the pill's lower edge instead of across the words. Inside the focus window (0.302..0.840 x 0.461..0.999), so the cursor is on canvas for the whole push rather than sliding off the end of it.\n\nPORTRAIT (0.288, 0.830): the same chip on the mobile plate, where it spans x 0.032..0.545 by y 0.815..0.845. Centred, because a phone frame gets a tap ripple and a ripple has no body to keep off the label.\n\nBoth measured off the committed PNGs at 0.05 gridding, not derived from the landscape numbers — the app is responsive and the chip is 51% of the width on mobile against 15% on desktop."
         }
       ],
-      "prosody": {
-        "rate": "+0%",
-        "pitch": "+0Hz",
-        "volume": "+0%"
-      },
-      "_prosodyNote": "Pinned NEUTRAL to match the eleven tracks already in this film. Kit 0.14.0 introduced per-kind default prosody, and 0.15.0 reports that every existing recording here was made before it — so a new line taking the new default would be the only one in the cut read at a different rate. The kit calls that acceptable and it is probably inaudible at -3%, but a film carrying two registers is a worse defect than a film carrying one slightly stale one.\n\nAdopting the new register is a real improvement and should happen — as `ci-video narrate --restyle` across all twelve lines, in its own change, where the re-recorded audio can be verified as a set. Not smuggled in under a content edit.",
-      "_captionNote": "Names ONLY what is in this frame. The first version read 'Burns, wounds, solar wiring, canning, radio, navigation' — and radio and navigation appear in no chip on screen. The shelf does carry ARRL Emergency Comms and FM3-25-26 Map Reading, so the words were true of the PRODUCT and false of the PICTURE, which is the exact defect the fleet review named when it warned not to let a count migrate into a caption. Caught by reading the rendered caption band, not the storyboard."
+      "_prosodyNote": "PIN REMOVED. It read \"Pinned NEUTRAL to match the eleven tracks already in this film\" — true when it was written, and false by the time this cut was assembled: eight of the thirteen lines here have since been recorded at the kit's per-kind register and only five were still neutral, so the pin was holding this scene to the minority. The whole set is now restyled together, which is what the old note said should happen and named the command for. Nothing about the words changed.",
+      "_captionNote": "REWRITTEN FOR THE 9:16 CUT, and this is the second time this caption has been caught naming things that are not in the picture. It read \"Water, burns, wounds, solar wiring, food — before you type a word\", which is true of the LANDSCAPE plate: six chips, and all five subjects among them. The mobile plate renders three — `.chip-extra { display: none }` under 620px — and they are \"How do I purify water in the field?\", \"First aid for a severe burn\" and \"Build a 72-hour emergency kit\". So in the portrait cut the caption enumerated five subjects over a frame holding two of them. Verified against `suggestions.mobile.png`, not inferred from the CSS.\n\nThe three named now are the three chips that survive to portrait, so the caption is true of both cuts and no longer depends on which viewport the viewer got. The note this replaces recorded the same defect one revision earlier (\"radio and navigation appear in no chip on screen\") — the caption was fixed for the plate it was checked against and then not checked against the other one.\n\nThe narration is unchanged and is deliberately NOT the same list: \"First aid, power, water, food. The suggestions come from the shelf itself.\" That sentence enumerates the SHELF, and says so in its second clause — power is NREL PV Solar Systems, food is Manual Of Gardening Bailey, both real rows in the library. A caption points at the frame; this line points at the corpus."
     },
     {
       "id": "type-a-question",
@@ -458,7 +481,7 @@
       "chapter": "offline",
       "seconds": 6,
       "transition": "cut",
-      "_transitionNote": "Same reason check-the-sources cuts: the scene before it ends full-bleed on this very app screen at nearly the same scale, and a half-second cross-dissolve between two shots of the SAME screen renders as a double-exposure ghost of overlapping body copy rather than as a transition. AUTHORING.md predicts it; the focus on the outgoing scene is what makes it unmissable.",
+      "_transitionNote": "The chapter boundary — `first-run` ends and `offline` begins — and the hardest subject change in the film: the three scenes before it build a shelf, this one takes the network away and shows that nothing on that shelf moved. The three first-run beats dissolve into each other because they are one continuous section; the cut is what marks the section ending. (It was authored as a ghost guard against `check-the-sources`, which used to precede it and ended full-bleed on the same app screen at the same scale. That neighbour has changed. `library-shelf` ends at 1.574 and this scene opens at 1.0, so there is no double exposure to guard against any more — the cut is now punctuation on its own account.)",
       "caption": "No connection. Wikipedia, on the box, in the answers.",
       "narration": "The network is gone and nothing changes. The encyclopedia is on the box too.",
       "shots": [
@@ -583,7 +606,9 @@
       "cta": "UnCloud your life.",
       "url": "ci.computer",
       "narration": "Just In Case, from Companion Intelligence. UnCloud your life.",
-      "mark": "brand:logo.full"
+      "mark": "brand:logo.full",
+      "transition": "hold",
+      "_transitionNote": "A hold, and it is doing two jobs. Editorially it is the last breath of the film: the four tally chips land, the frame goes to bare ground for `meta.holdSeconds`, and the CTA arrives on its own. Mechanically it removes the only overlap `check` flags in either format — at a cross-dissolve the recap chips were still on screen across the CTA at t=64.08s, reported as content_overlap in both cuts, because `reveal: \"paced\"` now spreads four chips across a 6.1s read and the last of them lands inside the dissolve. A hold is the fix that is also the better edit."
     }
   ]
 }
