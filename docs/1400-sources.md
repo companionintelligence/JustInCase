@@ -2,7 +2,7 @@
 
 > **JustInCase (JIC)** is designed to operate completely offline during infrastructure failure, network blackouts, or remote deployments.
 
-This document details the active 94-source catalog specified in [`sources.yaml`](../sources.yaml), how datasets are categorized, and how large-scale content archives (Kiwix ZIMs and KA-Lite media packs) are distributed via BitTorrent and tiered profiles.
+This document details the active 115-source catalog specified in [`sources.yaml`](../sources.yaml), how datasets are categorized, and how large-scale content archives (Kiwix ZIMs and KA-Lite media packs) are distributed via BitTorrent and tiered profiles.
 
 ---
 
@@ -20,20 +20,22 @@ Content acquisition in JIC is organized into tiered profiles in [`helper-scripts
 
 ---
 
-## 2. Active Manifest Structure (94 Verified Sources)
+## 2. Active Manifest Structure (115 Verified Sources)
 
-### `100_Survival` — Survival & Disaster Preparedness (12 sources)
+### `100_Survival` — Survival & Disaster Preparedness (17 sources)
 * **FEMA Emergency Supply Checklist** & **Financial First Aid Kit** (Ready.gov / FEMA)
-* **US Army FM 21-76 Survival Manual** (Shelter, water, foraging, trapping)
+* **US Army FM 21-76 Survival Manual** & **FM 21-76-1 Survival, Evasion, Recovery**
 * **US Army FM 3-25.26 Map Reading & Land Navigation**
 * **Nuclear War Survival Skills** (Cresson H. Kearney, Oak Ridge National Laboratory)
 * **NWS Weather Spotter's Field Guide** (NOAA / National Weather Service)
 * **EPA Emergency Disinfection of Drinking Water** & **Household Wells**
 * **FM 5-103 Survivability** (Field fortifications, bunkers, blast shelters)
 * **FEMA CERT Basic Training Manual** (Community Emergency Response Team)
+* **TC 21-3 Cold Weather Survival** & **AFM 64-5 Aircrew Search & Rescue**
+* **FEMA P-320 Taking Shelter From The Storm**
 * Historical & wilderness field guides (Camp Life in the Woods, Shelters & Shanties)
 
-### `200_Medical` — Austere, Tactical & Emergency Medicine (13 sources)
+### `200_Medical` — Austere, Tactical & Emergency Medicine (17 sources)
 * **Where There Is No Doctor / Dentist / Women Have No Doctor** (Hesperian Health Guides)
 * **US Army FM 4-25.11 First Aid** & **TC 4-02.3 Field Hygiene and Sanitation**
 * **Emergency War Surgery, 5th Edition** (Borden Institute)
@@ -41,20 +43,24 @@ Content acquisition in JIC is organized into tiered profiles in [`helper-scripts
 * **Psychological First Aid (PFA) Field Operations Guide** (NCTSN / NCPTSD)
 * **Special Operations Forces Medical Handbook (ST 31-91B)**
 * **US Public Health Emergency Childbirth Manual**
+* **FM 8-51 Combat Stress Control** & **FM 8-285 Chemical/Nuclear Casualty Treatment**
+* **AMEDD Field Dental Emergencies** & **US Navy Diving Medicine Rev 7**
 
-### `300_Food` — Food Production, Agriculture & Preservation (11 sources)
+### `300_Food` — Food Production, Agriculture & Preservation (14 sources)
 * **USDA Complete Guide to Home Canning** (2015 revision, all 7 guides)
 * **Manual of Gardening, 2nd ed.** (L.H. Bailey)
 * **Peace Corps ICE Manual Series**:
   * *Traditional Field Crops* (M-13)
+  * *Small Farm Crop Production* (M-4)
   * *Soils, Crops and Fertilizer Use*
   * *Small Farm Grain Storage* (M-2)
   * *Animal Traction* (M-12)
   * *Freshwater Fish Pond Culture and Management*
   * *Small Scale Beekeeping*
 * **USDA Commercial & Homestead Storage of Garden Produce, Fruits, Meat & Poultry**
+* **FAO Edible Wild Plants** & **USDA Nutritive Value of Foods (HB 72)**
 
-### `400_Engineering` — Water, Power, Sanitation & Mechanics (20 sources)
+### `400_Engineering` — Water, Power, Sanitation & Mechanics (23 sources)
 * **NREL Photovoltaic Solar Resource of the United States**
 * **VITA Village Technology Handbook** (Appropriate Technology Library)
 * **Handbook of Gravity-Flow Water Systems** (Jordan) & **Solar Disinfection of Water (SODIS)**
@@ -66,8 +72,11 @@ Content acquisition in JIC is organized into tiered profiles in [`helper-scripts
   * *FM 5-426 Carpentry* & *FM 5-125 Rigging Techniques*
   * *FM 5-420 Plumbing and Pipefitting*
   * *FM 5-430 Roads, Airfields, and Heliports*
+  * *FM 5-480 Field Water Supply (Well Drilling & Purification)*
+  * *FM 5-412 Project Management & Construction Engineering*
   * *TM 5-685 Operation, Maintenance and Repair of Generators*
 * **US Navy Rate Training Manuals**: *Tools and Their Uses*, *Construction Electrician 3 & 2*
+* **VITA Small-Scale Biogas Digester Design**
 * **Bureau of Reclamation**: *FIST 3-30 Transformer Maintenance*
 * **EPA Point-of-Use Water Treatment** & **DOE Small Wind Electric Systems**
 

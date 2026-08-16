@@ -10,17 +10,17 @@ echo "You must place GGUF files in ./gguf_models/ first."
 echo ""
 
 # ── Configurable via environment ─────────────────────────────────────
-LLM_FILE="${LLM_GGUF_FILE:-Llama-3.2-3B-Instruct-Q4_K_M.gguf}"
-LLM_REPO="${LLM_GGUF_REPO:-bartowski/Llama-3.2-3B-Instruct-GGUF}"
+LLM_FILE="${LLM_GGUF_FILE:-gemma-4-E4B-it-Q4_0.gguf}"
+LLM_REPO="${LLM_GGUF_REPO:-ggml-org/gemma-4-E4B-it-GGUF}"
 LLM_URL="https://huggingface.co/${LLM_REPO}/resolve/main/${LLM_FILE}"
 
-NOMIC_FILE="${EMBEDDING_GGUF_FILE:-nomic-embed-text-v1.5.Q4_K_M.gguf}"
-NOMIC_REPO="${NOMIC_GGUF_REPO:-nomic-ai/nomic-embed-text-v1.5-GGUF}"
-NOMIC_URL="https://huggingface.co/${NOMIC_REPO}/resolve/main/${NOMIC_FILE}"
+EMBEDDING_FILE="${EMBEDDING_GGUF_FILE:-embeddinggemma-300M-qat-Q4_0.gguf}"
+EMBEDDING_REPO="${EMBEDDING_GGUF_REPO:-ggml-org/embeddinggemma-300M-qat-q4_0-GGUF}"
+EMBEDDING_URL="https://huggingface.co/${EMBEDDING_REPO}/resolve/main/${EMBEDDING_FILE}"
 
 echo "Required models:"
-echo "  LLM        : ${LLM_FILE}  (~2.0 GB)"
-echo "  Embeddings : ${NOMIC_FILE}  (~84 MB)"
+echo "  LLM        : ${LLM_FILE}  (~4.3 GB, Google Gemma 4 E4B Mobile - https://ai.google.dev/gemma/docs/core)"
+echo "  Embeddings : ${EMBEDDING_FILE}  (~265 MB, Gemini Embedding 2 / EmbeddingGemma)"
 echo ""
 
 mkdir -p gguf_models
@@ -68,15 +68,15 @@ else
 fi
 
 # ── Embedding model ──────────────────────────────────────────────────
-if [[ -f "gguf_models/${NOMIC_FILE}" ]]; then
-    echo "✅  Embedding model already present: ${NOMIC_FILE}"
+if [[ -f "gguf_models/${EMBEDDING_FILE}" ]]; then
+    echo "✅  Embedding model already present: ${EMBEDDING_FILE}"
 else
-    echo "📥  Downloading embeddings: ${NOMIC_FILE}"
-    echo "    From: ${NOMIC_URL}"
+    echo "📥  Downloading embeddings: ${EMBEDDING_FILE}"
+    echo "    From: ${EMBEDDING_URL}"
     echo ""
-    download "${NOMIC_URL}" "gguf_models/${NOMIC_FILE}"
+    download "${EMBEDDING_URL}" "gguf_models/${EMBEDDING_FILE}"
     echo ""
-    echo "✅  Downloaded ${NOMIC_FILE}"
+    echo "✅  Downloaded ${EMBEDDING_FILE}"
 fi
 
 echo ""
