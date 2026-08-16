@@ -632,6 +632,232 @@ sources:
     basis: published 1896; US copyright expired
     size: ~13 MB
 
+  # ── 100 Survival (Additional Curated) ─────────────────────────────
+  - url: https://archive.org/download/milmanual-fm-5-103-survivability/fm_5-103_survivability.pdf
+    filename: FM5-103-Survivability.pdf
+    category: 100_Survival
+    title: "FM 5-103 — Survivability (Bunkers, Fortifications & Shelters)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~12 MB
+
+  - url: https://archive.org/download/fema-cert-participant-manual/cert_basic_training_participant_manual_2020.pdf
+    filename: FEMA-CERT-Basic-Training-Manual.pdf
+    category: 100_Survival
+    title: "FEMA — Community Emergency Response Team (CERT) Basic Training Manual"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (FEMA)
+    size: ~8.5 MB
+
+  # ── 200 Medical (Additional Curated) ──────────────────────────────
+  - url: https://archive.org/download/SpecialOperationsForcesMedicalHandbook/SOF_Medical_Handbook.pdf
+    filename: Special-Operations-Forces-Medical-Handbook.pdf
+    category: 200_Medical
+    title: "Special Operations Forces Medical Handbook (ST 31-91B)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~15 MB
+
+  - url: https://archive.org/download/emergency-childbirth-manual/emergency_childbirth_manual.pdf
+    filename: Emergency-Childbirth-Manual-US-Public-Health.pdf
+    category: 200_Medical
+    title: "Emergency Childbirth Manual (US Public Health Service)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: US Public Health Service publication
+    size: ~2.1 MB
+
+  # ── 400 Engineering (Additional Curated) ──────────────────────────
+  - url: https://archive.org/download/milmanual-fm-5-420-plumbing-and-pipefitting/fm_5-420_plumbing_and_pipefitting.pdf
+    filename: FM5-420-Plumbing-And-Pipefitting.pdf
+    category: 400_Engineering
+    title: "FM 5-420 — Plumbing and Pipefitting (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~14 MB
+
+  - url: https://archive.org/download/milmanual-fm-5-430-00-1-planning-and-design-of-roads-airfields-and-hel/fm_5-430-00-1_planning_and_design_of_roads_airfields_and_heliports_in_the_theater_of_operations_airfield_and_heliport_design.pdf
+    filename: FM5-430-Roads-And-Airfields.pdf
+    category: 400_Engineering
+    title: "FM 5-430 — Planning and Design of Roads, Airfields, and Heliports"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~18 MB
+
+  # ── 500 Communications (Additional Curated) ───────────────────────
+  - url: https://archive.org/download/milmanual-fm-24-18-tactical-single-channel-radio-communications-techniques/fm_24-18_tactical_single-channel_radio_communications_techniques.pdf
+    filename: FM24-18-Tactical-Radio-Comms.pdf
+    category: 500_Comms
+    title: "FM 24-18 — Tactical Single-Channel Radio Communications Techniques"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~9 MB
+
+  - url: https://archive.org/download/milmanual-fm-24-19-radio-operators-handbook/fm_24-19_radio_operators_handbook.pdf
+    filename: FM24-19-Radio-Operators-Handbook.pdf
+    category: 500_Comms
+    title: "FM 24-19 — Radio Operator's Handbook (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~7 MB
+
+  # ── 600 Education (Additional Curated) ────────────────────────────
+  - url: https://assets.openstax.org/oscms-prodcms/media/documents/AnatomyandPhysiology2e-WEB.pdf
+    filename: OpenStax-Anatomy-And-Physiology-2e.pdf
+    category: 600_Education
+    title: "OpenStax — Anatomy and Physiology 2e"
+    license: CC BY 4.0
+    redistribution: clean
+    size: ~88 MB
+
+  - url: https://assets.openstax.org/oscms-prodcms/media/documents/CollegePhysics2e-WEB.pdf
+    filename: OpenStax-College-Physics-2e.pdf
+    category: 600_Education
+    title: "OpenStax — College Physics 2e"
+    license: CC BY 4.0
+    redistribution: clean
+    size: ~92 MB
+
+  - url: https://assets.openstax.org/oscms-prodcms/media/documents/Chemistry2e-WEB.pdf
+    filename: OpenStax-Chemistry-2e.pdf
+    category: 600_Education
+    title: "OpenStax — Chemistry 2e"
+    license: CC BY 4.0
+    redistribution: clean
+    size: ~85 MB
+
+  # ── Zims_Medical (Kiwix Emergency & Medical ZIMs) ─────────────────
+  - url: https://download.kiwix.org/zim/other/mdwiki_en_all_2024-06.zim.torrent
+    filename: mdwiki_en_all_2024-06.zim.torrent
+    category: Zims_Medical
+    title: "MDWiki (Internet-in-a-Box Medical Encyclopedia) [Torrent]"
+    license: CC BY-SA 4.0
+    redistribution: clean
+    size: ~8.6 GB
+
+  - url: https://download.kiwix.org/zim/wikipedia/wikipedia_en_medicine_maxi_2024-04.zim.torrent
+    filename: wikipedia_en_medicine_maxi_2024-04.zim.torrent
+    category: Zims_Medical
+    title: "Wikipedia Medicine (Clinical & Healthcare Maxi) [Torrent]"
+    license: CC BY-SA 4.0
+    redistribution: clean
+    size: ~1.8 GB
+
+  - url: https://download.kiwix.org/zim/other/medlineplus.gov_en_all_2024-10.zim.torrent
+    filename: medlineplus.gov_en_all_2024-10.zim.torrent
+    category: Zims_Medical
+    title: "MedlinePlus Health & Drug Encyclopedia [Torrent]"
+    license: PD / Free (US NLM)
+    redistribution: clean
+    size: ~1.8 GB
+
+  - url: https://download.kiwix.org/zim/other/fas-military-medicine_en_2024-06.zim.torrent
+    filename: fas-military-medicine_en_2024-06.zim.torrent
+    category: Zims_Medical
+    title: "FAS Military & Tactical Medicine Reference [Torrent]"
+    license: PD (US Government)
+    redistribution: clean
+    size: ~81 MB
+
+  - url: https://download.kiwix.org/zim/other/zimgit-medicine_en_2024-08.zim.torrent
+    filename: zimgit-medicine_en_2024-08.zim.torrent
+    category: Zims_Medical
+    title: "Global Health Emergency Medicine ZIM [Torrent]"
+    license: CC BY-SA 4.0
+    redistribution: clean
+    size: ~70 MB
+
+  # ── Zims_Survival (Kiwix Emergency & Survival ZIMs) ───────────────
+  - url: https://download.kiwix.org/zim/other/www.ready.gov_en_2024-09.zim.torrent
+    filename: www.ready.gov_en_2024-09.zim.torrent
+    category: Zims_Survival
+    title: "Ready.gov Official Emergency Preparedness ZIM [Torrent]"
+    license: PD (US Government)
+    redistribution: clean
+    size: ~4.9 GB
+
+  - url: https://download.kiwix.org/zim/ted/ted_mul_natural-disaster_2024-11.zim.torrent
+    filename: ted_mul_natural-disaster_2024-11.zim.torrent
+    category: Zims_Survival
+    title: "TED Talks — Natural Disasters & Crisis Management [Torrent]"
+    license: CC BY-NC-ND 4.0
+    redistribution: clean
+    size: ~560 MB
+
+  # ── Zims_Engineering (Kiwix Repair & Sustainability ZIMs) ────────
+  - url: https://download.kiwix.org/zim/ifixit/ifixit_en_all_2024-09.zim.torrent
+    filename: ifixit_en_all_2024-09.zim.torrent
+    category: Zims_Engineering
+    title: "iFixit Repair Manuals & Teardowns ZIM [Torrent]"
+    license: CC BY-NC-SA 3.0
+    redistribution: clean
+    size: ~3.2 GB
+
+  - url: https://download.kiwix.org/zim/stack_exchange/sustainability.stackexchange.com_en_all_2024-11.zim.torrent
+    filename: sustainability.stackexchange.com_en_all_2024-11.zim.torrent
+    category: Zims_Engineering
+    title: "Sustainability StackExchange Archive [Torrent]"
+    license: CC BY-SA 4.0
+    redistribution: clean
+    size: ~20 MB
+
+  - url: https://download.kiwix.org/zim/other/openstreetmap-wiki_en_all_maxi_2023-05.zim.torrent
+    filename: openstreetmap-wiki_en_all_maxi_2023-05.zim.torrent
+    category: Zims_Engineering
+    title: "OpenStreetMap Complete Mapping Wiki [Torrent]"
+    license: CC BY-SA 2.0
+    redistribution: clean
+    size: ~932 MB
+
+  # ── Zims_Encyclopedia (Kiwix Full Knowledge ZIMs) ─────────────────
+  - url: https://download.kiwix.org/zim/wikipedia/wikipedia_en_all_maxi_2024-01.zim.torrent
+    filename: wikipedia_en_all_maxi_2024-01.zim.torrent
+    category: Zims_Encyclopedia
+    title: "English Wikipedia (Complete Maxi with Images) [Torrent]"
+    license: CC BY-SA 4.0
+    redistribution: clean
+    size: ~110 GB
+
+  - url: https://download.kiwix.org/zim/gutenberg/gutenberg_en_all_2023-08.zim.torrent
+    filename: gutenberg_en_all_2023-08.zim.torrent
+    category: Zims_Literature
+    title: "Project Gutenberg Complete Ebook Library (70k books) [Torrent]"
+    license: PD (Project Gutenberg)
+    redistribution: clean
+    size: ~77 GB
+
+  - url: https://download.kiwix.org/zim/wikihow/wikihow_en_maxi_2023-03.zim.torrent
+    filename: wikihow_en_maxi_2023-03.zim.torrent
+    category: Zims_HowTo
+    title: "WikiHow Complete Illustrated Guides [Torrent]"
+    license: CC BY-NC-SA 3.0
+    redistribution: clean
+    size: ~51 GB
+
+  - url: https://download.kiwix.org/zim/ted/ted_mul_farming_2024-10.zim.torrent
+    filename: ted_mul_farming_2024-10.zim.torrent
+    category: Zims_Agriculture
+    title: "TED Talks — Sustainable Agriculture & Farming [Torrent]"
+    license: CC BY-NC-ND 4.0
+    redistribution: clean
+    size: ~746 MB
+
+  # ── Videos_KALite (KA-Lite Educational Media Archive) ─────────────
+  - url: https://archive.org/details/kalite_content_pack.torrent
+    filename: kalite_content_pack.torrent
+    category: Videos_KALite
+    title: "KA-Lite Complete Video & Thumbnail Pack (15,414 files) [Torrent]"
+    license: CC BY-NC-SA 3.0 (Khan Academy)
+    redistribution: clean
+    size: ~40 GB
+
 # ══════════════════════════════════════════════════════════════════════
 # External resources — valuable but NOT auto-fetched (too large, not
 # PDF/TXT, or needs a dedicated reader).  See docs/1400-sources.md.
