@@ -1,86 +1,123 @@
-## Data Sources - Ideal
+# High-Value Data Sources & Manifest Architecture
 
-Note: Verify licenses and redistribution rights before mirroring or bundling content.
+> **JustInCase (JIC)** is designed to operate completely offline during infrastructure failure, network blackouts, or remote deployments.
 
-### **1. Official Emergency Services & Alerts**
-- **Local & National Emergency Hotlines** (911, 112, etc.)
-- **Weather Alerts & Disaster Warnings** (NOAA, National Weather Service, Tsunami Warning Centers)
-- **Civil Defense & Government Announcements** (FEMA, Ready.gov, CDC, WHO)
-- **Fire & Evacuation Alerts** (CalFire, local fire departments)
+This document details the active 94-source catalog specified in [`sources.yaml`](../sources.yaml), how datasets are categorized, and how large-scale content archives (Kiwix ZIMs and KA-Lite media packs) are distributed via BitTorrent and tiered profiles.
 
-### **2. Mapping, Navigation & Infrastructure Status**
-- **Offline Maps & Evacuation Routes** (OpenStreetMap, Google Maps offline, paper maps)
-- **Traffic & Road Conditions** (Waze, DOT road closures, public transit alerts)
-- **Shelter & Safe Zone Locations** (Red Cross shelter maps, community resources)
-- **Fuel & Charging Station Locators** (GasBuddy, EV charging networks)
+---
 
-### **3. First Aid & Medical Information**
-- **Basic First Aid & CPR Guides** (Red Cross, St. John Ambulance, WHO)
-- **Poison Control & Toxic Exposure Databases** (Poison Control Center, Toxnet)
-- **Medication & Treatment References** (Mayo Clinic, MedlinePlus, offline pharmacology guides)
-- **Herbal & Improvised Medicine References** (Survival medicine handbooks, herbal remedy guides)
+## 1. Catalog Tier Profiles
 
-### **4. Survival & Emergency Preparedness Guides**
-- **Wilderness Survival Guides** (SAS Survival Handbook, US Army Survival Field Manual)
-- **Home Preparedness & Disaster Response Plans** (FEMA, CDC emergency checklists)
-- **Food & Water Safety Information** (Safe water treatment guides, shelf-stable food lists)
-- **Radiation & Chemical Exposure Safety** (IAEA, CDC, OSHA Hazmat guides)
+Content acquisition in JIC is organized into tiered profiles in [`helper-scripts/fetch-source-data.sh`](../helper-scripts/fetch-source-data.sh):
 
-### **5. Communication & Coordination Resources**
-- **Emergency Radio Frequencies** (NOAA weather radio, HAM radio emergency frequencies)
-- **Offline Contact Lists & Family Emergency Plans** (Printed emergency contacts, agreed meeting points)
-- **Crowdsourced SOS & Disaster Response Platforms** (Zello, Ushahidi, CrisisMappers)
-- **Translation & Language Resources** (Offline dictionaries, emergency phrases in multiple languages)
+| Profile | Target Footprint | Contents & Purpose | Fetch Command |
+|---|---|---|---|
+| **`core`** *(default)* | ~350 MB | Curated emergency PDFs and TXTs across all 9 primary functional categories. High priority, license-clean, fast download. | `./helper-scripts/fetch-source-data.sh --profile core` |
+| **`emergency-zims`** | ~20 GB | High-utility Kiwix `.zim` archives (MDWiki, Ready.gov, iFixit Repair Guides, Wikipedia Medicine, MedlinePlus, FAS Military Medicine, Sustainability). | `./helper-scripts/fetch-source-data.sh --profile emergency-zims` |
+| **`full-zims`** | ~240 GB | Full-scale encyclopedic archives (English Wikipedia Maxi 110 GB, Project Gutenberg 77 GB / 70k books, WikiHow Complete 51 GB, TED Talks). | `./helper-scripts/fetch-source-data.sh --profile full-zims` |
+| **`kalite`** | ~40 GB | Khan Academy Lite (KA-Lite) consolidated educational media library (15,414 instructional MP4 videos and thumbnails). | `./helper-scripts/fetch-source-data.sh --profile kalite` |
+| **`all`** | ~300 GB | Complete offline survival, medical, engineering, and human knowledge repository. | `./helper-scripts/fetch-source-data.sh --profile all` |
 
-### **6. Legal, Identification & Financial Resources**
-- **Copies of Personal Documents & Identification** (Passport, IDs, medical records, home insurance)
-- **Banking & Cash Alternatives** (Bitcoin/Litecoin offline wallets, barter guidelines)
-- **Legal Rights & Government Emergency Policies** (Martial law guides, international refugee support contacts)
+---
 
-### **7. Community & Social Support Resources**
-- **Local Mutual Aid Networks** (Community emergency groups, informal food sharing networks)
-- **Relief Organizations & NGOs** (Red Cross, Doctors Without Borders, World Food Programme)
-- **Local Knowledge & Cultural Survival Guides** (Indigenous survival knowledge, regional-specific resources)
+## 2. Active Manifest Structure (94 Verified Sources)
 
-### **8. Digital & Offline Libraries for Reference**
-- **Offline Wikipedia & Survival Knowledge Archives** (Kiwix, The Internet in a Box)
-- **LLM/AI-Based Knowledge Repositories** (Pre-downloaded AI chatbot models, survival Q&A databases)
-- **Practical DIY & Engineering Resources** (Low-tech Magazine, HowStuffWorks offline copies)
+### `100_Survival` — Survival & Disaster Preparedness (12 sources)
+* **FEMA Emergency Supply Checklist** & **Financial First Aid Kit** (Ready.gov / FEMA)
+* **US Army FM 21-76 Survival Manual** (Shelter, water, foraging, trapping)
+* **US Army FM 3-25.26 Map Reading & Land Navigation**
+* **Nuclear War Survival Skills** (Cresson H. Kearney, Oak Ridge National Laboratory)
+* **NWS Weather Spotter's Field Guide** (NOAA / National Weather Service)
+* **EPA Emergency Disinfection of Drinking Water** & **Household Wells**
+* **FM 5-103 Survivability** (Field fortifications, bunkers, blast shelters)
+* **FEMA CERT Basic Training Manual** (Community Emergency Response Team)
+* Historical & wilderness field guides (Camp Life in the Woods, Shelters & Shanties)
 
-## Existing efforts
+### `200_Medical` — Austere, Tactical & Emergency Medicine (13 sources)
+* **Where There Is No Doctor / Dentist / Women Have No Doctor** (Hesperian Health Guides)
+* **US Army FM 4-25.11 First Aid** & **TC 4-02.3 Field Hygiene and Sanitation**
+* **Emergency War Surgery, 5th Edition** (Borden Institute)
+* **Survival and Austere Medicine: An Introduction, 3rd Ed.** (Austere Medicine Group)
+* **Psychological First Aid (PFA) Field Operations Guide** (NCTSN / NCPTSD)
+* **Special Operations Forces Medical Handbook (ST 31-91B)**
+* **US Public Health Emergency Childbirth Manual**
 
-Existing efforts include:
+### `300_Food` — Food Production, Agriculture & Preservation (11 sources)
+* **USDA Complete Guide to Home Canning** (2015 revision, all 7 guides)
+* **Manual of Gardening, 2nd ed.** (L.H. Bailey)
+* **Peace Corps ICE Manual Series**:
+  * *Traditional Field Crops* (M-13)
+  * *Soils, Crops and Fertilizer Use*
+  * *Small Farm Grain Storage* (M-2)
+  * *Animal Traction* (M-12)
+  * *Freshwater Fish Pond Culture and Management*
+  * *Small Scale Beekeeping*
+* **USDA Commercial & Homestead Storage of Garden Produce, Fruits, Meat & Poultry**
 
-1. [Kiwix](https://kiwix.org) ... an offline reader for web based content with offline copies of wikipedia, Project Gutenberg, Wikihow, videos on emergency and military medicine, information about common drugs, prepper package for "SHTF" needs.
+### `400_Engineering` — Water, Power, Sanitation & Mechanics (20 sources)
+* **NREL Photovoltaic Solar Resource of the United States**
+* **VITA Village Technology Handbook** (Appropriate Technology Library)
+* **Handbook of Gravity-Flow Water Systems** (Jordan) & **Solar Disinfection of Water (SODIS)**
+* **US Army Technical Manuals (TM)**:
+  * *TM 9-243 Use and Care of Hand Tools and Measuring Tools*
+  * *TM 9-237 Welding Theory and Application*
+  * *TC 9-524 Fundamentals of Machine Tools*
+  * *FM 5-499 Hydraulics* & *FM 5-424 Theater of Operations Electrical Systems*
+  * *FM 5-426 Carpentry* & *FM 5-125 Rigging Techniques*
+  * *FM 5-420 Plumbing and Pipefitting*
+  * *FM 5-430 Roads, Airfields, and Heliports*
+  * *TM 5-685 Operation, Maintenance and Repair of Generators*
+* **US Navy Rate Training Manuals**: *Tools and Their Uses*, *Construction Electrician 3 & 2*
+* **Bureau of Reclamation**: *FIST 3-30 Transformer Maintenance*
+* **EPA Point-of-Use Water Treatment** & **DOE Small Wind Electric Systems**
 
-2. [Internet-in-a-box](https://internet-in-a-box.org) ... a Raspberry PI centered system that creates a local Wi-Fi hotspot serving offline content. Loaded with Kiwix based content and additional educational materials.
+### `500_Comms` — Emergency Communications & Radio (6 sources)
+* **ARRL Emergency Communications Handbook**
+* **CISA National Interoperability Field Operations Guide (NIFOG v2.02)**
+* **CISA Auxiliary Communications Field Operations Guide (AUXFOG)**
+* **FCC 47 CFR Part 97 — Amateur Radio Service Rules**
+* **US Army FM 24-18 Tactical Single-Channel Radio Communications Techniques**
+* **US Army FM 24-19 Radio Operator's Handbook**
 
-3. [RACHEL](https://rachel.worldpossible.org) ... another offline content server and hotspot, designed for schools or remote learning. Features Khan Academy Lite, Wikipedia for Schools, Project Gutenberg, medical resources, educational software.
+### `600_Education` — Open Science & Math Textbooks (4 sources)
+* **OpenStax Elementary Algebra 2e**
+* **OpenStax Anatomy and Physiology 2e**
+* **OpenStax College Physics 2e**
+* **OpenStax Chemistry 2e**
 
-4. [Kolibri](https://learningequality.org/kolibri/about-kolibri/) ... an open-source learning platform focused on offline distribution of educational content (videos, exercises, e-books). Offers a structured / formal approach to delivering courses, lessons, and content packs, including Khan Academy videos organized by subject and grade level as well as interactive exercises.
+### `700_Social` & `800_Software` — Civic Foundations & Technical References (8 sources)
+* **Universal Declaration of Human Rights**, **US Constitution**, **The Federalist Papers**, **King James Bible**
+* **Think Python 2e**, **Think OS**, **Eloquent JavaScript 3e**, **Pro Git 2e**
 
-5. [CD3WD](https://en.wikipedia.org/wiki/CD3WD) ... a large collection of public-domain or open-licensed PDFs, manuals, and guides for agriculture, water, construction, engineering, and basic healthcare—originally compiled for developing regions. Lots of practical documents on small-scale farming, well drilling, appropriate technology, etc. Some are older or outdated, but still very relevant for low-tech or off-grid scenarios. Perfect for a “rebuild civilization” library: includes practical “how-to” info you won’t easily find in mainstream survival guides.
+### `900_Transport` — Vehicles, Marine & Mobility (7 sources)
+* **TM 9-8000 Principles of Automotive Vehicles** & **FM 21-305 Wheeled Vehicle Driver**
+* **FM 20-22 Vehicle Recovery Operations**
+* **NAVEDTRA 14050 Construction Mechanic, Advanced**
+* **USCG Boat Crew Handbooks**: *Seamanship Fundamentals* & *Navigation and Piloting*
+* **Bicycle Repairing** (S.D.V. Burr)
 
-6. [Appropriate Technology Library by Village Earth](https://villageearth.org/home/appropriate-technology-library) ... a huge compilation (tens of thousands of pages) of resources on low-cost, locally-sustainable solutions. Covers agriculture, food processing, renewable energy, water/sanitation, health, and more, often sourced from institutions like Peace Corps, FAO, WHO, etc. If you want to focus heavily on rebuilding with minimal tech or locally available resources, this set of documents is pure gold.
+---
 
-7. [Project Gutenberg](https://www.gutenberg.org) ... the oldest and best known digital library of public-domain books. While mostly classic literature, it also includes older reference works, historical texts, and some scientific/technical publications that have fallen into the public domain. Great if you want to add cultural/literary or historical texts to your offline library, all legally free to redistribute.
+## 3. Large-Scale Offline Media Archives
 
-8. [Internet Archive](https://archive.org) ... the canonical 'backup of the Internet'. You'll have to be selective but there are many scanned books, texts and videos including government provided PDFs on first aid, disaster response, agricultural services, WHO, CDC, Red Cross guides for medical and disease treatment. USDA agricultural handbooks. Academic Open Access resources. Libretex. OpenStax (Rice University free textbooks). In some cases some of these materials are not open source.
+### Kiwix `.zim` Archives (Direct Upstream Torrents)
+All official Kiwix `.zim` archives are mirrored and seeded upstream at `https://download.kiwix.org/zim/`. JIC indexes official `.torrent` files for:
+* **Medical:** MDWiki (8.6 GB), Wikipedia Medicine (1.8 GB), MedlinePlus (1.8 GB), FAS Military Medicine (81 MB), Global Health Medicine (70 MB)
+* **Survival & Repair:** Ready.gov ZIM (4.9 GB), iFixit Manuals (3.2 GB), Sustainability StackExchange (20 MB), OSM Wiki (932 MB)
+* **Comprehensive Encyclopedias:** English Wikipedia Maxi (110 GB), Project Gutenberg (77 GB), WikiHow Complete (51 GB), TED Talks (1.3 GB)
 
-9. Other Niche Prepper Libraries ... You can find various “prepper PDF libraries” scattered across the Internet (on forums or specialized websites). They often include older US military field manuals, survival books, NBC (nuclear/biological/chemical) guides, homesteading, medical references, etc. Many such archives are compiled by individuals or small groups and shared via torrent or direct download. Just be mindful of licensing and the quality of materials (some are public domain, some are not). Often these are bundled with hardware solutions as well. See also:
+### KA-Lite Flat Media Package
+The complete **40 GB** repository of Khan Academy Lite videos and thumbnails (15,414 files) is packaged as a standalone torrent generated by JIC's internal BitTorrent creator:
+* **Torrent Generator Tool:** [`helper-scripts/create-torrent.py`](../helper-scripts/create-torrent.py)
+* **Generated Torrent File:** `kalite_content_pack.torrent` (Info Hash: `8b119022fc33a092f17a4159d6c22b59da3664bd`)
 
-10. See also https://github.com/PR0M3TH3AN/Survival-Data
+---
 
-11. And also https://prepperdisk.com/compare-models#cb13c8cb-17a1-4be1-afc0-d8ce2a41ed4b ... PrepperDisk ships: English Wikipedia, Project Gutenberg (60k ebooks), WikiHow (90k guides), Ready.gov/FEMA documents, medical wikis (NLM/MedlinePlus, surgical and first-aid guides), military survival manuals, hunting/trapping/foraging guides, ham radio RepeaterBook, street + national park maps, and iFixit repair guides. JIC's `sources.yaml` mirrors the PDF-able, license-clear part of that scope.
+## 4. Benchmark Projects & Reference Catalogs
 
-11b. https://www.projectnomad.us ... Project NOMAD (Node for Offline Media, Archives, and Data) — free, Apache-2.0 licensed offline server combining Kiwix (Wikipedia, Gutenberg, medical references, repair guides), Ollama for local LLMs, OpenStreetMap offline maps, and Kolibri/Khan Academy. The closest open-source analogue to JIC's mission; their content bundle is a good benchmark for ours.
-
-12. https://www.openstreetmaps.org - Openstreetmaps
-
-13. https://mdwiki.org/wiki
-
-14. https://collections.nlm.nih.gov/collections
-
-15. NERT is worth mentioning - there are several community emergency response efforts to participate in: https://sf-fire.org/nert
-
-16. https://www.opensourceecology.org
+JIC's catalog is benchmarked against leading offline and disaster-preparedness initiatives:
+1. **[Project NOMAD](https://www.projectnomad.us)** — Offline server combining Kiwix, Ollama, OpenStreetMap, and Kolibri.
+2. **[PrepperDisk](https://prepperdisk.com)** — Commercial curated offline encyclopedia and military field manual archive.
+3. **[Internet-in-a-Box (IIAB)](https://internet-in-a-box.org)** — Raspberry Pi based offline knowledge distribution hotspot.
+4. **[RACHEL by World Possible](https://rachel.worldpossible.org)** — Remote educational and medical hotspot.
+5. **[CD3WD](https://en.wikipedia.org/wiki/CD3WD)** & **[Appropriate Technology Library](https://villageearth.org)** — Low-tech, off-grid civilizational rebuilding libraries.
