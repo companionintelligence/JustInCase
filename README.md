@@ -60,7 +60,7 @@ Background thinking on the problem space is in the [docs/](docs/) folder: [typic
 
 ## How it works
 
-The system is written in C++17 and compiles to two binaries: a server and an ingestion worker. Both link against [llama.cpp](https://github.com/ggml-org/llama.cpp) for LLM inference and embeddings, [MuPDF](https://github.com/ArtifexSoftware/mupdf) for PDF text extraction, and SQLite with [sqlite-vec](https://github.com/asg017/sqlite-vec) and FTS5 for hybrid search. The server uses [cpp-httplib](https://github.com/yhirose/cpp-httplib) for HTTP. The default LLM is Llama 3.2 3B Instruct (Q4_K_M, ~2 GB); embeddings use nomic-embed-text-v1.5 (768-dimensional, ~260 MB).
+The system is written in C++17 and compiles to two binaries: a server and an ingestion worker. Both link against [llama.cpp](https://github.com/ggml-org/llama.cpp) for LLM inference and embeddings, [MuPDF](https://github.com/ArtifexSoftware/mupdf) for PDF text extraction, and SQLite with [sqlite-vec](https://github.com/asg017/sqlite-vec) and FTS5 for hybrid search. The server uses [cpp-httplib](https://github.com/yhirose/cpp-httplib) for HTTP. The default LLM is Google Gemma 4 E4B Instruct (Q4_0, ~5.1 GB); embeddings use nomic-embed-text-v1.5 (768-dimensional, ~260 MB).
 
 **Content lives in volumes, not in the image.** The container image holds only the binaries and the web UI; the document library (`jic-sources` volume), the search index (`jic-data` volume), and the GGUF models (`./gguf_models` bind mount) are all provisioned at runtime. That keeps the image small, lets you update the library without rebuilding, and means a `docker compose down -v` is the only thing that can delete your data.
 
@@ -192,10 +192,10 @@ To swap the LLM, set `LLM_GGUF_FILE` in the environment or edit `docker-compose.
 
 | Model | Parameters | RAM | Notes |
 |---|---|---|---|
-| **Llama 3.2 3B** (default) | 3B | ~3 GB | Fast, good quality, fits comfortably in 8 GB |
-| Phi-4-mini | 3.8B | ~3.5 GB | Strong reasoning for its size |
-| Gemma 3 4B | 4B | ~4 GB | Broad general knowledge |
-| Llama 3.1 8B | 8B | ~6 GB | Better answers, needs ≥16 GB RAM |
+| **Gemma 4 E4B** (default) | 4B effective | ~6 GB | State of the art instruction following & disaster reasoning |
+| Llama 3.2 3B | 3B | ~3 GB | Fast lightweight option for low-RAM appliances |
+| Gemma 2 2B | 2B | ~2.5 GB | Ultra-lightweight footprint |
+| Llama 3.1 8B | 8B | ~6 GB | Strong long-context synthesis |
 
 Additional environment knobs (all optional):
 

@@ -9,15 +9,6 @@
 // ── Version ──────────────────────────────────────────────────────────
 #define JIC_VERSION "0.3.0"
 
-// ── GPU backend ──────────────────────────────────────────────────────
-// Set by CMake (jic_configure_gpu) to whatever llama.cpp was compiled with.
-// The fallback matters: a build path that forgets to define it must read as
-// "off" rather than fail to compile, because the only wrong answer here is a
-// binary that CLAIMS a GPU backend it does not have.
-#ifndef JIC_GPU_BACKEND
-#define JIC_GPU_BACKEND "off"
-#endif
-
 // ── Network ──────────────────────────────────────────────────────────
 const int PORT = 8080;
 
@@ -31,24 +22,6 @@ const int CHUNK_OVERLAP = 200;  // overlap between adjacent chunks
 // ── Retrieval ────────────────────────────────────────────────────────
 const int MAX_CONTEXT_CHUNKS = 5;   // chunks sent to the LLM
 const int SEARCH_CANDIDATES  = 30;  // candidates pulled before re-ranking
-
-// ── ZIM library (kiwix-serve), optional ──────────────────────────────
-// A third retriever beside vector and BM25, enabled only when JIC_KIWIX_URL
-// points at a reachable kiwix-serve. See src/kiwix_client.h for why this is
-// spoken to over HTTP rather than linked (libzim is GPLv2+, JIC is MIT).
-//
-// The timeouts are the whole safety story: the library must never be able to
-// make the appliance feel broken, so a stalled container costs one query at
-// most and then gets cached as unhealthy for a minute.
-const int    KIWIX_CANDIDATES            = 10; // hits pulled into the RRF pool
-const int    KIWIX_CONNECT_TIMEOUT_SECONDS = 1;
-const int    KIWIX_READ_TIMEOUT_SECONDS    = 3;
-const int    KIWIX_PROBE_TTL_SECONDS       = 60;
-const int    KIWIX_MAX_BOOKS             = 50; // catalog entries read for /status
-const size_t KIWIX_MAX_RESPONSE_BYTES    = 4u * 1024u * 1024u;
-// A ZIM article is whole-page, not a pre-chunked passage, so it is truncated
-// to roughly one local chunk's worth before being handed to the LLM.
-const size_t KIWIX_MAX_ARTICLE_CHARS     = 4000;
 
 // ── LLM ──────────────────────────────────────────────────────────────
 const int LLM_CONTEXT_SIZE   = 8192;  // n_ctx — token window
@@ -108,7 +81,7 @@ inline std::string get_gguf_dir() {
 
 inline std::string get_llm_model_path() {
     return get_gguf_dir() + "/" +
-           env_or("LLM_GGUF_FILE", "Llama-3.2-3B-Instruct-Q4_K_M.gguf");
+           env_or("LLM_GGUF_FILE", "gemma-4-E4B_q4_0-it.gguf");
 }
 
 inline std::string get_embedding_model_path() {
@@ -188,7 +161,7 @@ inline std::string describe_model_path(const std::string& path) {
 }
 
 inline std::string get_llm_model_name() {
-    return env_or("LLM_MODEL", "llama3.2:3b");
+    return env_or("LLM_MODEL", "gemma-4:e4b");
 }
 
 inline std::string get_embedding_model_name() {

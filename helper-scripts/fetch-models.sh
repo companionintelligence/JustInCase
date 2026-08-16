@@ -10,8 +10,8 @@ echo "You must place GGUF files in ./gguf_models/ first."
 echo ""
 
 # ── Configurable via environment ─────────────────────────────────────
-LLM_FILE="${LLM_GGUF_FILE:-Llama-3.2-3B-Instruct-Q4_K_M.gguf}"
-LLM_REPO="${LLM_GGUF_REPO:-bartowski/Llama-3.2-3B-Instruct-GGUF}"
+LLM_FILE="${LLM_GGUF_FILE:-gemma-4-E4B_q4_0-it.gguf}"
+LLM_REPO="${LLM_GGUF_REPO:-google/gemma-4-E4B-it-qat-q4_0-gguf}"
 LLM_URL="https://huggingface.co/${LLM_REPO}/resolve/main/${LLM_FILE}"
 
 NOMIC_FILE="${EMBEDDING_GGUF_FILE:-nomic-embed-text-v1.5.Q4_K_M.gguf}"
@@ -19,8 +19,8 @@ NOMIC_REPO="${NOMIC_GGUF_REPO:-nomic-ai/nomic-embed-text-v1.5-GGUF}"
 NOMIC_URL="https://huggingface.co/${NOMIC_REPO}/resolve/main/${NOMIC_FILE}"
 
 echo "Required models:"
-echo "  LLM        : ${LLM_FILE}  (~2.0 GB)"
-echo "  Embeddings : ${NOMIC_FILE}  (~84 MB)"
+echo "  LLM        : ${LLM_FILE}  (~5.1 GB, Google Gemma 4)"
+echo "  Embeddings : ${NOMIC_FILE}  (~260 MB, Nomic Embed)"
 echo ""
 
 mkdir -p gguf_models
