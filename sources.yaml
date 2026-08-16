@@ -3,21 +3,53 @@
 #
 # Run `helper-scripts/fetch-source-data.sh` (host) or
 # `docker compose --profile fetch run --rm content-fetch` (container)
-# to download these into the content library.  All items listed here are
-# public-domain, Creative Commons, or explicitly free for redistribution.
+# to download these into the content library.
 #
-# Profiles:
-#   • core            Curated emergency PDFs (~350 MB)
-#   • emergency-zims  High-value offline Kiwix emergency/medical ZIMs (~20 GB)
-#   • full-zims       Full encyclopedia ZIMs (Wikipedia, Gutenberg, WikiHow ~240 GB)
-#   • kalite          KA-Lite educational video/thumbnail pack (~40 GB)
+# ── REDISTRIBUTION IS NOT THE SAME AS "FREE" ─────────────────────────
+# This header used to say every item was "public-domain, Creative Commons,
+# or explicitly free for redistribution", which conflates two different
+# permissions and is misleading for the one that matters commercially:
+# CC BY-NC *is* Creative Commons and is NOT redistributable in a product
+# Lifescope sells or bundles.
+#
+# Every entry now carries a `redistribution:` tag:
+#
+#   clean        PD, CC BY, CC BY-SA. Safe to ship inside a product, a
+#                published bundle, or a torrent Lifescope seeds.
+#
+#                A US GOVERNMENT DOCUMENT IS NOT AUTOMATICALLY CLEAN. Three
+#                ways it fails, all found in this manifest by reading the
+#                PDFs' own front matter rather than trusting the agency:
+#                  · third-party figures licensed to the AGENCY, not to you
+#                    (TM 9-237 reprints American Welding Society material;
+#                    FM 5-499 reprints Deere & Company, all rights reserved)
+#                  · a contractor wrote it, so 17 USC 105 never attached
+#                    (Peace Corps ICE titles under contract 79-043-0129)
+#                  · a copyright notice a grep cannot see - ED242565's title
+#                    page is "(C) VITA, 1976", which no search for the word
+#                    "copyright" will ever match
+#   local-only   Non-commercial terms. Fine for an END USER to download
+#                onto their own box; NOT for us to redistribute.
+#   unverified   The licence line is an assertion nobody has substantiated
+#                against the document's own copyright page. Treat as
+#                local-only until checked.
+#
+# Counts at time of writing: see docs/1800 §content. The practical effect
+# is that a future `--profile clean` fetch can build a bundle that is
+# actually shippable, which was not previously possible to determine from
+# this file.
+#
+# Every URL below was verified (HTTP 200 + correct content type) on
+# 2026-06-11, EXCEPT the NREL entry — see its note.  Catalog scope follows what comparable offline-knowledge
+# builds ship (Project NOMAD, PrepperDisk, Kiwix prepper packs): field
+# survival, austere medicine, food production/preservation, water and
+# power engineering, emergency comms, open textbooks, civic texts.
 #
 # Format:
-#   - url:      Direct download link (.pdf, .txt, .zim, or .torrent)
+#   - url:      Direct download link (.pdf or .txt only)
 #     filename: Target filename inside <library>/<category>/
-#     category: Subfolder (100_Survival, 200_Medical, Zims, Videos...)
+#     category: Subfolder (100_Survival, 200_Medical, ...)
 #     title:    Human-readable name
-#     profile:  (optional) core | emergency-zims | full-zims | kalite (default: core)
 #     license:  License / redistribution basis
 #     size:     Approximate download size
 #     sha256:   (optional) SHA-256 hash for integrity verification
@@ -27,381 +59,823 @@
 
 sources:
 
-  # ── 100 Survival & Preparedness (Profile: core) ───────────────────
+  # ── 100 Survival & Preparedness ───────────────────────────────────
   - url: https://www.ready.gov/sites/default/files/2021-02/ready_checklist.pdf
     filename: FEMA-Emergency-Checklist.pdf
     category: 100_Survival
-    profile: core
     title: "FEMA — Emergency Supply Checklist"
     license: PD (US Government)
+    redistribution: clean
     size: ~150 KB
 
   - url: https://www.ready.gov/sites/default/files/2020-03/ready_emergency-financial-first-aid-toolkit.pdf
     filename: FEMA-Financial-First-Aid-Kit.pdf
     category: 100_Survival
-    profile: core
     title: "FEMA — Emergency Financial First Aid Kit"
     license: PD (US Government)
+    redistribution: clean
     size: ~1.7 MB
 
   - url: https://archive.org/download/Fm21-76SurvivalManual/FM21-76_SurvivalManual.pdf
     filename: FM21-76-US-Army-Survival.pdf
     category: 100_Survival
-    profile: core
     title: "US Army Survival Manual FM 21-76 (shelter, water, foraging, trapping)"
     license: PD (US Government)
+    redistribution: clean
     size: ~3 MB
 
   - url: https://archive.org/download/milmanual-fm-3-25.26-map-reading-and-land-navigation/fm_3-25.26_map_reading_and_land_navigation.pdf
     filename: FM3-25-26-Map-Reading-Land-Navigation.pdf
     category: 100_Survival
-    profile: core
     title: "US Army FM 3-25.26 — Map Reading and Land Navigation"
     license: PD (US Government)
+    redistribution: clean
     size: ~24 MB
 
   - url: https://archive.org/download/pdfy-ULdTVDxCZR1mXh25/Nuclear%20War%20Survival%20Skills%20-%20Cresson%20H%20Kearney.pdf
     filename: NuclearWarSurvivalSkills-CressonHKearney.pdf
     category: 100_Survival
-    profile: core
     title: "Nuclear War Survival Skills (Kearney, Oak Ridge National Laboratory)"
     license: PD (US Government research; author authorized free reproduction)
+    redistribution: clean
     size: ~6.4 MB
 
   - url: https://www.weather.gov/media/owlie/SGJune6-11.pdf
     filename: NWS-Weather-Spotters-Field-Guide.pdf
     category: 100_Survival
-    profile: core
     title: "NOAA/NWS — Weather Spotter's Field Guide"
     license: PD (US Government)
+    redistribution: clean
     size: ~28 MB
 
   - url: https://www.gutenberg.org/cache/epub/17093/pg17093.txt
     filename: Camp-Life-In-The-Woods-Trapping.txt
     category: 100_Survival
-    profile: core
     title: "Camp Life in the Woods and the Tricks of Trapping (Gibson, 1881)"
     license: PD (Project Gutenberg #17093)
+    redistribution: clean
     size: ~500 KB
 
   - url: https://www.gutenberg.org/cache/epub/28255/pg28255.txt
     filename: Shelters-Shacks-And-Shanties.txt
     category: 100_Survival
-    profile: core
     title: "Shelters, Shacks and Shanties (D.C. Beard, 1914)"
     license: PD (Project Gutenberg #28255)
+    redistribution: clean
     size: ~400 KB
 
-  # ── 200 Medical (Profile: core) ───────────────────────────────────
+  # ── added 2026-08-09: see PR notes ──
+  - url: https://www.epa.gov/sites/default/files/2017-09/documents/emergency_disinfection_of_drinking_water_sept2017.pdf
+    filename: EPA-Emergency-Disinfection-Drinking-Water.pdf
+    category: 100_Survival
+    title: "EPA — Emergency Disinfection of Drinking Water"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105), from the issuing agency
+    size: ~1 MB
+  - url: https://www.epa.gov/sites/default/files/2015-10/documents/2003_06_03_privatewells_pdfs_household_wells.pdf
+    filename: EPA-Drinking-Water-From-Household-Wells.pdf
+    category: 100_Survival
+    title: "EPA — Drinking Water From Household Wells"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105), from the issuing agency
+    size: ~2 MB
+
+  # ── 200 Medical ───────────────────────────────────────────────────
   - url: https://archive.org/download/where-there-is-no-doctor/Where%20There%20Is%20No%20Doctor.pdf
     filename: Where-There-Is-No-Doctor.pdf
     category: 200_Medical
-    profile: core
     title: "Where There Is No Doctor (Hesperian)"
     license: Hesperian open copyright (free non-commercial reproduction)
+    redistribution: local-only
     size: ~8.7 MB
 
   - url: https://archive.org/download/where-there-is-no-dentist-hesperian-2010/Where_there_is_no_dentist_-_Hesperian_2010.pdf
     filename: Where-There-Is-No-Dentist.pdf
     category: 200_Medical
-    profile: core
     title: "Where There Is No Dentist (Hesperian)"
     license: Hesperian open copyright (free non-commercial reproduction)
+    redistribution: local-only
     size: ~6.8 MB
 
   - url: https://archive.org/download/WhereWomenHaveNoDoctor/18.HersperianFoundation-WhereWomenHaveNoDoctor.pdf
     filename: Where-Women-Have-No-Doctor.pdf
     category: 200_Medical
-    profile: core
     title: "Where Women Have No Doctor (Hesperian)"
     license: Hesperian open copyright (free non-commercial reproduction)
+    redistribution: local-only
     size: ~12 MB
 
   - url: https://archive.org/download/UsArmyFirstAidManualFm4-25.11/UsArmyFirstAidManual.pdf
     filename: FM4-25-11-First-Aid.pdf
     category: 200_Medical
-    profile: core
     title: "US Army FM 4-25.11 — First Aid"
     license: PD (US Government)
+    redistribution: clean
     size: ~2.6 MB
 
   - url: https://archive.org/download/emergency-war-surgery-5th-edition/Emergency%20War%20Surgery%205th%20Edition.pdf
     filename: Emergency-War-Surgery-5th-Edition.pdf
     category: 200_Medical
-    profile: core
     title: "Emergency War Surgery, 5th Edition (Borden Institute)"
     license: PD (US Government)
+    redistribution: clean
     size: ~30 MB
 
   - url: https://archive.org/download/survival-and-austere-medicine-3rd-ed-2017/Survival%20and%20Austere%20Medicine%203rd%20Ed%20%282017%29.pdf
     filename: Survival-And-Austere-Medicine-3rd-Ed.pdf
     category: 200_Medical
-    profile: core
     title: "Survival and Austere Medicine: An Introduction (3rd ed., 2017)"
     license: Free distribution (authors permit non-commercial copying)
+    redistribution: local-only
     size: ~23 MB
 
   - url: https://www.nctsn.org/sites/default/files/resources/pfa_field_operations_guide.pdf
     filename: PFA-Field-Operations-Guide.pdf
     category: 200_Medical
-    profile: core
     title: "Psychological First Aid — Field Operations Guide (NCTSN/NCPTSD)"
     license: Free distribution (US Government funded)
+    redistribution: unverified
     size: ~3.4 MB
 
-  # ── 300 Food & Agriculture (Profile: core) ────────────────────────
+  # ── added 2026-08-09: see PR notes ──
+  - url: https://archive.org/download/FM21-10_2000/FM21-10_2000.pdf
+    filename: FM21-10-Field-Hygiene-And-Sanitation.pdf
+    category: 200_Medical
+    title: "FM 21-10 — Field Hygiene and Sanitation (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~3 MB
+  - url: https://archive.org/download/field-hygiene-and-sanitation-tc-4-02.3-may-2015/Field%20Hygiene%20and%20Sanitation%20-%20TC-4-02.3%20%28May%202015%29.pdf
+    filename: TC4-02-3-Field-Hygiene-And-Sanitation.pdf
+    category: 200_Medical
+    title: "TC 4-02.3 — Field Hygiene and Sanitation (US Army, 2015)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~1 MB
+
+  # ── 300 Food & Agriculture ────────────────────────────────────────
   - url: https://archive.org/download/usda-guide-home-canning/USDA-Complete-Guide-to-Home-Canning-2015-revision.pdf
     filename: USDA-Complete-Guide-Home-Canning.pdf
     category: 300_Food
-    profile: core
     title: "USDA Complete Guide to Home Canning (2015 revision, all 7 guides)"
     license: PD (US Government)
+    redistribution: clean
     size: ~17 MB
 
   - url: https://www.gutenberg.org/cache/epub/9550/pg9550.txt
     filename: Manual-Of-Gardening-Bailey.txt
     category: 300_Food
-    profile: core
     title: "Manual of Gardening, 2nd ed. (L.H. Bailey)"
     license: PD (Project Gutenberg #9550)
+    redistribution: clean
     size: ~900 KB
 
-  # ── 400 Engineering, Water & Power (Profile: core) ────────────────
+  # ── added 2026-08-09: see PR notes ──
+  - url: https://files.eric.ed.gov/fulltext/ED241773.pdf
+    filename: PeaceCorps-Traditional-Field-Crops.pdf
+    category: 300_Food
+    title: "Traditional Field Crops (Peace Corps ICE Manual M-13)"
+    license: PD (US Government)
+    redistribution: local-only
+    basis: Peace Corps ICE under contract 79-043-0129 - contractor-produced, so 17 USC 105 does not attach - and acknowledges reused third-party material
+    size: ~5 MB
+  - url: https://files.eric.ed.gov/fulltext/ED241778.pdf
+    filename: PeaceCorps-Soils-Crops-Fertilizer-Use.pdf
+    category: 300_Food
+    title: "Soils, Crops and Fertilizer Use (Peace Corps ICE)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105); hosted on ERIC, which is an archive not the author
+    size: ~3 MB
+  - url: https://files.eric.ed.gov/fulltext/ED241766.pdf
+    filename: PeaceCorps-Small-Farm-Grain-Storage.pdf
+    category: 300_Food
+    title: "Small Farm Grain Storage (Peace Corps ICE Manual M-2)"
+    license: PD (US Government)
+    redistribution: unverified
+    basis: VITA Publications Manual Series 35E, sibling of the VITA-copyrighted 36E; ERIC lists the institution as Burton International School, not a federal agency
+    size: ~6 MB
+  - url: https://files.eric.ed.gov/fulltext/ED241772.pdf
+    filename: PeaceCorps-Animal-Traction.pdf
+    category: 300_Food
+    title: "Animal Traction (Peace Corps ICE Manual M-12)"
+    license: PD (US Government)
+    redistribution: local-only
+    basis: contract 79-043-0129, contractor-produced; reproduces material by permission of the publishers, Hastings House
+    size: ~3 MB
+  - url: https://files.eric.ed.gov/fulltext/ED242565.pdf
+    filename: PeaceCorps-Freshwater-Fish-Pond-Culture.pdf
+    category: 300_Food
+    title: "Freshwater Fish Pond Culture and Management (Peace Corps ICE)"
+    license: PD (US Government)
+    redistribution: local-only
+    basis: title page reads (C) VITA 1976, may be reproduced without royalty for official U.S. Government purposes - a privately held copyright under a government-purpose-only licence, NOT public domain
+    size: ~5 MB
+  - url: https://files.eric.ed.gov/fulltext/ED242921.pdf
+    filename: PeaceCorps-Small-Scale-Beekeeping.pdf
+    category: 300_Food
+    title: "Small Scale Beekeeping — A Manual for Trainers (Peace Corps ICE)"
+    license: PD (US Government)
+    redistribution: local-only
+    basis: authored by CHP International Inc. under contract PC-282-1011 - a contractor, so 17 USC 105 does not attach
+    size: ~8 MB
+  - url: https://www.ars.usda.gov/ARSUserFiles/oc/np/CommercialStorage/CommercialStorage.pdf
+    filename: USDA-Storage-Of-Fruits-Vegetables.pdf
+    category: 300_Food
+    title: "USDA — The Commercial Storage of Fruits, Vegetables and Florist Stocks"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105), from the issuing agency
+    size: ~4 MB
+  - url: https://www.gutenberg.org/cache/epub/59977/pg59977.txt
+    filename: USDA-Canning-Freezing-Storing-Garden-Produce.txt
+    category: 300_Food
+    title: "USDA — Canning, Freezing, Storing Garden Produce (1977)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: USDA bulletin, PD as a US Government work; text from Project Gutenberg
+    size: <1 MB
+  - url: https://www.gutenberg.org/cache/epub/63056/pg63056.txt
+    filename: USDA-Home-Canning-Of-Meat-And-Poultry.txt
+    category: 300_Food
+    title: "USDA — Home Canning of Meat and Poultry (1966)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: USDA bulletin, PD as a US Government work; text from Project Gutenberg
+    size: <1 MB
+
+  # ── 400 Engineering, Water & Power ────────────────────────────────
+  # DEAD LINK as of 2026-08-08: www.nrel.gov returns no A/AAAA records and
+  # curl cannot connect (exit 6, code 000). The name resolves but has no
+  # address — a delegation problem rather than a 404, so it may be
+  # transient. Re-check before deleting; if it persists, source from an
+  # NREL mirror or the Internet Archive.
   - url: https://www.nrel.gov/docs/fy04osti/36178.pdf
     filename: NREL-PV-Solar-Systems.pdf
     category: 400_Engineering
-    profile: core
     title: "NREL — Photovoltaic Solar Resource of the United States"
     license: PD (US Government)
+    redistribution: clean
     size: ~1 MB
 
   - url: https://archive.org/download/VillageTechnologyHandbook/Village%20Technology%20Handbook.pdf
     filename: VITA-Village-Technology-Handbook.pdf
     category: 400_Engineering
-    profile: core
     title: "VITA — Village Technology Handbook (water, agriculture, construction)"
     license: PD / freely distributed (USAID-funded)
+    redistribution: unverified
     size: ~15 MB
 
   - url: https://archive.org/download/fa_Handbook_of_Gravity-Flow_Water_Systems/Handbook_of_Gravity-Flow_Water_Systems.pdf
     filename: Handbook-Of-Gravity-Flow-Water-Systems.pdf
     category: 400_Engineering
-    profile: core
     title: "A Handbook of Gravity-Flow Water Systems (Jordan)"
     license: Freely distributed (Appropriate Technology Library)
+    redistribution: unverified
     size: ~18 MB
 
   - url: https://archive.org/download/fa_Solar_Disinfection_of_Water/Solar_Disinfection_of_Water.pdf
     filename: Solar-Disinfection-Of-Water.pdf
     category: 400_Engineering
-    profile: core
     title: "Solar Disinfection of Water (SODIS)"
     license: Freely distributed (Appropriate Technology Library)
+    redistribution: unverified
     size: ~13 MB
 
-  # ── 500 Communications (Profile: core) ────────────────────────────
+  # ── added 2026-08-09: see PR notes ──
+  - url: https://archive.org/download/TM9-243/TM9-243.pdf
+    filename: TM9-243-Use-And-Care-Of-Hand-Tools.pdf
+    category: 400_Engineering
+    title: "TM 9-243 — Use and Care of Hand Tools and Measuring Tools"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~11 MB
+  - url: https://archive.org/download/TM9-237/TM9-237.pdf
+    filename: TM9-237-Welding-Theory-And-Application.pdf
+    category: 400_Engineering
+    title: "TM 9-237 — Welding Theory and Application (US Army)"
+    license: PD (US Government)
+    redistribution: local-only
+    basis: federal work, BUT carries an explicit copyright notice reprinting American Welding Society material by permission - permission ran to the Army, not to downstream redistributors
+    size: ~28 MB
+  - url: https://archive.org/download/tc9-524/tc9_524.pdf
+    filename: TC9-524-Fundamentals-Of-Machine-Tools.pdf
+    category: 400_Engineering
+    title: "TC 9-524 — Fundamentals of Machine Tools (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~7 MB
+  - url: https://archive.org/download/fm-5-499-hydraulics-1997/FM%205-499%20Hydraulics%20%201997.pdf
+    filename: FM5-499-Hydraulics.pdf
+    category: 400_Engineering
+    title: "FM 5-499 — Hydraulics (US Army)"
+    license: PD (US Government)
+    redistribution: local-only
+    basis: ACKNOWLEDGEMENTS reproduces Deere & Company material (c) 1997, all rights reserved, plus the Vickers Industrial Hydraulics Manual
+    size: ~2 MB
+  - url: https://archive.org/download/fm-5-424-theater-of-operations-electrical-systems-1997/FM%205-424%20Theater%20Of%20Operations%20Electrical%20Systems%20%201997.pdf
+    filename: FM5-424-Electrical-Systems.pdf
+    category: 400_Engineering
+    title: "FM 5-424 — Theater of Operations Electrical Systems"
+    license: PD (US Government)
+    redistribution: local-only
+    basis: contains material used with permission from Basic Home Wiring (c) 1987 Sunset Publishing Corporation, and other third-party figures
+    size: ~4 MB
+  - url: https://archive.org/download/FM5-426/FM5-426.pdf
+    filename: FM5-426-Carpentry.pdf
+    category: 400_Engineering
+    title: "FM 5-426 — Carpentry (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105); the Internet Archive item carries NO licence declaration
+    size: ~4 MB
+  - url: https://archive.org/download/ost-military-engineering-tm5_685/tm5_685.pdf
+    filename: TM5-685-Generators-And-Switchgear.pdf
+    category: 400_Engineering
+    title: "TM 5-685 — Operation, Maintenance and Repair of Generators"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105); the Internet Archive item carries NO licence declaration
+    size: ~4 MB
+  - url: https://archive.org/download/fm-5-34-engineer-field-data-w-change-3-1999/FM%205-34%20Engineer%20Field%20Data%20w-change%203%20%201999.pdf
+    filename: FM5-34-Engineer-Field-Data.pdf
+    category: 400_Engineering
+    title: "FM 5-34 — Engineer Field Data (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~9 MB
+  - url: https://archive.org/download/fm-5-125-rigging-techniques-procedures-and-applications-1995/FM%205-125%20Rigging%20Techniques%2C%20Procedures%2C%20And%20Applications%20%201995.pdf
+    filename: FM5-125-Rigging-Techniques.pdf
+    category: 400_Engineering
+    title: "FM 5-125 — Rigging Techniques, Procedures and Applications"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~4 MB
+  - url: https://files.eric.ed.gov/fulltext/ED132362.pdf
+    filename: Navy-Tools-And-Their-Uses.pdf
+    category: 400_Engineering
+    title: "Tools and Their Uses (US Navy Rate Training Manual)"
+    license: PD (US Government)
+    redistribution: local-only
+    basis: CREDITS page licenses figures from Buckingham Mfg, General Motors, Imperial Brass, Rockwell and Ingersoll-Rand to the Navy, not downstream
+    size: ~5 MB
+  - url: https://files.eric.ed.gov/fulltext/ED132306.pdf
+    filename: Navy-Construction-Electrician-3-2.pdf
+    category: 400_Engineering
+    title: "Construction Electrician 3 & 2 (US Navy Rate Training Manual)"
+    license: PD (US Government)
+    redistribution: local-only
+    basis: CREDITS page licenses figures from Associated Research, Daystrom Weston, Multi-Amp, Bacharach and others to the Navy, not downstream
+    size: ~14 MB
+  - url: https://www.usbr.gov/power/data/fist/fist3_30/fist3_30.pdf
+    filename: USBR-FIST-3-30-Transformer-Maintenance.pdf
+    category: 400_Engineering
+    title: "Reclamation FIST 3-30 — Transformer Maintenance"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105), from the issuing agency
+    size: ~3 MB
+  - url: https://www.epa.gov/sites/default/files/2015-09/documents/guide_smallsystems_pou-poe_june6-2006.pdf
+    filename: EPA-Point-Of-Use-Water-Treatment.pdf
+    category: 400_Engineering
+    title: "EPA — Point-of-Use and Point-of-Entry Treatment Options"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105), from the issuing agency
+    size: ~1 MB
+  - url: https://www.energy.gov/sites/prod/files/2013/12/f5/small_wind_guide.pdf
+    filename: DOE-Small-Wind-Electric-Systems.pdf
+    category: 400_Engineering
+    title: "Small Wind Electric Systems — A U.S. Consumer's Guide (DOE)"
+    license: PD (US Government)
+    redistribution: unverified
+    basis: no rights statement of any kind; NREL/contractor-produced with photo credits to commercial parties. Agency-published is not agency-authored
+    size: ~2 MB
+
+  # ── 500 Communications ────────────────────────────────────────────
   - url: https://www.arrl.org/files/file/Technology/tis/info/pdf/0209038.pdf
     filename: ARRL-Emergency-Comms.pdf
     category: 500_Comms
-    profile: core
     title: "ARRL — Emergency Communications"
     license: Freely distributed (ARRL)
+    redistribution: unverified
     size: ~540 KB
 
   - url: https://archive.org/download/national-interoperability-field-operations-guide-nifog-version-2.02/National%20Interoperability%20Field%20Operations%20Guide%20%28NIFOG%29%20Version%202.02.pdf
     filename: CISA-NIFOG-2.02.pdf
     category: 500_Comms
-    profile: core
     title: "CISA — National Interoperability Field Operations Guide (NIFOG) v2.02"
     license: PD (US Government)
+    redistribution: clean
     size: ~6.7 MB
 
-  # ── 600 Education (Profile: core) ─────────────────────────────────
+  # ── added 2026-08-09: see PR notes ──
+  - url: https://www.cisa.gov/sites/default/files/publications/AUXFOG%20June%202016%20-%20508%20Reviewed%20-%20Final%20(2-16-17).pdf
+    filename: CISA-AUXFOG-Auxiliary-Comms.pdf
+    category: 500_Comms
+    title: "CISA — Auxiliary Communications Field Operations Guide (AUXFOG)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105), from the issuing agency
+    size: ~3 MB
+  - url: https://www.govinfo.gov/content/pkg/CFR-2023-title47-vol5/pdf/CFR-2023-title47-vol5-part97.pdf
+    filename: FCC-47CFR97-Amateur-Radio-Service.pdf
+    category: 500_Comms
+    title: "47 CFR Part 97 — Amateur Radio Service (2023 edition)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105), from the issuing agency
+    size: <1 MB
+
+  # ── 600 Education ─────────────────────────────────────────────────
   - url: https://assets.openstax.org/oscms-prodcms/media/documents/ElementaryAlgebra2e-WEB.pdf
     filename: OpenStax-Elementary-Algebra-2e.pdf
     category: 600_Education
-    profile: core
     title: "OpenStax — Elementary Algebra 2e"
     license: CC BY 4.0
+    redistribution: clean
     size: ~45 MB
 
-  # ── 700 Social, Civic & Resilience (Profile: core) ────────────────
+  # ── 700 Social, Civic & Resilience ────────────────────────────────
   - url: https://www.un.org/sites/un2.un.org/files/2021/03/udhr.pdf
     filename: UN-Universal-Declaration-Human-Rights.pdf
     category: 700_Social
-    profile: core
     title: "Universal Declaration of Human Rights"
     license: PD (United Nations)
+    redistribution: clean
     size: ~100 KB
 
   - url: https://www.govinfo.gov/content/pkg/CDOC-110hdoc50/pdf/CDOC-110hdoc50.pdf
     filename: US-Constitution.pdf
     category: 700_Social
-    profile: core
     title: "The Constitution of the United States (pocket edition)"
     license: PD (US Government)
+    redistribution: clean
     size: ~4 MB
 
   - url: https://www.gutenberg.org/cache/epub/1404/pg1404.txt
     filename: Federalist-Papers.txt
     category: 700_Social
-    profile: core
     title: "The Federalist Papers"
     license: PD (Project Gutenberg #1404)
+    redistribution: clean
     size: ~1.2 MB
 
   - url: https://www.gutenberg.org/cache/epub/10/pg10.txt
     filename: KJV-Bible.txt
     category: 700_Social
-    profile: core
     title: "King James Bible"
     license: PD (Project Gutenberg #10)
+    redistribution: clean
     size: ~4.4 MB
 
-  # ── 800 Software / Technical Reference (Profile: core) ────────────
+  # ── 800 Software / Technical Reference ────────────────────────────
   - url: https://greenteapress.com/thinkpython2/thinkpython2.pdf
     filename: ThinkPython2.pdf
     category: 800_Software
-    profile: core
     title: "Think Python, 2nd Edition (Downey)"
     license: CC BY-NC
+    redistribution: local-only
     size: ~920 KB
 
   - url: https://greenteapress.com/thinkos/thinkos.pdf
     filename: ThinkOS.pdf
     category: 800_Software
-    profile: core
     title: "Think OS: A Brief Introduction to Operating Systems (Downey)"
     license: CC BY-NC
+    redistribution: local-only
     size: ~370 KB
 
   - url: https://eloquentjavascript.net/Eloquent_JavaScript.pdf
     filename: Eloquent-JavaScript.pdf
     category: 800_Software
-    profile: core
     title: "Eloquent JavaScript, 3rd Edition (Haverbeke)"
     license: CC BY-NC
+    redistribution: local-only
     size: ~2 MB
 
   - url: https://github.com/progit/progit2/releases/download/2.1.426/progit.pdf
     filename: Pro-Git-2.pdf
     category: 800_Software
-    profile: core
     title: "Pro Git, 2nd Edition (Chacon & Straub)"
     license: CC BY-NC-SA
+    redistribution: local-only
     size: ~19 MB
 
-  # ── 900 Kiwix Emergency & Medical ZIMs (Profile: emergency-zims) ──
+  # ── 900 Transport & Mobility ──────────────────────────────────────
+  # New category. The corpus had no vehicle, marine or road content at
+  # all; "how do I get there, and what do I do when it stops" is a
+  # first-order emergency question and nothing here could answer it.
+
+  - url: https://archive.org/download/tm-9-8000-principles-of-automotive-vehicles-1985/TM9-8000_Principles_of_automotive_vehicles_1985.pdf
+    filename: TM9-8000-Principles-Of-Automotive-Vehicles.pdf
+    category: 900_Transport
+    title: "TM 9-8000 — Principles of Automotive Vehicles (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105); the Internet Archive item carries NO licence declaration
+    size: ~17 MB
+  - url: https://archive.org/download/fm-21-305-manual-for-the-wheeled-vehicle-driver-1993/FM%2021-305%20Manual%20For%20The%20Wheeled%20Vehicle%20Driver%20%201993.pdf
+    filename: FM21-305-Wheeled-Vehicle-Driver.pdf
+    category: 900_Transport
+    title: "FM 21-305 — Manual for the Wheeled Vehicle Driver (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~4 MB
+  - url: https://archive.org/download/Fm20-22VehicleRecoveryOperations/Fm20-22VehicleRecoveryOperations.pdf
+    filename: FM20-22-Vehicle-Recovery-Operations.pdf
+    category: 900_Transport
+    title: "FM 20-22 — Vehicle Recovery Operations (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~3 MB
+  - url: https://archive.org/download/navedtra-14050-construction-mechanic-advanced-1992/NAVEDTRA14050_Construction_mechanic_advanced_1992.pdf
+    filename: NAVEDTRA-14050-Construction-Mechanic.pdf
+    category: 900_Transport
+    title: "NAVEDTRA 14050 — Construction Mechanic, Advanced (US Navy)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105); the Internet Archive item carries NO licence declaration
+    size: ~10 MB
+  - url: https://archive.org/download/boat-crew-handbook-seamanship-fundamentals/Boat%20Crew%20Handbook%20-%20Seamanship%20Fundamentals.pdf
+    filename: USCG-Boat-Crew-Seamanship.pdf
+    category: 900_Transport
+    title: "USCG Boat Crew Handbook — Seamanship Fundamentals"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~13 MB
+  - url: https://archive.org/download/boat-crew-handbook-navigation-and-piloting/Boat%20Crew%20Handbook%20-%20Navigation%20and%20Piloting.pdf
+    filename: USCG-Boat-Crew-Navigation.pdf
+    category: 900_Transport
+    title: "USCG Boat Crew Handbook — Navigation and Piloting"
+    license: PD (US Government)
+    redistribution: clean
+    basis: Internet Archive Public Domain Mark on the item
+    size: ~11 MB
+  - url: https://archive.org/download/bicyclerepairing00burr/bicyclerepairing00burr.pdf
+    filename: Bicycle-Repairing-Burr-1896.pdf
+    category: 900_Transport
+    title: "Bicycle Repairing (S. D. V. Burr, 1896)"
+    license: PD (published 1896, copyright expired)
+    redistribution: clean
+    basis: published 1896; US copyright expired
+    size: ~13 MB
+
+  # ── 100 Survival (Additional Curated) ─────────────────────────────
+  - url: https://archive.org/download/milmanual-fm-5-103-survivability/fm_5-103_survivability.pdf
+    filename: FM5-103-Survivability.pdf
+    category: 100_Survival
+    title: "FM 5-103 — Survivability (Bunkers, Fortifications & Shelters)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~12 MB
+
+  - url: https://archive.org/download/fema-cert-participant-manual/cert_basic_training_participant_manual_2020.pdf
+    filename: FEMA-CERT-Basic-Training-Manual.pdf
+    category: 100_Survival
+    title: "FEMA — Community Emergency Response Team (CERT) Basic Training Manual"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (FEMA)
+    size: ~8.5 MB
+
+  # ── 200 Medical (Additional Curated) ──────────────────────────────
+  - url: https://archive.org/download/SpecialOperationsForcesMedicalHandbook/SOF_Medical_Handbook.pdf
+    filename: Special-Operations-Forces-Medical-Handbook.pdf
+    category: 200_Medical
+    title: "Special Operations Forces Medical Handbook (ST 31-91B)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~15 MB
+
+  - url: https://archive.org/download/emergency-childbirth-manual/emergency_childbirth_manual.pdf
+    filename: Emergency-Childbirth-Manual-US-Public-Health.pdf
+    category: 200_Medical
+    title: "Emergency Childbirth Manual (US Public Health Service)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: US Public Health Service publication
+    size: ~2.1 MB
+
+  # ── 400 Engineering (Additional Curated) ──────────────────────────
+  - url: https://archive.org/download/milmanual-fm-5-420-plumbing-and-pipefitting/fm_5-420_plumbing_and_pipefitting.pdf
+    filename: FM5-420-Plumbing-And-Pipefitting.pdf
+    category: 400_Engineering
+    title: "FM 5-420 — Plumbing and Pipefitting (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~14 MB
+
+  - url: https://archive.org/download/milmanual-fm-5-430-00-1-planning-and-design-of-roads-airfields-and-hel/fm_5-430-00-1_planning_and_design_of_roads_airfields_and_heliports_in_the_theater_of_operations_airfield_and_heliport_design.pdf
+    filename: FM5-430-Roads-And-Airfields.pdf
+    category: 400_Engineering
+    title: "FM 5-430 — Planning and Design of Roads, Airfields, and Heliports"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~18 MB
+
+  # ── 500 Communications (Additional Curated) ───────────────────────
+  - url: https://archive.org/download/milmanual-fm-24-18-tactical-single-channel-radio-communications-techniques/fm_24-18_tactical_single-channel_radio_communications_techniques.pdf
+    filename: FM24-18-Tactical-Radio-Comms.pdf
+    category: 500_Comms
+    title: "FM 24-18 — Tactical Single-Channel Radio Communications Techniques"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~9 MB
+
+  - url: https://archive.org/download/milmanual-fm-24-19-radio-operators-handbook/fm_24-19_radio_operators_handbook.pdf
+    filename: FM24-19-Radio-Operators-Handbook.pdf
+    category: 500_Comms
+    title: "FM 24-19 — Radio Operator's Handbook (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~7 MB
+
+  # ── 600 Education (Additional Curated) ────────────────────────────
+  - url: https://assets.openstax.org/oscms-prodcms/media/documents/AnatomyandPhysiology2e-WEB.pdf
+    filename: OpenStax-Anatomy-And-Physiology-2e.pdf
+    category: 600_Education
+    title: "OpenStax — Anatomy and Physiology 2e"
+    license: CC BY 4.0
+    redistribution: clean
+    size: ~88 MB
+
+  - url: https://assets.openstax.org/oscms-prodcms/media/documents/CollegePhysics2e-WEB.pdf
+    filename: OpenStax-College-Physics-2e.pdf
+    category: 600_Education
+    title: "OpenStax — College Physics 2e"
+    license: CC BY 4.0
+    redistribution: clean
+    size: ~92 MB
+
+  - url: https://assets.openstax.org/oscms-prodcms/media/documents/Chemistry2e-WEB.pdf
+    filename: OpenStax-Chemistry-2e.pdf
+    category: 600_Education
+    title: "OpenStax — Chemistry 2e"
+    license: CC BY 4.0
+    redistribution: clean
+    size: ~85 MB
+
+  # ── Zims_Medical (Kiwix Emergency & Medical ZIMs) ─────────────────
   - url: https://download.kiwix.org/zim/other/mdwiki_en_all_2024-06.zim.torrent
-    filename: mdwiki_en_all_2024-06.zim
+    filename: mdwiki_en_all_2024-06.zim.torrent
     category: Zims_Medical
-    profile: emergency-zims
-    title: "MDWiki (Internet-in-a-Box Medical Encyclopedia)"
+    title: "MDWiki (Internet-in-a-Box Medical Encyclopedia) [Torrent]"
     license: CC BY-SA 4.0
+    redistribution: clean
     size: ~8.6 GB
 
-  - url: https://download.kiwix.org/zim/other/www.ready.gov_en_2024-09.zim.torrent
-    filename: www.ready.gov_en_2024-09.zim
-    category: Zims_Survival
-    profile: emergency-zims
-    title: "Ready.gov Official Emergency Preparedness ZIM"
-    license: PD (US Government)
-    size: ~4.9 GB
-
-  - url: https://download.kiwix.org/zim/ifixit/ifixit_en_all_2024-09.zim.torrent
-    filename: ifixit_en_all_2024-09.zim
-    category: Zims_Engineering
-    profile: emergency-zims
-    title: "iFixit Repair Manuals & Teardowns ZIM"
-    license: CC BY-NC-SA 3.0
-    size: ~3.2 GB
-
   - url: https://download.kiwix.org/zim/wikipedia/wikipedia_en_medicine_maxi_2024-04.zim.torrent
-    filename: wikipedia_en_medicine_maxi_2024-04.zim
+    filename: wikipedia_en_medicine_maxi_2024-04.zim.torrent
     category: Zims_Medical
-    profile: emergency-zims
-    title: "Wikipedia Medicine (Clinical & Healthcare Maxi)"
+    title: "Wikipedia Medicine (Clinical & Healthcare Maxi) [Torrent]"
     license: CC BY-SA 4.0
+    redistribution: clean
     size: ~1.8 GB
 
   - url: https://download.kiwix.org/zim/other/medlineplus.gov_en_all_2024-10.zim.torrent
-    filename: medlineplus.gov_en_all_2024-10.zim
+    filename: medlineplus.gov_en_all_2024-10.zim.torrent
     category: Zims_Medical
-    profile: emergency-zims
-    title: "MedlinePlus Health & Drug Encyclopedia"
+    title: "MedlinePlus Health & Drug Encyclopedia [Torrent]"
     license: PD / Free (US NLM)
+    redistribution: clean
     size: ~1.8 GB
 
   - url: https://download.kiwix.org/zim/other/fas-military-medicine_en_2024-06.zim.torrent
-    filename: fas-military-medicine_en_2024-06.zim
+    filename: fas-military-medicine_en_2024-06.zim.torrent
     category: Zims_Medical
-    profile: emergency-zims
-    title: "FAS Military & Tactical Medicine Reference"
+    title: "FAS Military & Tactical Medicine Reference [Torrent]"
     license: PD (US Government)
+    redistribution: clean
     size: ~81 MB
 
   - url: https://download.kiwix.org/zim/other/zimgit-medicine_en_2024-08.zim.torrent
-    filename: zimgit-medicine_en_2024-08.zim
+    filename: zimgit-medicine_en_2024-08.zim.torrent
     category: Zims_Medical
-    profile: emergency-zims
-    title: "Global Health Emergency Medicine ZIM"
+    title: "Global Health Emergency Medicine ZIM [Torrent]"
     license: CC BY-SA 4.0
+    redistribution: clean
     size: ~70 MB
 
-  - url: https://download.kiwix.org/zim/stack_exchange/sustainability.stackexchange.com_en_all_2024-11.zim.torrent
-    filename: sustainability.stackexchange.com_en_all_2024-11.zim
+  # ── Zims_Survival (Kiwix Emergency & Survival ZIMs) ───────────────
+  - url: https://download.kiwix.org/zim/other/www.ready.gov_en_2024-09.zim.torrent
+    filename: www.ready.gov_en_2024-09.zim.torrent
+    category: Zims_Survival
+    title: "Ready.gov Official Emergency Preparedness ZIM [Torrent]"
+    license: PD (US Government)
+    redistribution: clean
+    size: ~4.9 GB
+
+  - url: https://download.kiwix.org/zim/ted/ted_mul_natural-disaster_2024-11.zim.torrent
+    filename: ted_mul_natural-disaster_2024-11.zim.torrent
+    category: Zims_Survival
+    title: "TED Talks — Natural Disasters & Crisis Management [Torrent]"
+    license: CC BY-NC-ND 4.0
+    redistribution: clean
+    size: ~560 MB
+
+  # ── Zims_Engineering (Kiwix Repair & Sustainability ZIMs) ────────
+  - url: https://download.kiwix.org/zim/ifixit/ifixit_en_all_2024-09.zim.torrent
+    filename: ifixit_en_all_2024-09.zim.torrent
     category: Zims_Engineering
-    profile: emergency-zims
-    title: "Sustainability StackExchange Archive"
+    title: "iFixit Repair Manuals & Teardowns ZIM [Torrent]"
+    license: CC BY-NC-SA 3.0
+    redistribution: clean
+    size: ~3.2 GB
+
+  - url: https://download.kiwix.org/zim/stack_exchange/sustainability.stackexchange.com_en_all_2024-11.zim.torrent
+    filename: sustainability.stackexchange.com_en_all_2024-11.zim.torrent
+    category: Zims_Engineering
+    title: "Sustainability StackExchange Archive [Torrent]"
     license: CC BY-SA 4.0
+    redistribution: clean
     size: ~20 MB
 
-  # ── 950 Kiwix Comprehensive Encyclopedias (Profile: full-zims) ────
+  - url: https://download.kiwix.org/zim/other/openstreetmap-wiki_en_all_maxi_2023-05.zim.torrent
+    filename: openstreetmap-wiki_en_all_maxi_2023-05.zim.torrent
+    category: Zims_Engineering
+    title: "OpenStreetMap Complete Mapping Wiki [Torrent]"
+    license: CC BY-SA 2.0
+    redistribution: clean
+    size: ~932 MB
+
+  # ── Zims_Encyclopedia (Kiwix Full Knowledge ZIMs) ─────────────────
   - url: https://download.kiwix.org/zim/wikipedia/wikipedia_en_all_maxi_2024-01.zim.torrent
-    filename: wikipedia_en_all_maxi_2024-01.zim
+    filename: wikipedia_en_all_maxi_2024-01.zim.torrent
     category: Zims_Encyclopedia
-    profile: full-zims
-    title: "English Wikipedia (Complete Maxi with Images)"
+    title: "English Wikipedia (Complete Maxi with Images) [Torrent]"
     license: CC BY-SA 4.0
+    redistribution: clean
     size: ~110 GB
 
   - url: https://download.kiwix.org/zim/gutenberg/gutenberg_en_all_2023-08.zim.torrent
-    filename: gutenberg_en_all_2023-08.zim
+    filename: gutenberg_en_all_2023-08.zim.torrent
     category: Zims_Literature
-    profile: full-zims
-    title: "Project Gutenberg Complete Ebook Library (70k books)"
+    title: "Project Gutenberg Complete Ebook Library (70k books) [Torrent]"
     license: PD (Project Gutenberg)
+    redistribution: clean
     size: ~77 GB
 
   - url: https://download.kiwix.org/zim/wikihow/wikihow_en_maxi_2023-03.zim.torrent
-    filename: wikihow_en_maxi_2023-03.zim
+    filename: wikihow_en_maxi_2023-03.zim.torrent
     category: Zims_HowTo
-    profile: full-zims
-    title: "WikiHow Complete Illustrated Guides"
+    title: "WikiHow Complete Illustrated Guides [Torrent]"
     license: CC BY-NC-SA 3.0
+    redistribution: clean
     size: ~51 GB
 
   - url: https://download.kiwix.org/zim/ted/ted_mul_farming_2024-10.zim.torrent
-    filename: ted_mul_farming_2024-10.zim
+    filename: ted_mul_farming_2024-10.zim.torrent
     category: Zims_Agriculture
-    profile: full-zims
-    title: "TED Talks — Sustainable Agriculture & Farming"
+    title: "TED Talks — Sustainable Agriculture & Farming [Torrent]"
     license: CC BY-NC-ND 4.0
+    redistribution: clean
     size: ~746 MB
 
-  - url: https://download.kiwix.org/zim/ted/ted_mul_natural-disaster_2024-11.zim.torrent
-    filename: ted_mul_natural-disaster_2024-11.zim
-    category: Zims_Survival
-    profile: full-zims
-    title: "TED Talks — Natural Disasters & Crisis Management"
-    license: CC BY-NC-ND 4.0
-    size: ~560 MB
-
-  # ── 980 Educational Video Packs (Profile: kalite) ─────────────────
+  # ── Videos_KALite (KA-Lite Educational Media Archive) ─────────────
   - url: https://archive.org/details/kalite_content_pack.torrent
     filename: kalite_content_pack.torrent
     category: Videos_KALite
-    profile: kalite
-    title: "KA-Lite Complete Video & Thumbnail Pack (15,414 files)"
+    title: "KA-Lite Complete Video & Thumbnail Pack (15,414 files) [Torrent]"
     license: CC BY-NC-SA 3.0 (Khan Academy)
+    redistribution: clean
     size: ~40 GB
+
+# ══════════════════════════════════════════════════════════════════════
+# External resources — valuable but NOT auto-fetched (too large, not
+# PDF/TXT, or needs a dedicated reader).  See docs/1400-sources.md.
+#
+#   Kiwix ZIM archives (browse with Kiwix, https://library.kiwix.org):
+#     - Simple English Wikipedia ZIM (~250 MB) — CC BY-SA
+#     - WikiHow ZIM (~10 GB) — CC BY-NC-SA
+#     - iFixit repair guides ZIM (~3 GB) — CC BY-NC-SA
+#     - MedlinePlus / Wikipedia Medicine ZIM (~1.7 GB) — CC BY-SA
+#     - Post-disaster prepper pack ZIM — mixed licenses
+#   Offline maps:
+#     - OpenStreetMap extracts, https://download.geofabrik.de — ODbL
+#   Education platforms:
+#     - Kolibri + Khan Academy channels, https://learningequality.org — CC BY-NC-SA
+#     - OpenStax Biology 2e PDF (~400 MB, exceeds the 100 MB ingest cap;
+#       fetch manually if wanted) — CC BY 4.0
+#   Bulk corpora:
+#     - Survival-Data community corpus,
+#       https://github.com/PR0M3TH3AN/Survival-Data — mixed, check per file
+#     - CD3WD appropriate-technology archive (via archive.org) — mixed
+# ══════════════════════════════════════════════════════════════════════
