@@ -79,9 +79,6 @@ Content acquisition in JIC is organized into tiered profiles in [`helper-scripts
 * **VITA Small-Scale Biogas Digester Design**
 * **Bureau of Reclamation**: *FIST 3-30 Transformer Maintenance*
 * **EPA Point-of-Use Water Treatment** & **DOE Small Wind Electric Systems**
-* **US Navy Rate Training Manuals**: *Tools and Their Uses*, *Construction Electrician 3 & 2*
-* **Bureau of Reclamation**: *FIST 3-30 Transformer Maintenance*
-* **EPA Point-of-Use Water Treatment** & **DOE Small Wind Electric Systems**
 
 ### `500_Comms` — Emergency Communications & Radio (6 sources)
 * **ARRL Emergency Communications Handbook**

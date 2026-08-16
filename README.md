@@ -60,7 +60,7 @@ Background thinking on the problem space is in the [docs/](docs/) folder: [typic
 
 ## How it works
 
-The system is written in C++17 and compiles to two binaries: a server and an ingestion worker. Both link against [llama.cpp](https://github.com/ggml-org/llama.cpp) for LLM inference and embeddings, [MuPDF](https://github.com/ArtifexSoftware/mupdf) for PDF text extraction, and SQLite with [sqlite-vec](https://github.com/asg017/sqlite-vec) and FTS5 for hybrid search. The server uses [cpp-httplib](https://github.com/yhirose/cpp-httplib) for HTTP. The default LLM is Google Gemma 4 E4B Instruct (Q4_0, ~5.1 GB); embeddings use nomic-embed-text-v1.5 (768-dimensional, ~260 MB).
+The system is written in C++17 and compiles to two binaries: a server and an ingestion worker. Both link against [llama.cpp](https://github.com/ggml-org/llama.cpp) for LLM inference and embeddings, [MuPDF](https://github.com/ArtifexSoftware/mupdf) for PDF text extraction, and SQLite with [sqlite-vec](https://github.com/asg017/sqlite-vec) and FTS5 for hybrid search. The server uses [cpp-httplib](https://github.com/yhirose/cpp-httplib) for HTTP. The default LLM is Google Gemma 4 E4B Mobile (Q4_0, ~4.3 GB, [Google AI Core](https://ai.google.dev/gemma/docs/core)); embeddings use Gemini Embedding 2 / EmbeddingGemma (768-dimensional, ~265 MB).
 
 **Content lives in volumes, not in the image.** The container image holds only the binaries and the web UI; the document library (`jic-sources` volume), the search index (`jic-data` volume), and the GGUF models (`./gguf_models` bind mount) are all provisioned at runtime. That keeps the image small, lets you update the library without rebuilding, and means a `docker compose down -v` is the only thing that can delete your data.
 
@@ -109,7 +109,7 @@ Models must be present before starting Docker — they are not fetched at runtim
 ./helper-scripts/fetch-models.sh
 ```
 
-This places two GGUF files in `./gguf_models/`: `Llama-3.2-3B-Instruct-Q4_K_M.gguf` (~2.0 GB, the LLM) and `nomic-embed-text-v1.5.Q4_K_M.gguf` (~260 MB, the embedding model).
+This places two GGUF files in `./gguf_models/`: `gemma-4-E4B-it-Q4_0.gguf` (~4.3 GB, Google Gemma 4 E4B Mobile) and `embeddinggemma-300M-qat-Q4_0.gguf` (~265 MB, Gemini Embedding 2 / EmbeddingGemma).
 
 ### 2. Build and run
 
