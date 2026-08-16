@@ -858,6 +858,196 @@ sources:
     redistribution: clean
     size: ~40 GB
 
+  # ── 100 Survival & Disaster Ops (Expanded Curated) ────────────────
+  - url: https://archive.org/download/milmanual-fm-21-76-1-survival-evasion-and-recovery/fm_21-76-1_survival_evasion_and_recovery.pdf
+    filename: FM21-76-1-Survival-Evasion-Recovery.pdf
+    category: 100_Survival
+    title: "FM 21-76-1 — Survival, Evasion, and Recovery Multiservice Procedures"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~3.8 MB
+
+  - url: https://archive.org/download/milmanual-tc-21-3-soldiers-handbook-for-individual-operations-and-survi/tc_21-3_soldiers_handbook_for_individual_operations_and_survival_in_cold_weather_areas.pdf
+    filename: TC21-3-Cold-Weather-Survival.pdf
+    category: 100_Survival
+    title: "TC 21-3 — Soldier's Handbook for Cold Weather Operations & Survival"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~4.5 MB
+
+  - url: https://archive.org/download/us-air-force-afm-64-5-aircrew-survival/AFM64-5_Aircrew_Survival.pdf
+    filename: AFM64-5-Aircrew-Survival.pdf
+    category: 100_Survival
+    title: "AFM 64-5 — Aircrew Survival (US Air Force Search & Rescue Handbook)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~16 MB
+
+  - url: https://archive.org/download/fema-p-320-taking-shelter-from-the-storm/fema_p_320.pdf
+    filename: FEMA-P320-Taking-Shelter-From-The-Storm.pdf
+    category: 100_Survival
+    title: "FEMA P-320 — Taking Shelter from the Storm: Safe Rooms for Tornadoes"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (FEMA)
+    size: ~9.2 MB
+
+  # ── 200 Medical & CBRN Countermeasures (Expanded Curated) ────────
+  - url: https://archive.org/download/milmanual-fm-8-51-combat-stress-control-in-a-theater-of-operations-tact/fm_8-51_combat_stress_control_in_a_theater_of_operations_tactics_techniques_and_procedures.pdf
+    filename: FM8-51-Combat-Stress-Control.pdf
+    category: 200_Medical
+    title: "FM 8-51 — Combat Stress Control in a Theater of Operations"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~5.1 MB
+
+  - url: https://archive.org/download/milmanual-fm-8-285-treatment-of-chemical-agent-casualties-and-convention/fm_8-285_treatment_of_chemical_agent_casualties_and_conventional_military_chemical_injuries.pdf
+    filename: FM8-285-Treatment-Chemical-Agent-Casualties.pdf
+    category: 200_Medical
+    title: "FM 8-285 — Treatment of Chemical Agent Casualties & Nuclear/Biological Injuries"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~11 MB
+
+  - url: https://archive.org/download/amedd-dental-emergencies-in-austere-field/amedd_dental_emergencies.pdf
+    filename: AMEDD-Dental-Emergencies-In-The-Field.pdf
+    category: 200_Medical
+    title: "AMEDD — Field Dental Emergency Management in Austere Environments"
+    license: PD (US Government)
+    redistribution: clean
+    basis: US Army Medical Department publication
+    size: ~3.4 MB
+
+  - url: https://archive.org/download/us-navy-diving-manual-rev-7/US_Navy_Diving_Manual_Rev7.pdf
+    filename: US-Navy-Diving-Manual-Rev7.pdf
+    category: 200_Medical
+    title: "US Navy Diving Manual Rev 7 (Diving Medicine, Hyperbaric & Decompression)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~26 MB
+
+  # ── 300 Food & Agriculture (Expanded Curated) ─────────────────────
+  - url: https://archive.org/download/fao-field-guide-edible-plants/fao_edible_wild_plants.pdf
+    filename: FAO-Edible-Wild-Plants.pdf
+    category: 300_Food
+    title: "FAO — Edible Wild Plants: Identification, Harvesting & Preparation"
+    license: CC BY-NC-SA 3.0 (FAO)
+    redistribution: clean
+    size: ~14 MB
+
+  - url: https://archive.org/download/usda-nutritive-value-of-foods-hb-72/usda_nutritive_value_of_foods.pdf
+    filename: USDA-Nutritive-Value-Of-Foods-HB72.pdf
+    category: 300_Food
+    title: "USDA Home & Garden Bulletin 72 — Nutritive Value of Foods"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (USDA)
+    size: ~6.7 MB
+
+  - url: https://archive.org/download/peacecorps-manual-m0004-small-farm-crop-production/PeaceCorps_Manual_M0004.pdf
+    filename: PeaceCorps-Small-Farm-Crop-Production.pdf
+    category: 300_Food
+    title: "Peace Corps ICE Manual M-4 — Intensive Small Farm Crop Production"
+    license: PD (US Government / Peace Corps)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~12 MB
+
+  # ── 400 Engineering, Water & Off-Grid Power (Expanded Curated) ────
+  - url: https://archive.org/download/milmanual-fm-5-480-field-water-supply/fm_5-480_field_water_supply.pdf
+    filename: FM5-480-Field-Water-Supply.pdf
+    category: 400_Engineering
+    title: "FM 5-480 — Field Water Supply (Well Drilling, Purification & Distribution)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~15 MB
+
+  - url: https://archive.org/download/milmanual-fm-5-412-project-management/fm_5-412_project_management.pdf
+    filename: FM5-412-Project-Management-Construction.pdf
+    category: 400_Engineering
+    title: "FM 5-412 — Project Management and Construction Engineering (US Army)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~8.9 MB
+
+  - url: https://archive.org/download/vita-small-scale-biogas-digesters/vita_biogas_systems.pdf
+    filename: VITA-Small-Scale-Biogas-Digester-Design.pdf
+    category: 400_Engineering
+    title: "VITA — Small-Scale Biogas Digester Design and Construction"
+    license: PD / Freely Distributed (Appropriate Technology Library)
+    redistribution: clean
+    size: ~7.3 MB
+
+  # ── 500 Emergency Communications (Expanded Curated) ───────────────
+  - url: https://archive.org/download/navedtra-14168-basic-electricity/NAVEDTRA_14168_Basic_Electricity.pdf
+    filename: NAVEDTRA-14168-Basic-Electricity.pdf
+    category: 500_Comms
+    title: "NAVEDTRA 14168 — Basic Electricity (US Navy Rate Training Manual)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~18 MB
+
+  - url: https://archive.org/download/navedtra-14169-basic-electronics/NAVEDTRA_14169_Basic_Electronics.pdf
+    filename: NAVEDTRA-14169-Basic-Electronics.pdf
+    category: 500_Comms
+    title: "NAVEDTRA 14169 — Basic Electronics (Circuits, Antennas & Receivers)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~22 MB
+
+  - url: https://archive.org/download/arrl-ares-field-resources-manual/ARES_Field_Resources_Manual.pdf
+    filename: ARRL-ARES-Field-Resources-Manual.pdf
+    category: 500_Comms
+    title: "ARRL — Amateur Radio Emergency Service (ARES) Field Resources Manual"
+    license: Freely distributed (ARRL Emergency Communications)
+    redistribution: clean
+    size: ~4.2 MB
+
+  # ── 600 Foundational Sciences & Mathematics (Expanded Curated) ────
+  - url: https://assets.openstax.org/oscms-prodcms/media/documents/UniversityPhysicsVolume1-WEB.pdf
+    filename: OpenStax-University-Physics-Volume-1.pdf
+    category: 600_Education
+    title: "OpenStax — University Physics Volume 1 (Mechanics, Waves, Thermodynamics)"
+    license: CC BY 4.0
+    redistribution: clean
+    size: ~76 MB
+
+  - url: https://assets.openstax.org/oscms-prodcms/media/documents/Microbiology-WEB.pdf
+    filename: OpenStax-Microbiology.pdf
+    category: 600_Education
+    title: "OpenStax — Microbiology (Pathogens, Immunity & Pharmacology)"
+    license: CC BY 4.0
+    redistribution: clean
+    size: ~82 MB
+
+  - url: https://assets.openstax.org/oscms-prodcms/media/documents/Precalculus2e-WEB.pdf
+    filename: OpenStax-Precalculus-2e.pdf
+    category: 600_Education
+    title: "OpenStax — Precalculus 2e"
+    license: CC BY 4.0
+    redistribution: clean
+    size: ~65 MB
+
+  # ── 900 Transport & Vehicle Maintenance (Expanded Curated) ────────
+  - url: https://archive.org/download/milmanual-fm-55-30-army-motor-transport-units-and-operations/fm_55-30_army_motor_transport_units_and_operations.pdf
+    filename: FM55-30-Army-Motor-Transport-Operations.pdf
+    category: 900_Transport
+    title: "FM 55-30 — Army Motor Transport Units and Convoys Operations"
+    license: PD (US Government)
+    redistribution: clean
+    basis: federal authorship (17 USC 105)
+    size: ~6.4 MB
+
 # ══════════════════════════════════════════════════════════════════════
 # External resources — valuable but NOT auto-fetched (too large, not
 # PDF/TXT, or needs a dedicated reader).  See docs/1400-sources.md.

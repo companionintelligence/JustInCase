@@ -44,10 +44,10 @@
 # ══════════════════════════════════════════════════════════════════════
 
 x-jic-env: &jic-env
-  LLM_MODEL: llama3.2:3b
-  EMBEDDING_MODEL: nomic-embed-text
-  LLM_GGUF_FILE: Llama-3.2-3B-Instruct-Q4_K_M.gguf
-  EMBEDDING_GGUF_FILE: nomic-embed-text-v1.5.Q4_K_M.gguf
+  LLM_MODEL: gemma4:e4b
+  EMBEDDING_MODEL: gemini-embedding-2
+  LLM_GGUF_FILE: gemma-4-E4B-it-Q4_0.gguf
+  EMBEDDING_GGUF_FILE: embeddinggemma-300M-qat-Q4_0.gguf
   # ── Error reporting (opt-out; see docs/1700-error-reporting.md) ──
   # Only meaningful in an image built with --build-arg JIC_SENTRY=1; a
   # default image has no SDK linked and ignores all of these. All empty by
