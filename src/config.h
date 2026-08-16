@@ -81,7 +81,7 @@ inline std::string get_gguf_dir() {
 
 inline std::string get_llm_model_path() {
     return get_gguf_dir() + "/" +
-           env_or("LLM_GGUF_FILE", "gemma-4-E4B_q4_0-it.gguf");
+           env_or("LLM_GGUF_FILE", "gemma-2-2b-it-Q4_K_M.gguf");
 }
 
 inline std::string get_embedding_model_path() {
@@ -161,7 +161,7 @@ inline std::string describe_model_path(const std::string& path) {
 }
 
 inline std::string get_llm_model_name() {
-    return env_or("LLM_MODEL", "gemma-4:e4b");
+    return env_or("LLM_MODEL", "gemma2:2b");
 }
 
 inline std::string get_embedding_model_name() {

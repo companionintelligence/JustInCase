@@ -18,9 +18,9 @@
 # ══════════════════════════════════════════════════════════════════════
 
 x-jic-env: &jic-env
-  LLM_MODEL: gemma-4:e4b
+  LLM_MODEL: gemma2:2b
   EMBEDDING_MODEL: nomic-embed-text
-  LLM_GGUF_FILE: gemma-4-E4B_q4_0-it.gguf
+  LLM_GGUF_FILE: gemma-2-2b-it-Q4_K_M.gguf
   EMBEDDING_GGUF_FILE: nomic-embed-text-v1.5.Q4_K_M.gguf
   # ── Error reporting (opt-out; see docs/1700-error-reporting.md) ──
   # Only meaningful in an image built with --build-arg JIC_SENTRY=1; a
