@@ -53,6 +53,10 @@ test.sh
 # baked into the image for the compose "fetch" profile
 helper-scripts/
 !helper-scripts/fetch-source-data.sh
+# ...and the ZIM fetcher, which is the entrypoint of the zim-fetch image
+# (Dockerfile.fetch). Without this line the COPY fails at build time with
+# "not found", which reads like a missing file rather than an ignore rule.
+!helper-scripts/zim-fetch-entrypoint.sh
 
 # Build artifacts
 build/

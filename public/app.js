@@ -24,6 +24,7 @@
     '600_Education':   'Education',
     '700_Social':      'Civic & social',
     '800_Software':    'Software & technical',
+    '900_Transport':   'Transport & mobility',
   };
 
   const SUGGESTED_PROMPTS = [
@@ -65,7 +66,29 @@
       .replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>')
       .replace(/\n\n+/g, '</p><p>')
       .replace(/\n/g, '<br>');
-    return '<p>' + html + '</p>';
+
+    html = '<p>' + html + '</p>';
+
+    // The `\n` → `<br>` pass above fires inside the <ul> it just built and
+    // right after its closing tag, so a three-bullet answer rendered as
+    // <ul><li>…</li><br><li>…</li>…</ul><br> — a stray break between every
+    // pair of bullets (invalid as a child of <ul>) plus one more under the
+    // list. The blocks also sit inside the wrapping <p>, which the parser
+    // force-closes, leaving an empty paragraph that keeps its bottom margin.
+    // Together those are the ragged gaps in the answer bubble.
+    return html
+      // stray breaks introduced around block boundaries
+      .replace(/<br>\s*(?=<\/?(?:ul|ol|li|h[2-4]|pre)\b)/g, '')
+      .replace(/(<\/(?:ul|ol|h[2-4]|pre)>)\s*<br>/g, '$1')
+      // lift blocks out of the paragraph instead of letting the parser do it
+      .replace(/(<(?:ul|ol|h[2-4]|pre)\b)/g, '</p>$1')
+      .replace(/(<\/(?:ul|ol|h[2-4]|pre)>)/g, '$1<p>')
+      .replace(/<p>\s*<\/p>/g, '');
+  }
+
+  function formatCount(n) {
+    const v = Number(n);
+    return Number.isFinite(v) ? v.toLocaleString('en-US') : '—';
   }
 
   function formatUptime(seconds) {
@@ -79,6 +102,28 @@
     if (!bytes) return '';
     if (bytes < 1048576) return Math.max(1, Math.round(bytes / 1024)) + ' KB';
     return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+  // The field library is an inventory of documents, so it should list titles.
+  // Printing the raw basename cost it two ways: ".pdf" repeated on 27 of 32
+  // rows carried no information and used the width that ran ten names into an
+  // ellipsis, and hyphen-joined words read as identifiers rather than as the
+  // books they are. The exact filename stays on the row's `title`, and every
+  // citation in an answer still prints the full path unchanged — this is the
+  // sidebar's label only.
+  //
+  // A hyphen only becomes a space where it is joining words: before an
+  // uppercase letter, or after a lowercase one. That leaves document numbers
+  // intact ("FM3-25-26-Map-Reading" → "FM3-25-26 Map Reading", not
+  // "FM3 25 26 Map Reading") and never touches CamelCase, so "OpenStax",
+  // "ThinkOS" and "Eloquent-JavaScript" survive.
+  function displayTitle(filename) {
+    const base = String(filename).split('/').pop();
+    return base
+      .replace(/\.(pdf|txt|md|epub|html?)$/i, '')
+      .replace(/[_-](?=[A-Z])/g, ' ')
+      .replace(/(?<=[a-z])[_-]/g, ' ')
+      .trim();
   }
 
   // ── Chat rendering ─────────────────────────────────────────────────
@@ -117,8 +162,18 @@
       const item = document.createElement('div');
       item.className = 'source-item';
       const score = m.score ? `<span class="source-score">match ${(m.score * 100).toFixed(0)}%</span>` : '';
+      // A ZIM citation names an ENCYCLOPEDIA ARTICLE, not a file in the
+      // sources volume, so it is deliberately not a link: /sources/<title>
+      // would 404, and a citation that 404s is worse than one that does not
+      // offer to open. It is labelled instead, so the reader can still see
+      // which claims came from the field manuals and which from the library.
+      const isZim = m.origin === 'zim';
+      const label = isZim
+        ? `<span class="source-name">${escapeHtml(m.filename)}</span>` +
+          `<span class="source-origin">encyclopedia</span>`
+        : `<a href="/sources/${encodeURI(m.filename)}" target="_blank" rel="noopener">${escapeHtml(m.filename)}</a>`;
       item.innerHTML =
-        `<a href="/sources/${encodeURI(m.filename)}" target="_blank" rel="noopener">${escapeHtml(m.filename)}</a>` +
+        label +
         score +
         `<p class="source-snippet">${escapeHtml(m.text || '')}</p>`;
       details.appendChild(item);
@@ -171,10 +226,13 @@
   function renderChips() {
     const wrap = $('chips');
     wrap.innerHTML = '';
-    SUGGESTED_PROMPTS.forEach((p) => {
+    SUGGESTED_PROMPTS.forEach((p, i) => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'chip';
+      // At 360px every chip is its own row; six of them took two thirds of the
+      // viewport and pushed the welcome copy under the composer, cutting the
+      // last line in half. CSS drops the overflow below 620px.
+      b.className = 'chip' + (i >= 3 ? ' chip-extra' : '');
       b.textContent = p;
       b.addEventListener('click', () => {
         $('user-input').value = p;
@@ -186,20 +244,40 @@
 
   // ── Status & library ───────────────────────────────────────────────
 
-  function setPill(kind, text) {
+  // `detail` is the secondary half of the pill ("· 32 docs"). It is dropped
+  // below 620px, where the full string pushed "New chat" onto a second line.
+  function setPill(kind, text, detail) {
     const pill = $('status-pill');
     pill.className = 'status-pill ' + kind;
     pill.querySelector('.pill-text').textContent = text;
+    $('pill-detail').textContent = detail ? ' · ' + detail : '';
   }
 
-  function setBanner(text) {
+  // `parts` are plain strings, except that a { path } object is rendered as a
+  // <code> span. The degraded-mode banner names the directory to drop the GGUF
+  // files into — the one actionable thing a self-hoster needs from it — and set
+  // in running prose an absolute container path reads as a leaked debug string.
+  // Marking it up as a path says "this is a literal to copy", which is what it
+  // is, without replacing the instruction with vaguer prose.
+  function setBanner(...parts) {
     const b = $('banner');
-    if (text) {
-      b.textContent = text;
-      b.hidden = false;
-    } else {
+    b.textContent = '';
+    const filled = parts.filter((p) => p && (typeof p !== 'string' || p.length));
+    if (!filled.length) {
       b.hidden = true;
+      return;
     }
+    for (const part of filled) {
+      if (typeof part === 'string') {
+        b.appendChild(document.createTextNode(part));
+      } else {
+        const code = document.createElement('code');
+        code.className = 'banner-path';
+        code.textContent = part.path;
+        b.appendChild(code);
+      }
+    }
+    b.hidden = false;
   }
 
   async function refreshStatus() {
@@ -209,26 +287,54 @@
       const s = await res.json();
       state.statusFailures = 0;
 
-      $('st-engine').textContent = s.llm_loaded ? 'online' : 'degraded';
+      // "online"/"degraded" read as a contradiction next to the app's own
+      // "Runs 100% offline" footer. This field is really about whether the
+      // local weights are resident, so say that.
+      $('st-engine').textContent = s.llm_loaded ? 'model loaded' : 'no model';
       $('st-engine').className = s.llm_loaded ? 'ok' : 'err';
-      $('st-index').textContent = `${s.documents_indexed} chunks / ${s.files_processed} files`;
+      $('st-index').textContent =
+        `${formatCount(s.documents_indexed)} chunks · ${formatCount(s.files_processed)} files`;
       $('st-index').className = s.documents_indexed > 0 ? 'ok' : 'warn';
+      // Same contradiction the Engine field had, one tile over: in degraded
+      // mode "no model" sat next to a confidently-lit "llama3.2:3b". The name
+      // is the configured model, so when it is not resident it is dimmed
+      // rather than presented as the running one.
       $('st-model').textContent = s.llm_model || '—';
-      $('st-uptime').textContent = formatUptime(s.uptime_seconds || 0);
+      $('st-model').className = s.llm_loaded ? '' : 'idle';
+      $('st-embed').textContent = s.embedding_model || '—';
+
+      // Optional ZIM library. `configured` and `reachable` are separate fields
+      // for a reason: the row appears only for a deployment that asked for a
+      // library, and then tells the truth about whether it answered.
+      const zim = s.zim_library || {};
+      const zimRow = $('st-zim-row');
+      if (zimRow) zimRow.hidden = !zim.configured;
+      if (zim.configured) {
+        const n = zim.book_count || 0;
+        $('st-zim').textContent = zim.reachable
+          ? `${formatCount(n)} archive${n === 1 ? '' : 's'}`
+          : 'not reachable';
+        $('st-zim').className = zim.reachable && n > 0 ? 'ok' : 'warn';
+      }
       $('st-version').textContent = 'v' + (s.version || '?');
+      $('sidebar-footer').title = s.uptime_seconds
+        ? 'Server up ' + formatUptime(s.uptime_seconds)
+        : '';
 
       if (!s.llm_loaded) {
         setPill('err', 'LLM missing');
-        const where = s.gguf_dir || 'gguf_models/';
-        setBanner('Language model not loaded — drop the GGUF files into ' + where +
-                  ' and they load automatically within ~30s (no restart needed). ' +
-                  'The library stays browsable; answers are unavailable.');
+        setBanner(
+          'Language model not loaded — drop the GGUF files into ',
+          { path: s.gguf_dir || 'gguf_models/' },
+          ' and they load automatically within ~30s (no restart needed). ' +
+          'The library stays browsable; answers are unavailable.'
+        );
       } else if (s.documents_indexed === 0) {
         setPill('warn', 'Index empty');
-        setBanner('');
+        setBanner();
       } else {
-        setPill('ok', `Ready · ${s.files_processed} docs`);
-        setBanner('');
+        setPill('ok', 'Ready', `${formatCount(s.files_processed)} docs`);
+        setBanner();
       }
 
       if (s.files_processed !== state.lastFileCount) {
@@ -282,9 +388,8 @@
           a.target = '_blank';
           a.rel = 'noopener';
           a.title = f.filename + (f.size_bytes ? ` · ${formatSize(f.size_bytes)}` : '');
-          const base = f.filename.split('/').pop();
           a.innerHTML =
-            `<span class="lib-name">${escapeHtml(base)}</span>` +
+            `<span class="lib-name">${escapeHtml(displayTitle(f.filename))}</span>` +
             `<span class="lib-chunks">${f.status === 'skipped' ? 'skipped' : f.chunks}</span>`;
           list.appendChild(a);
         });
@@ -386,8 +491,20 @@
 
   // ── Init ───────────────────────────────────────────────────────────
 
+  // The full placeholder is 38 characters and overflowed the narrow composer,
+  // so it read as "Ask an emergency or survival (" — a clipped string, not a
+  // prompt. CSS cannot swap placeholder text, so match the viewport here.
+  function syncPlaceholder() {
+    const narrow = window.matchMedia('(max-width: 620px)').matches;
+    $('user-input').placeholder = narrow
+      ? 'Ask a survival question…'
+      : 'Ask an emergency or survival question…';
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     initTheme();
+    syncPlaceholder();
+    window.matchMedia('(max-width: 620px)').addEventListener('change', syncPlaceholder);
     showWelcome();
     renderChips();
 
