@@ -1,0 +1,29 @@
+# rendered videos — regenerate with `ci-video render`
+out/
+
+# generated compositions — regenerate with `ci-video build`
+build/
+
+# playwright auth state
+.auth/
+
+node_modules/
+
+# captured screenshots ARE COMMITTED — see assets/shots/.
+#
+# They used to be ignored here, on the reasoning that capturing locally is cheap
+# and a stale committed screenshot outlives the UI it photographed. That trade
+# only holds if everyone can re-capture, and fleet-wide they cannot: as of
+# 2026-08-05 only three of twelve products have a stage that actually comes up.
+# A gitignored shot set therefore means nobody but the stage's author can render
+# the cut, and eleven of twelve products were rendering every screen beat as a
+# "capture pending" slate.
+#
+# So the shots are inputs, checked in like any other input. Staleness is the
+# cost we accept for a render anyone can reproduce; re-run `./video/make.sh`
+# when the UI moves and commit the new PNGs in the same change.
+
+# npm install writes this when the toolchain is installed; the project has never
+# had one and both make.sh and the workflow use `npm install`, so committing it
+# now would quietly change how the video toolchain resolves.
+package-lock.json

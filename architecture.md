@@ -54,7 +54,7 @@ volumes are writable.
 
 | # | Actor step | System response |
 |---|---|---|
-| 1 | `./helper-scripts/fetch-models.sh` | GGUF models land in `./gguf_models/` (LLM ~2 GB, embeddings ~260 MB) |
+| 1 | `./helper-scripts/fetch-models.sh` | GGUF models land in `./gguf_models/` (LLM ~2 GB, embeddings ~84 MB) |
 | 2 | `docker compose up --build -d` | Image builds; server + ingestion start; UI live at `:8080` (degraded if models missing) |
 | 3 | `docker compose --profile fetch run --rm content-fetch` | Library volume seeded + curated catalog downloaded with integrity checks |
 | 4 | *(wait ≤ 30 s)* | Ingestion discovers settled files, indexes them; library panel fills in live |
@@ -288,5 +288,9 @@ flowchart LR
 - No OCR for scanned PDFs (MuPDF extracts text layers only)
 - Page-level citation anchors (per-page text already available)
 - Re-index on file change (hash-based) rather than name-based dedupe
-- Kiwix ZIM ingestion and offline map tiles as sibling services
+- ~~Kiwix ZIM ingestion and offline map tiles as sibling services~~ — done, as the
+  `library` and `maps` compose profiles. ZIM content is **not** ingested: `src/kiwix_client.h`
+  queries kiwix-serve's own index at answer time and folds the hits into the same RRF as the
+  local retrievers, so an answer can cite a Wikipedia article without an embedding pass over
+  100 GB. See [`docs/1800-project-nomad-parity.md`](docs/1800-project-nomad-parity.md).
 - pgvector escape hatch if collections outgrow one SQLite file

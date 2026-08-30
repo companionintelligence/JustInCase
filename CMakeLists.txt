@@ -111,6 +111,47 @@ else()
     set(LLAMA_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/llama.cpp)
 endif()
 
+# ── Sentry (optional, OFF by default) ────────────────────────────────
+# Error reporting is opt-out at RUNTIME (a DSN turns it on, CI_TELEMETRY /
+# CI_LOCAL_ONLY turn it back off) but optional at BUILD time. Without
+# -DJIC_SENTRY=ON, src/telemetry.h compiles every entry point to a no-op and
+# no SDK is linked, so "no DSN configured ⇒ no Sentry in the binary" is a fact
+# about the artifact rather than a promise about its behaviour.
+#
+# The SDK is built with SENTRY_BACKEND=inproc — see the crash-handler rationale
+# at the top of src/telemetry.h. crashpad/breakpad would emit minidumps, i.e. a
+# memory image of a process holding the user's questions, their documents and
+# the model's output, and no client-side callback can redact a minidump.
+option(JIC_SENTRY "Link sentry-native for opt-out error reporting" OFF)
+set(JIC_SENTRY_PREFIX "/sentry-install" CACHE PATH
+    "Install prefix of a sentry-native build (Dockerfile stage 'sentry-builder')")
+
+if(JIC_SENTRY)
+    find_package(sentry REQUIRED CONFIG
+                 PATHS "${JIC_SENTRY_PREFIX}"
+                 PATH_SUFFIXES lib/cmake/sentry lib64/cmake/sentry
+                 NO_DEFAULT_PATH)
+endif()
+
+# Applies the Sentry build mode to a target. Kept as a function so the two
+# executables cannot drift apart.
+function(jic_configure_telemetry target)
+    if(JIC_SENTRY)
+        target_compile_definitions(${target} PRIVATE JIC_SENTRY_ENABLED)
+        target_link_libraries(${target} PRIVATE sentry::sentry)
+    endif()
+endfunction()
+
+# Which ggml GPU backend this binary was COMPILED against. Baked in at build
+# time rather than read from the environment on purpose: asking for GPU layers
+# on a CPU-only build is silently ignored by llama.cpp, so the only honest way
+# for /status to answer "will this machine actually use the GPU" is a value
+# that a runtime env var cannot contradict.
+set(JIC_GPU "off" CACHE STRING "GPU backend llama.cpp was built with (off|vulkan|cuda|hip)")
+function(jic_configure_gpu target)
+    target_compile_definitions(${target} PRIVATE JIC_GPU_BACKEND="${JIC_GPU}")
+endfunction()
+
 # ── Executables ──────────────────────────────────────────────────────
 
 add_executable(jic-server    src/server.cpp)
@@ -127,15 +168,26 @@ set(JIC_INCLUDES
 
 # Common link libraries
 if(EXISTS "/llama-install/lib/libllama.a")
+    # GGML's archives are GLOBBED, not listed. A GPU build emits an extra
+    # backend archive next to the CPU ones — libggml-vulkan.a, libggml-cuda.a,
+    # libggml-hip.a — and the previous hard-coded list of base/cpu/ggml would
+    # simply not link it. That failure is silent in the worst way: ggml still
+    # builds, the binary still runs, and inference quietly stays on the CPU
+    # while JIC_N_GPU_LAYERS says otherwise. Globbing keeps the link set
+    # honest for whatever the llama-builder stage actually produced.
+    file(GLOB LLAMA_GGML_ARCHIVES "/llama-install/lib/libggml*.a")
     set(LLAMA_LINK_LIBS
         -Wl,--whole-archive
         /llama-install/lib/libllama.a
         /llama-install/lib/libcommon.a
-        /llama-install/lib/libggml-base.a
-        /llama-install/lib/libggml-cpu.a
-        /llama-install/lib/libggml.a
+        ${LLAMA_GGML_ARCHIVES}
         -Wl,--no-whole-archive
     )
+    # The Vulkan loader is dynamic and is not inside any ggml archive.
+    if(JIC_GPU STREQUAL "vulkan")
+        find_library(JIC_VULKAN_LIB vulkan REQUIRED)
+        list(APPEND LLAMA_LINK_LIBS ${JIC_VULKAN_LIB})
+    endif()
 else()
     set(LLAMA_LINK_LIBS llama ggml)
 endif()
@@ -154,12 +206,21 @@ set(COMMON_LIBS
 # ── jic-server ───────────────────────────────────────────────────────
 target_include_directories(jic-server PRIVATE ${JIC_INCLUDES})
 target_link_libraries(jic-server PRIVATE ${COMMON_LIBS})
+jic_configure_telemetry(jic-server)
+jic_configure_gpu(jic-server)
 
 # ── jic-ingestion ────────────────────────────────────────────────────
 target_include_directories(jic-ingestion PRIVATE ${JIC_INCLUDES})
 target_link_libraries(jic-ingestion PRIVATE ${COMMON_LIBS})
+jic_configure_telemetry(jic-ingestion)
+jic_configure_gpu(jic-ingestion)
 
 # ── Build info ───────────────────────────────────────────────────────
 message(STATUS "JIC build configuration:")
 message(STATUS "  CMAKE_BUILD_TYPE : ${CMAKE_BUILD_TYPE}")
 message(STATUS "  MuPDF include    : ${MUPDF_INCLUDE_DIR}")
+if(JIC_SENTRY)
+    message(STATUS "  Sentry           : ON (inproc backend, no minidumps)")
+else()
+    message(STATUS "  Sentry           : OFF (no SDK linked into the binaries)")
+endif()

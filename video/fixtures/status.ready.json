@@ -1,0 +1,13 @@
+{
+  "version": "0.3.0",
+  "uptime_seconds": 5220,
+  "documents_indexed": 11490,
+  "files_processed": 32,
+  "llm_loaded": true,
+  "embeddings_loaded": true,
+  "llm_model": "llama3.2:3b",
+  "embedding_model": "nomic-embed-text",
+  "gguf_dir": "/app/gguf_models",
+  "llm_gguf_present": true,
+  "embedding_gguf_present": true
+}

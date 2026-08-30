@@ -238,6 +238,11 @@ body {
 
 .status-grid div { min-width: 0; }
 
+/* "11,490 chunks · 32 files" never fit a half-width column and ellipsised to
+   "11490 chunks / 3…" — the app failing to show its own headline number.
+   The long stats get the full panel width. */
+.status-grid .status-wide { grid-column: 1 / -1; }
+
 .status-grid dt {
   font-family: var(--mono);
   font-size: 0.62rem;
@@ -254,6 +259,7 @@ body {
   text-overflow: ellipsis;
 }
 
+.status-grid dd.idle { color: var(--fg-dim); }
 .status-grid dd.ok   { color: var(--ok); }
 .status-grid dd.warn { color: var(--warn); }
 .status-grid dd.err  { color: var(--err); }
@@ -307,12 +313,20 @@ body {
 
 .lib-file:hover { background: var(--bg3); }
 
+/* Dropping the ".pdf" suffix (see displayTitle) took the clipped rows from ten
+   to three. Those three are genuinely long titles, so give them a second line
+   rather than an ellipsis: the clamp only expands the rows that need it, which
+   costs three lines across the whole 32-document library instead of the row
+   height every fixed two-line layout would spend. */
 .lib-file .lib-name {
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow-wrap: anywhere;
 }
 
 .lib-file .lib-chunks {
@@ -360,6 +374,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .icon-btn, .ghost-btn {
@@ -383,11 +398,20 @@ body {
 .icon-btn svg { width: 18px; height: 18px; }
 
 .ghost-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 6px 12px;
   font-size: 0.8rem;
   font-family: var(--mono);
   letter-spacing: 0.04em;
+  /* without this the button wrapped to two lines the moment the topbar ran
+     out of room, which is what "New / chat" was in the 360px shots */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
+
+.ghost-btn-icon { display: none; width: 16px; height: 16px; }
 
 .icon-btn:hover, .ghost-btn:hover {
   background: var(--bg3);
@@ -440,6 +464,8 @@ body {
 
 .toggle input { accent-color: var(--accent); cursor: pointer; }
 
+.toggle-short { display: none; }
+
 /* ── Banner (degraded mode) ─────────────────────────────────────── */
 
 .banner {
@@ -448,6 +474,17 @@ body {
   border-bottom: 1px solid var(--line);
   color: var(--warn);
   font-size: 0.82rem;
+}
+
+/* The GGUF directory is a literal the reader has to act on, not prose. Setting
+   it as a path stops it reading as a debug string leaking into the UI. */
+.banner-path {
+  font-family: var(--mono);
+  font-size: 0.95em;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+  white-space: nowrap;
 }
 
 /* ── Chat ───────────────────────────────────────────────────────── */
@@ -568,6 +605,30 @@ body {
 }
 
 .source-item a:hover { text-decoration: underline; }
+
+/* An encyclopedia citation. Same weight and size as a document citation so it
+   reads as an equal source, but in body colour rather than accent — the accent
+   is this UI's affordance for "this opens", and a ZIM article has no local file
+   to open. Nothing here should imply a link that is not there. */
+.source-name {
+  color: var(--fg);
+  font-size: 0.82rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.source-origin {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 8px;
+  white-space: nowrap;
+}
 
 .source-score {
   font-family: var(--mono);
@@ -762,8 +823,45 @@ body {
   }
 
   #sidebar-toggle { display: inline-flex; }
+}
 
-  .toggle span { display: none; }
+/* ── Narrow phones (the 360px capture viewport) ─────────────────────
+   Everything below is one problem: the topbar and the composer were laid
+   out for a tablet and simply ran out of horizontal room at 360px, so
+   controls wrapped, labels vanished and both the hero copy and the input
+   text were sliced. Shed the optional words instead of the useful ones. */
+
+@media (max-width: 620px) {
+  .topbar { gap: 8px; padding: 10px 12px; }
+  .topbar-actions { gap: 8px; }
+
+  /* the doc count is already the FIELD LIBRARY badge in the drawer */
+  .pill-detail { display: none; }
+  .status-pill { padding: 5px 10px; }
+
+  /* "Use library" previously collapsed to a bare, unlabelled checkbox */
+  .toggle-long { display: none; }
+  .toggle-short { display: inline; }
+  .toggle { font-size: 0.68rem; gap: 5px; }
+
+  .ghost-btn { padding: 6px 9px; }
+  .ghost-btn-icon { display: block; }
+  .ghost-btn-label { display: none; }
+
+  .welcome { padding: 18px 0 4px; }
+  .welcome .brand-mark { width: 48px; height: 48px; }
+  .welcome h1 { font-size: 1.3rem; }
+  .welcome p { font-size: 0.94rem; }
+
+  /* six one-per-row chips left the hero no room and cut its last line */
+  .chip-extra { display: none; }
+
+  .composer { padding: 8px 12px 10px; }
+  .composer-input { font-size: 0.98rem; padding: 10px 12px; }
+  .send-btn { padding: 0 13px; }
+  .send-btn-label { display: none; }
+  .send-btn svg { width: 16px; height: 16px; }
+  .disclaimer { font-size: 0.64rem; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════

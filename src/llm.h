@@ -29,6 +29,15 @@ public:
         if (model) { llama_model_free(model); model = nullptr; }
 
         llama_model_params model_params = llama_model_default_params();
+        // GPU offload. 0 (the default) is pure CPU and is what a default image
+        // can do at all: the shipped build links only the CPU backend, so
+        // asking for layers there is silently ignored by llama.cpp rather than
+        // failing — which is why the number is echoed in the log below and
+        // reported on /status, instead of being trusted.
+        model_params.n_gpu_layers = env_or_int("JIC_N_GPU_LAYERS", 0);
+        if (model_params.n_gpu_layers > 0)
+            std::cout << "LLM: requesting " << model_params.n_gpu_layers
+                      << " GPU layer(s)" << std::endl;
         model = llama_model_load_from_file(get_llm_model_path().c_str(), model_params);
         if (!model) {
             std::cerr << "Failed to load LLM model from "

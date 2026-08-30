@@ -24,3 +24,8 @@ security model and failure modes, with diagrams (canonical, matches the code)
 [Hardware](1500-hardware.md)
 
 [Architecture notes & design history](1600-architecture.md)
+
+## Operations
+
+[Error reporting (Sentry)](1700-error-reporting.md) — opt-out crash reporting,
+the kill switches, and why JIC ships no minidumps

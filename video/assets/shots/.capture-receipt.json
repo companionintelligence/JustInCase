@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "at": "2026-08-09T06:02:44.991Z",
+  "kit": "0.18.0",
+  "shots": {
+    "answer.mobile.png": {
+      "ok": true,
+      "at": "2026-08-09T06:02:44.991Z",
+      "sha256": "9517edbff33b7e450ae5e8dacbd6cc3af4fc33286349ed2930303e3662ecf190"
+    },
+    "answer.png": {
+      "ok": true,
+      "at": "2026-08-09T06:02:44.991Z",
+      "sha256": "6e566c5e52aa4f65ec2ccd783c966805385bf2bddcda3c284ae2f78a9c81e055"
+    },
+    "degraded.mobile.png": {
+      "ok": true,
+      "at": "2026-08-09T06:02:44.991Z",
+      "sha256": "f3327add1522f856a4920f332632a338018534f6596f76fecabc876aef520aea"
+    },
+    "degraded.png": {
+      "ok": true,
+      "at": "2026-08-09T06:02:44.991Z",
+      "sha256": "d78c95cbc9389db6fe908e513376a37955f6172f85e072690c0dc8b3c3e0960d"
+    },
+    "library-indexed.mobile.png": {
+      "ok": true,
+      "at": "2026-08-09T06:02:44.991Z",
+      "sha256": "81725232af1f50107ec54db2e26d4a3d634ac57389db31ef9c1dc454bbb0307a"
+    },
+    "library-indexed.png": {
+      "ok": true,
+      "at": "2026-08-09T06:02:44.991Z",
+      "sha256": "ffc521b24931717e543e3febee45386f9e9fe721311cfecc5de25e0051525044"
+    },
+    "library-scrolled.mobile.png": {
+      "ok": true,
+      "at": "2026-08-09T06:02:44.991Z",
+      "sha256": "8f789181cccf7b6a55783e35798c9506f6129f2c018e68854a75939023cb6d89"
+    },
+    "library-scrolled.png": {
+      "ok": true,
+      "at": "2026-08-09T06:02:44.991Z",
+      "sha256": "7ae0dfbc154d9a9adba89a20a7fde715796d68c349ae7572ccc8f569f25b0760"
+    },
+    "offline-library.mobile.png": {
+      "ok": true,
+      "at": "2026-08-09T06:02:44.991Z",
+      "sha256": "1457bfae152db727543dc482db74aaf964defe357ac29df7085ba2e21f25c9a8"
+    },
+    "offline-library.png": {
+      "ok": true,
+      "at": "2026-08-09T06:02:44.991Z",
+      "sha256": "51988784059e223dbbb991128a4b13cb2106e235b7c4e4a14416272064b0fd25"
+    },
+    "question-typed.mobile.png": {
+      "ok": true,
+      "at": "2026-08-09T06:02:44.991Z",
+      "sha256": "92edd42dd5b982760a1dc4068bc7c595f953237a929bf1585b153ffb6ccd6d12"
+    },
+    "question-typed.png": {
+      "ok": true,
+      "at": "2026-08-09T06:02:44.991Z",
+      "sha256": "c79178e225699a347938fdd4cc479d78f07bfebb329cc435b92420e9f88debdd"
+    },
+    "sources-open.mobile.png": {
+      "ok": true,
+      "at": "2026-08-09T06:02:44.991Z",
+      "sha256": "d436cf4a810e410486dacb73fe8c6cc36762de3b0baf2a2f3a6a93cbc9fdfef4"
+    },
+    "sources-open.png": {
+      "ok": true,
+      "at": "2026-08-09T06:02:44.991Z",
+      "sha256": "fba281f7f53615b6aa4a1654ebe0e0f2f1277132829be60f10e89b250e18a1fd"
+    },
+    "suggestions.mobile.png": {
+      "ok": true,
+      "at": "2026-08-09T06:02:44.991Z",
+      "sha256": "491845edadd812bac08633cc9333e6fcd63f4837eae939924148d78c38e8970e"
+    },
+    "suggestions.png": {
+      "ok": true,
+      "at": "2026-08-09T06:02:44.991Z",
+      "sha256": "ffc521b24931717e543e3febee45386f9e9fe721311cfecc5de25e0051525044"
+    },
+    "welcome-empty.mobile.png": {
+      "ok": true,
+      "at": "2026-08-09T06:02:44.991Z",
+      "sha256": "321fe3b5e54524d642564145f8a03d85aae9ef69c97e821dc6e9af10023ad2cb"
+    },
+    "welcome-empty.png": {
+      "ok": true,
+      "at": "2026-08-09T06:02:44.991Z",
+      "sha256": "8dff3c35e25dead8d2e389d900b29d4b9a1f002afd73615e1f4087ab2836a7e5"
+    }
+  }
+}
