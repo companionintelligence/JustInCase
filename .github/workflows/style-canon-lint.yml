@@ -6,10 +6,6 @@ name: Style canon lint
 on:
   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   style-canon-lint:
     runs-on: ubuntu-latest
@@ -18,4 +14,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: node scripts/lint-canon.mjs .
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@companionintelligence'
+      # No npm project here: the gate is the ci-lint-canon bin of @companionintelligence/config,
+      # pointed at the vendored canon (brand bundle) so it needs no tokens install.
+      - run: npx --yes --package @companionintelligence/config ci-lint-canon . --tokens public/assets/brand/tokens/tokens.json
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: scripts/vendor-brand.sh --check

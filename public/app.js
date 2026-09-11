@@ -618,6 +618,8 @@
 
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
+    // The canon token layer (assets/brand/tokens/tokens.css) keys its dark block on .dark.
+    document.documentElement.classList.toggle('dark', theme !== 'light');
     try { localStorage.setItem('jic-theme', theme); } catch (e) { /* private mode */ }
   }
 

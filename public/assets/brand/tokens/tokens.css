@@ -1,0 +1,215 @@
+/*
+ * @companionintelligence/tokens — tokens.css
+ * ==========================================================================
+ * Raw CSS custom properties (hex) for the Companion Intelligence canonical
+ * palette. No Tailwind, no @theme — just :root (light) and .dark (dark).
+ *
+ * For vanilla-CSS / static-HTML consumers that do NOT run Tailwind v4:
+ * CI-OS portal, companionintelligence.github.io, JustInCase, etc.
+ *
+ *   <link rel="stylesheet" href="node_modules/@companionintelligence/tokens/src/tokens.css">
+ *   -- or, in a bundled app --  import '@companionintelligence/tokens/tokens.css';
+ *
+ * Toggle dark mode with class="dark" on <html>.
+ * ==========================================================================
+ */
+:root {
+  --radius: 0.625rem;
+  --font-letter-spacing: 0.2pt;
+  --font-word-spacing: 0.4pt;
+  --background: #f3faf7;
+  --foreground: #0a222e;
+  --card: #f0f9f5;
+  --card-foreground: #0a222e;
+  --popover: #f4fdfa;
+  --popover-foreground: #0a222e;
+  --primary: #0a6358;
+  --primary-foreground: #f0fdf4;
+  --secondary: #e8f2ec;
+  --secondary-foreground: #0a222e;
+  --muted: #e8f2ec;
+  --muted-foreground: #3a524b;
+  --accent: #edf6f0;
+  --accent-foreground: #0a222e;
+  --destructive: #ee3533;
+  --destructive-foreground: #f8fafc;
+  --border: #dfece6;
+  --input: #dfece6;
+  --ring: #0a6358;
+  --chart-1: var(--heat);
+  --chart-2: #0a6358;
+  --chart-3: #066c80;
+  --chart-4: #ffb900;
+  --chart-5: #00a9a7;
+  --sidebar: #f3faf7;
+  --sidebar-foreground: #0a222e;
+  --sidebar-primary: #0a6358;
+  --sidebar-primary-foreground: #f0fdf4;
+  --sidebar-accent: #e8f2ec;
+  --sidebar-accent-foreground: #0a222e;
+  --sidebar-border: #dfece6;
+  --sidebar-ring: #0a6358;
+
+  /* Typography */
+  --font-sans: "Manrope", system-ui, sans-serif;
+  --font-display: "Archivo Black", "Manrope", system-ui, sans-serif;
+
+  /* Heat — theme-stable burned orange. Rare: orb, one CTA, marks. Not --primary. */
+  --heat: #ff3f00;
+  --heat-foreground: #070707;
+  --heat-deep: #c43000;
+  --heat-glow: color-mix(in srgb, var(--heat) 42%, transparent);
+
+  /* CI enriched palette — brand teal ramp + accent hues */
+  --teal-50: #eef7f8;
+  --teal-100: #d3e9ec;
+  --teal-200: #abd4d8;
+  --teal-300: #7fbcc2;
+  --teal-400: #4c9aa3;
+  --teal-500: #1c8791;
+  --teal-600: #0f717a;
+  --teal-700: #0d5f67;
+  --teal-800: #0e4a52;
+  --teal-900: #0a222e;
+  --teal-950: #041620;
+  --aqua: #00a9a7;
+  --aqua-light: #72ddd4;
+  --teal-accent: #2c676d;
+  --teal-mid: #409b9b;
+  --phthalo: #0a6358;
+  --phthalo-deep: #022c2b;
+  --phthalo-hover: #0d7a6e;
+  --mist: #f3faf7;
+  --mist-deep: #e8f2ec;
+
+  /*
+   * QR code surfaces — the one place the CI palette deliberately does NOT
+   * follow the theme. Decoders expect dark modules on a light ground, so a QR
+   * is never inverted for dark mode and its modules are never tinted with the
+   * brand teal. Declared ONLY here, in :root, and intentionally absent from
+   * the `.dark` block below — do not add them there. Brand color belongs on
+   * the QR's frame, border and caption instead.
+   */
+  --qr-plate: #ffffff;
+  --qr-module: #041620;
+
+  --radius-sm: calc(var(--radius, 0.625rem) - 4px);
+  --radius-md: calc(var(--radius, 0.625rem) - 2px);
+  --radius-lg: var(--radius, 0.625rem);
+  --radius-xl: calc(var(--radius, 0.625rem) + 4px);
+  --radius-2xl: calc(var(--radius, 0.625rem) + 10px);
+
+  /* enriched — semantic status + gradients + elevation (light) */
+  --success: #0f5132;
+  --success-foreground: #ffffff;
+  --warning: #855500;
+  --warning-foreground: #ffffff;
+  --info: #0284c7;
+  --info-foreground: #ffffff;
+  --gradient-brand: linear-gradient(135deg, #0a6358, #00a9a7);
+  --gradient-hero: linear-gradient(135deg, #f3faf7, #abd4d8);
+  --gradient-button: linear-gradient(135deg, #0e766a, #064741);
+  --gradient-aurora: radial-gradient(1200px circle at 50% -20%, rgba(232, 242, 236, 0.65), transparent 52%),
+    radial-gradient(900px circle at 80% 0%, rgba(10, 99, 88, 0.04), transparent 45%);
+  --shadow-sm: 0 1px 2px rgba(4, 22, 32, 0.04), 0 4px 12px -4px rgba(10, 99, 88, 0.05);
+  --shadow-md: 0 1px 3px rgba(4, 22, 32, 0.05), 0 6px 18px -6px rgba(10, 99, 88, 0.07);
+  --shadow-lg: 0 2px 4px rgba(4, 22, 32, 0.05), 0 10px 24px -8px rgba(10, 99, 88, 0.08);
+
+  /* CI extension tokens (light) */
+  --ci-bg: #f3faf7;
+  --ci-bg-deep: #e8f2ec;
+  --ci-surface: #f4fdfa;
+  --ci-card: #f0f9f5;
+  --ci-card-hover: #e8f5ef;
+  --ci-border: rgba(6, 108, 128, 0.12);
+  --ci-border-strong: rgba(10, 99, 88, 0.16);
+  --ci-text: #0a222e;
+  --ci-text-muted: #3a524b;
+  --ci-text-soft: #0e4a52;
+  --ci-accent: #0a6358;
+  --ci-accent-2: #0d7a6e;
+  --ci-success: #0f5132;
+  --ci-warning: #855500;
+  --ci-danger: #ea7260;
+  --ci-offline: #4a5c62;
+  --ci-link: #085952;
+}
+
+.dark {
+  --background: #041620;
+  --foreground: #e8f2f4;
+  --card: #0c323c;
+  --card-foreground: #e8f2f4;
+  --popover: #143e48;
+  --popover-foreground: #e8f2f4;
+  --primary: #c5e8dc;
+  --primary-foreground: #041620;
+  --secondary: #073038;
+  --secondary-foreground: #e8f2f4;
+  --muted: #073038;
+  --muted-foreground: #a3babf;
+  --accent: #0a2e38;
+  --accent-foreground: #e8f2f4;
+  --destructive: #ef7070;
+  --destructive-foreground: #f5f8fa;
+  --border: #073038;
+  --input: #0a2e38;
+  --ring: #c5e8dc;
+  --chart-1: #c5e8dc;
+  --chart-2: #409b9b;
+  --chart-3: #079d99;
+  --chart-4: #70a6af;
+  --chart-5: #066c80;
+  --sidebar: #041620;
+  --sidebar-foreground: #e8f2f4;
+  --sidebar-primary: #c5e8dc;
+  --sidebar-primary-foreground: #041620;
+  --sidebar-accent: #0a2e38;
+  --sidebar-accent-foreground: #e8f2f4;
+  --sidebar-border: #073038;
+  --sidebar-ring: #c5e8dc;
+
+  /* enriched — semantic status + gradients + elevation (dark) */
+  --success: #34d399;
+  --success-foreground: #052e16;
+  --warning: #fbbf24;
+  --warning-foreground: #422006;
+  --info: #38bdf8;
+  --info-foreground: #082f49;
+  --gradient-aurora: radial-gradient(1200px circle at 50% -20%, rgba(200, 230, 217, 0.08), transparent 55%),
+    radial-gradient(800px circle at 15% 10%, rgba(4, 22, 32, 0.5), transparent 50%);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.22), 0 4px 12px -6px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.24), 0 6px 18px -8px rgba(0, 0, 0, 0.32);
+  --shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.26), 0 10px 24px -10px rgba(0, 0, 0, 0.36);
+
+  /* CI extension tokens (dark) */
+  --ci-bg: #041620;
+  --ci-bg-deep: #021018;
+  --ci-surface: #143e48;
+  --ci-card: #0c323c;
+  --ci-card-hover: #103a44;
+  --ci-border: rgba(6, 108, 128, 0.16);
+  --ci-border-strong: rgba(10, 99, 88, 0.22);
+  --ci-text: #e8f2f4;
+  --ci-text-muted: #a3babf;
+  --ci-text-soft: #b5cdc2;
+  --ci-accent: #c5e8dc;
+  --ci-accent-2: #c5e8dc;
+  --ci-success: #34d399;
+  --ci-warning: #fbbf24;
+  --ci-danger: #ea7260;
+  --ci-offline: #a8bcc4;
+  --ci-link: #dceee4;
+}
+
+html {
+  font-size: 17px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  letter-spacing: var(--font-letter-spacing);
+  word-spacing: var(--font-word-spacing);
+}
