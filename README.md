@@ -239,3 +239,12 @@ Work in progress — contributions welcome. See the [Discord](https://discord.gg
 ## License
 
 See [LICENSE](LICENSE).
+
+## Brand
+
+The UI's colours and type are the Companion Intelligence canon, vendored from CI-Common's
+brand bundle into `public/assets/brand/` (`tokens.css` / `tokens.json`, Manrope + JetBrains
+Mono). `scripts/vendor-brand.sh <version>` refreshes it from the
+`@companionintelligence/tokens@<version>` release; `scripts/vendor-brand.sh --check` (CI)
+verifies the files against the bundle's `SHA256SUMS`. Never edit the vendored files; see
+CI-Common `CONSUMING.md`, Route B.
