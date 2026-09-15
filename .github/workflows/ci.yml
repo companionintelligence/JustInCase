@@ -1,13 +1,11 @@
 name: CI
 
-# >>> ci-local:gated original triggers below, restore with `ci-local restore`
-# on:
-#   pull_request:
-#   push:
-#     branches: [main]
-# <<< ci-local:gated
+# Restored 2026-09-10 (was gated to workflow_dispatch-only in the August 2026
+# org-wide cost pass). Found during an org-level CI/CD health audit.
 on:
-  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
