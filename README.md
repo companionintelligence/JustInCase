@@ -12,7 +12,7 @@ JIC is a self-contained, LLM-powered conversational search engine that runs enti
 
 ## Interface
 
-A single-page, fully-offline UI on the [Companion Intelligence design system](https://github.com/companionintelligence/CI-Common/tree/main/style) — CI teal accent (`--primary` `#0f717a` / `#abd4d8`), self-hosted fonts (no CDN), and a light + dark theme toggle persisted to `localStorage`. The whole front end is dependency-free vanilla JS in [`public/`](public/) (`index.html`, `app.js`, `style.css`); it talks to the C++ server over three endpoints — `GET /status`, `GET /api/library`, `POST /query`.
+A single-page, fully-offline UI on the [Companion Intelligence design system](https://github.com/companionintelligence/CI-Common/tree/main/styles) — CI phthalo-mist accent (`--primary` `#0a6358` / `#c5e8dc`), self-hosted fonts (no CDN), and a light + dark theme toggle persisted to `localStorage`. The whole front end is dependency-free vanilla JS in [`public/`](public/) (`index.html`, `app.js`, `style.css`); it talks to the C++ server over three endpoints — `GET /status`, `GET /api/library`, `POST /query`.
 
 Every screen below is a real headless render of `public/index.html` captured in **both themes**. Screens marked _(needs backend)_ are driven by the native `jic-server` responses (`/status`, `/api/library`, `/query`); their captures use representative response payloads so the genuine client render path is exercised — the layout, tokens, and formatting are real, the document counts and answer text are illustrative.
 
@@ -48,7 +48,7 @@ Narrow-viewport layout (≤ 920 px): the field library collapses into an off-can
 | --- | --- |
 | ![Mobile library drawer, dark theme](docs/ui/justincase-mobile-dark.png) | ![Mobile library drawer, light theme](docs/ui/justincase-mobile-light.png) |
 
-> The theme toggle, suggested-question chips, sidebar drawer, and welcome/empty state render with no backend — they are pure client-side UI. The populated system status, indexed document library, grounded answers, and citations require the native `jic-server` (C++ + llama.cpp); the captures above exercise the real render path with representative server payloads. Token/theme conformance is enforced in CI by [`scripts/lint-canon.mjs`](scripts/lint-canon.mjs) (the canon lint gate), so the teal `--primary` and dark/light contracts stay honest.
+> The theme toggle, suggested-question chips, sidebar drawer, and welcome/empty state render with no backend — they are pure client-side UI. The populated system status, indexed document library, grounded answers, and citations require the native `jic-server` (C++ + llama.cpp); the captures above exercise the real render path with representative server payloads. Token/theme conformance is enforced in CI by [`scripts/vendor-brand.sh --check`](scripts/vendor-brand.sh), which verifies the vendored `public/assets/brand/` bundle against CI-Common's published SHA256SUMS, so the phthalo `--primary` and dark/light contracts stay honest.
 
 ## Why
 
