@@ -586,9 +586,18 @@
 
       if (!res.ok) {
         const detail = data && data.error ? data.error : `server returned ${res.status}`;
-        addMessage('bot', res.status === 503
-          ? 'The language model is not loaded on this device yet — ' + detail
-          : 'Something went wrong: ' + detail, { error: true });
+        // 429 comes from the edge quota, not from jic-server: a hosted
+        // deployment meters questions per signed-in address. It is a plain
+        // limit, not a fault, so it must not read like one.
+        let text;
+        if (res.status === 429) {
+          text = detail;
+        } else if (res.status === 503) {
+          text = 'The language model is not loaded on this device yet — ' + detail;
+        } else {
+          text = 'Something went wrong: ' + detail;
+        }
+        addMessage('bot', text, { error: true });
         return;
       }
 

@@ -262,6 +262,67 @@ services:
       - "${MAPS_PORT:-8082}:8080"
     command: ["--port", "8080"]
 
+  # ── Cloudflare Tunnel: publish this box at jic.ci.computer (opt-in) ─
+  # Outbound-only. cloudflared dials Cloudflare's edge and holds the
+  # connection open, so the origin needs NO inbound port open, no public IP
+  # and no certificate of its own — which is the whole reason to prefer it
+  # to a port forward for a box that lives on someone's network.
+  #
+  # The server itself is NOT reachable from the internet: the tunnel talks
+  # to `jic` over the compose network, so `ports:` on the jic service stays
+  # a localhost convenience and can be dropped entirely on a deployed box.
+  #
+  # Run:  echo 'CLOUDFLARE_TUNNEL_TOKEN=...' >> .env
+  #       docker compose --profile tunnel up -d
+  #
+  # Setup (DNS, Access, the quota Worker): docs/1900-deployment-cloudflare.md
+  #
+  # Ingress is configured REMOTELY in the Zero Trust dashboard for a
+  # token-run tunnel, not in a local config file — point the public hostname
+  # jic.ci.computer at http://jic:8080. A local config.yml would be ignored.
+  cloudflared:
+    image: cloudflare/cloudflared:${CLOUDFLARED_VERSION:-latest}
+    container_name: jic-tunnel
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    depends_on:
+      jic:
+        # Only dial out once the server answers /status. Connecting earlier
+        # would publish the hostname while it still 502s.
+        condition: service_healthy
+    # The token goes in the ENVIRONMENT, not in `command`. Anything in argv
+    # is visible to `docker inspect` and every `ps` on the host; a tunnel
+    # token is a bearer credential for the hostname.
+    # Empty by default rather than a `:?` required-variable, so that
+    # `docker compose config` stays valid on a checkout with no .env — the
+    # repo's own config test asserts exactly that. An empty token makes
+    # cloudflared exit with "provided Tunnel token is not valid", which is
+    # the right failure for a service you opted into by naming its profile.
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+      # Readiness/metrics listener. Probe it from the HOST
+      # (curl http://localhost:2000/ready) — the image is distroless, so
+      # there is no curl or wget inside to run a container healthcheck with.
+      # A healthcheck of `cloudflared --version` would pass while the tunnel
+      # was completely disconnected, which is worse than no healthcheck.
+      TUNNEL_METRICS: 0.0.0.0:2000
+    # --no-autoupdate matters under read_only: a self-update would try to
+    # rewrite its own binary, fail, and restart-loop. Pin CLOUDFLARED_VERSION
+    # and update deliberately instead.
+    command: ["tunnel", "--no-autoupdate", "run"]
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+    ports:
+      # Metrics/readiness bound to loopback only — it is an operator
+      # endpoint, not something to publish alongside the tunnel.
+      - "127.0.0.1:${TUNNEL_METRICS_PORT:-2000}:2000"
+
 volumes:
   jic-sources:
   jic-data:
