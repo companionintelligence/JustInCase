@@ -1,0 +1,10 @@
+# Local-only overrides for `npx wrangler dev`. Copy to .dev.vars (gitignored).
+#
+# The quota can be exercised without Cloudflare at all: point TEAM_DOMAIN at a
+# local server that serves a JWKS at /cdn-cgi/access/certs, mint a token with
+# the matching key, and set ORIGIN_BASE_URL at a stub that answers /query.
+# Lower the limit so the ceiling is cheap to reach.
+TEAM_DOMAIN=http://127.0.0.1:9999
+POLICY_AUD=test-aud-tag
+MONTHLY_QUERY_LIMIT=3
+ORIGIN_BASE_URL=http://127.0.0.1:9999

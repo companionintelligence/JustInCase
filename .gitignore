@@ -54,3 +54,4 @@ tests/unit/.deps/
 tests/unit/test_text_utils
 tests/unit/test_telemetry
 tests/unit/test_telemetry_scrub
+tests/unit/test_kiwix_parse

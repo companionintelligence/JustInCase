@@ -1,0 +1,58 @@
+{
+  // ══════════════════════════════════════════════════════════════════
+  // jic-gateway — edge quota in front of the jic.ci.computer tunnel.
+  // Deploy:  npx wrangler deploy
+  // Secrets: none. TEAM_DOMAIN and POLICY_AUD are not secrets (the AUD tag
+  //          is a public identifier and the JWT is verified against
+  //          Cloudflare's own JWKS), so they live here in plain sight.
+  // ══════════════════════════════════════════════════════════════════
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jic-gateway",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "observability": { "enabled": true },
+
+  // The Worker must sit on the SAME hostname as the tunnel's public
+  // hostname. `fetch(request)` then reaches the tunnel origin, so the Worker
+  // is a filter in front of the box rather than a second address for it.
+  "routes": [
+    {
+      "pattern": "jic.ci.computer/*",
+      "zone_name": "ci.computer"
+    }
+  ],
+
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "QUOTA",
+        "class_name": "QuotaCounter"
+      }
+    ]
+  },
+
+  // SQLite-backed storage is what Cloudflare recommends for all new Durable
+  // Object namespaces, and it is the only backend available on the Workers
+  // free plan. Newer wrangler versions can express this declaratively with a
+  // top-level `exports` block instead; this form works on both.
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["QuotaCounter"]
+    }
+  ],
+
+  "vars": {
+    // Zero Trust team domain — replace <team> with the org's team name.
+    "TEAM_DOMAIN": "https://<team>.cloudflareaccess.com",
+    // Application Audience (AUD) tag from the Access application's overview.
+    "POLICY_AUD": "<access-application-aud-tag>",
+    // The cap: questions per verified email per calendar month (UTC).
+    "MONTHLY_QUERY_LIMIT": "500",
+    // Optional ceiling across everyone. Unset = no global cap. Worth setting
+    // on owned hardware: 40 users at 500 each is 20,000 CPU inferences.
+    // "GLOBAL_MONTHLY_LIMIT": "5000",
+    // Only these POST paths are metered; everything else proxies free.
+    "METERED_PATHS": "/query"
+  }
+}
