@@ -1,6 +1,11 @@
 // ── JIC web UI ───────────────────────────────────────────────────────
 // Vanilla JS, no dependencies, CSP-safe (no inline handlers/styles).
 // Talks to: POST /query · GET /status · GET /api/library
+//
+// The server normally serves this page, so every request is a relative path
+// and the browser's same-origin default is all that is needed. A deployment
+// that serves the UI from somewhere else — static hosting, a Pages project —
+// tells it where the server is; see backend() below.
 
 'use strict';
 
@@ -35,6 +40,80 @@
     'Wire a solar panel to a battery',
     'Preserve food without refrigeration',
   ];
+
+  // ── Backend origin ─────────────────────────────────────────────────
+  // Empty means "same origin as this page", which is the bundled appliance
+  // and the default. Anything else is a full origin the user pointed us at.
+  const BACKEND_KEY = 'jic.backendUrl';
+
+  // Every access is guarded: localStorage throws in a private window and
+  // returns null with site data blocked, and neither should stop the UI from
+  // rendering against its own origin.
+  function readBackend() {
+    try {
+      return (localStorage.getItem(BACKEND_KEY) || '').replace(/\/+$/, '');
+    } catch {
+      return '';
+    }
+  }
+
+  function writeBackend(value) {
+    try {
+      if (value) localStorage.setItem(BACKEND_KEY, value);
+      else localStorage.removeItem(BACKEND_KEY);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  let backendBase = readBackend();
+
+  /** Absolute URL for a server path, or the bare path when same-origin. */
+  function api(path) {
+    return backendBase ? backendBase + path : path;
+  }
+
+  /**
+   * True for a host the browser treats as local: loopback, a .local name, or
+   * an RFC1918 address. Used to warn about an https page reaching a plain-http
+   * server, which browsers permit for loopback and refuse for everything else.
+   */
+  function isLocalHost(origin) {
+    let host;
+    try {
+      host = new URL(origin).hostname.toLowerCase();
+    } catch {
+      return false;
+    }
+    if (host === 'localhost' || host.endsWith('.localhost')) return true;
+    if (host === '::1' || host === '[::1]') return true;
+    if (host.endsWith('.local')) return true;
+    if (/^127\./.test(host)) return true;
+    if (/^10\./.test(host)) return true;
+    if (/^192\.168\./.test(host)) return true;
+    return /^172\.(1[6-9]|2\d|3[01])\./.test(host);
+  }
+
+  /**
+   * fetch() against the configured server.
+   *
+   * Note what is deliberately NOT here: a `targetAddressSpace` annotation.
+   * Chrome's Local Network Access docs suggest declaring "local" so the
+   * destination is known before it is resolved, but tested against Chromium
+   * the option is not honoured as documented — the request is sent with a
+   * target space of `unknown`, Chrome compares that against the resource's
+   * actual `loopback` space, and BLOCKS it. That turns a working
+   * loopback-to-loopback request into a CORS failure, which is worse than the
+   * problem it was meant to solve.
+   *
+   * Without it: same-address-space requests work untouched, and a public page
+   * reaching a local server prompts the visitor for Local Network Access
+   * permission once (Chrome 142+) — which is the intended flow anyway.
+   */
+  function apiFetch(path, init) {
+    return fetch(api(path), init);
+  }
 
   // ── Helpers ────────────────────────────────────────────────────────
 
@@ -171,7 +250,7 @@
       const label = isZim
         ? `<span class="source-name">${escapeHtml(m.filename)}</span>` +
           `<span class="source-origin">encyclopedia</span>`
-        : `<a href="/sources/${encodeURI(m.filename)}" target="_blank" rel="noopener">${escapeHtml(m.filename)}</a>`;
+        : `<a href="${escapeHtml(api('/sources/' + encodeURI(m.filename)))}" target="_blank" rel="noopener">${escapeHtml(m.filename)}</a>`;
       item.innerHTML =
         label +
         score +
@@ -282,7 +361,7 @@
 
   async function refreshStatus() {
     try {
-      const res = await fetch('/status');
+      const res = await apiFetch('/status');
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const s = await res.json();
       state.statusFailures = 0;
@@ -350,7 +429,7 @@
 
   async function refreshLibrary() {
     try {
-      const res = await fetch('/api/library');
+      const res = await apiFetch('/api/library');
       if (!res.ok) return;
       const lib = await res.json();
 
@@ -384,7 +463,7 @@
         files.forEach((f) => {
           const a = document.createElement('a');
           a.className = 'lib-file' + (f.status === 'skipped' ? ' skipped' : '');
-          a.href = '/sources/' + encodeURI(f.filename);
+          a.href = api('/sources/' + encodeURI(f.filename));
           a.target = '_blank';
           a.rel = 'noopener';
           a.title = f.filename + (f.size_bytes ? ` · ${formatSize(f.size_bytes)}` : '');
@@ -418,7 +497,7 @@
     const list = $('catalog-list');
     list.textContent = 'Loading…';
     try {
-      const res = await fetch('/api/catalog');
+      const res = await apiFetch('/api/catalog');
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       renderCatalog(data);
@@ -467,7 +546,7 @@
     btn.disabled = true;
     btn.textContent = 'Starting…';
     try {
-      const res = await fetch('/api/import', {
+      const res = await apiFetch('/api/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ collection: id }),
@@ -493,7 +572,7 @@
     if (importPoll) return;
     importPoll = setInterval(async () => {
       try {
-        const res = await fetch('/api/catalog');
+        const res = await apiFetch('/api/catalog');
         if (res.ok) {
           const data = await res.json();
           renderCatalog(data);
@@ -524,7 +603,7 @@
     fd.append('category', $('upload-category').value);
     fd.append('file', file);
     try {
-      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const res = await apiFetch('/api/upload', { method: 'POST', body: fd });
       const d = await res.json().catch(() => ({}));
       if (res.ok) {
         status.textContent = 'Uploaded ' + (d.filename || file.name) + ' — indexing shortly.';
@@ -569,7 +648,7 @@
     addTyping();
 
     try {
-      const res = await fetch('/query', {
+      const res = await apiFetch('/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -632,6 +711,68 @@
     try { localStorage.setItem('jic-theme', theme); } catch (e) { /* private mode */ }
   }
 
+  // ── Backend selector ───────────────────────────────────────────────
+  function renderBackend() {
+    const el = $('st-backend');
+    if (!el) return;
+    el.textContent = backendBase || 'this device';
+    const input = $('backend-url');
+    if (input) input.value = backendBase;
+  }
+
+  function setBackendStatus(message, isError) {
+    const el = $('backend-status');
+    if (!el) return;
+    el.hidden = !message;
+    el.textContent = message || '';
+    el.className = 'modal-status' + (isError ? ' is-error' : '');
+  }
+
+  /**
+   * Point the UI at a server. Rejects anything that is not an http(s) origin
+   * up front: the alternative is a silent stream of failed fetches that look
+   * like the server is down.
+   */
+  function applyBackend(raw) {
+    const value = (raw || '').trim().replace(/\/+$/, '');
+    if (value) {
+      let url;
+      try {
+        url = new URL(value);
+      } catch {
+        setBackendStatus('That is not a valid URL. Include the scheme, e.g. http://localhost:8080', true);
+        return;
+      }
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+        setBackendStatus('Only http:// and https:// URLs work here.', true);
+        return;
+      }
+      // An https page cannot call a plain-http server, with one exception the
+      // browsers carve out: loopback and local addresses are treated as
+      // trustworthy. Saying so now beats a blocked request later.
+      if (window.location.protocol === 'https:' && url.protocol === 'http:' && !isLocalHost(value)) {
+        setBackendStatus(
+          'This page is served over https, so it cannot reach a plain-http server ' +
+          'unless it is on your own machine or local network. Use https for a remote server.',
+          true);
+        return;
+      }
+    }
+
+    if (!writeBackend(value)) {
+      setBackendStatus('Could not save the setting — browser storage is blocked. It will apply to this tab only.', true);
+    } else {
+      setBackendStatus(value ? 'Connecting to ' + value + '…' : 'Using this device.', false);
+    }
+    backendBase = value;
+    renderBackend();
+    // Prove it: the next status poll either answers or reports unreachable,
+    // which is the real confirmation rather than a saved-settings message.
+    state.statusFailures = 0;
+    refreshStatus();
+    refreshLibrary();
+  }
+
   function initTheme() {
     let saved = null;
     try { saved = localStorage.getItem('jic-theme'); } catch (e) { /* private mode */ }
@@ -681,6 +822,21 @@
       state.useContext = e.target.checked;
     });
 
+    $('backend-btn').addEventListener('click', () => {
+      const form = $('backend-form');
+      const open = form.hidden;
+      form.hidden = !open;
+      $('backend-btn').setAttribute('aria-expanded', String(open));
+      if (open) $('backend-url').focus();
+    });
+
+    $('backend-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      applyBackend($('backend-url').value);
+    });
+
+    $('backend-reset').addEventListener('click', () => applyBackend(''));
+
     $('sidebar-toggle').addEventListener('click', () => toggleSidebar());
     $('backdrop').addEventListener('click', () => toggleSidebar(false));
 
@@ -724,6 +880,7 @@
 
     $('user-input').focus();
 
+    renderBackend();
     refreshStatus();
     refreshLibrary();
     setInterval(refreshStatus, 8000);

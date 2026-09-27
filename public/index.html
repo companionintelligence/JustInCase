@@ -29,7 +29,10 @@
       </div>
 
       <section class="panel" aria-label="System status">
-        <h2 class="panel-title">System</h2>
+        <h2 class="panel-title">System
+          <button class="ghost-btn panel-action" id="backend-btn" type="button"
+                  aria-expanded="false" aria-controls="backend-form">Server</button>
+        </h2>
         <dl class="status-grid" id="status-grid">
           <div><dt>Engine</dt><dd id="st-engine">—</dd></div>
           <div><dt>Model</dt><dd id="st-model">—</dd></div>
@@ -39,7 +42,22 @@
                deployment that never wanted an encyclopedia is not shown a row
                reporting that it lacks one. -->
           <div class="status-wide" id="st-zim-row" hidden><dt>Encyclopedia</dt><dd id="st-zim">—</dd></div>
+          <!-- Which server is answering. Reads "this device" for the normal
+               case, where the page and the server share an origin. -->
+          <div class="status-wide"><dt>Backend</dt><dd id="st-backend">this device</dd></div>
         </dl>
+        <!-- Only needed when the UI is served from somewhere other than the
+             server (static hosting, a Pages project), so it stays collapsed. -->
+        <form class="backend-form" id="backend-form" hidden>
+          <label class="backend-label" for="backend-url">Server URL</label>
+          <input type="url" id="backend-url" class="backend-input" spellcheck="false"
+                 autocomplete="off" placeholder="http://localhost:8080">
+          <div class="backend-actions">
+            <button type="submit" class="ghost-btn">Connect</button>
+            <button type="button" class="ghost-btn" id="backend-reset">This device</button>
+          </div>
+          <p class="modal-status" id="backend-status" hidden></p>
+        </form>
       </section>
 
       <section class="panel panel-grow" aria-label="Field library">

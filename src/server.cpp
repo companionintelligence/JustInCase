@@ -980,12 +980,23 @@ int main() {
 
     // CSP for HTML only — a strict policy here would break in-browser PDF
     // viewing of /sources/ files in some browsers.
-    svr.set_post_routing_handler([](const httplib::Request&, httplib::Response& res) {
+    //
+    // connect-src is 'self' plus anything JIC_CONNECT_SRC names. Without that
+    // the UI could only ever call the server that served it, so the backend
+    // selector in the sidebar would fail with a policy violation rather than
+    // a connection error — the most confusing failure available.
+    const std::string extra_connect = get_connect_src();
+    const std::string connect_src =
+        extra_connect.empty() ? "'self'" : "'self' " + extra_connect;
+    if (!extra_connect.empty()) {
+        std::cout << "UI may connect to: " << connect_src << std::endl;
+    }
+    svr.set_post_routing_handler([connect_src](const httplib::Request&, httplib::Response& res) {
         auto ct = res.get_header_value("Content-Type");
         if (ct.find("text/html") != std::string::npos) {
             res.set_header("Content-Security-Policy",
                 "default-src 'self'; script-src 'self'; style-src 'self'; "
-                "img-src 'self' data:; connect-src 'self'; font-src 'self'; "
+                "img-src 'self' data:; connect-src " + connect_src + "; font-src 'self'; "
                 "object-src 'none'; base-uri 'self'; form-action 'self'; "
                 "frame-ancestors 'none'");
         }
