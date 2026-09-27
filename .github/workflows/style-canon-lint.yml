@@ -4,9 +4,39 @@ name: Style canon lint
 # org-wide cost pass). Found during an org-level CI/CD health audit.
 on: [pull_request, push]
 
+# Two jobs on purpose. They were one, in which the npm-dependent canon lint ran
+# FIRST and the registry-free bundle check ran second — so from mid-September
+# 2026 a GitHub Packages permission error (403 permission_denied: read_package
+# on @companionintelligence/content, a dependency of the linter) failed the job
+# before the bundle check ever executed. Every PR in the repo lost its brand
+# signal because of a credential problem in an unrelated check.
+#
+# Split, the two report independently: a registry outage or a missing package
+# grant can no longer hide whether the vendored brand bundle is intact.
 jobs:
-  style-canon-lint:
+  # ── The gate that needs nothing but the checkout ───────────────────
+  # Verifies public/assets/brand/ against CI-Common's published SHA256SUMS.
+  # No registry, no token, no network beyond the checkout — so nothing outside
+  # this repository can stop it running.
+  brand-bundle:
+    name: Brand bundle conformance
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/vendor-brand.sh --check
+
+  # ── The gate that needs the shared linter from GitHub Packages ─────
+  canon-lint:
+    name: Style canon lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Necessary but NOT sufficient: the linter pulls @companionintelligence
+      # packages owned by other repositories in the org, and a workflow's
+      # GITHUB_TOKEN can only read those if each package grants this
+      # repository access (package settings → Manage Actions access). Without
+      # that grant the step below reports "cannot check" rather than failing.
+      packages: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,7 +46,23 @@ jobs:
           scope: '@companionintelligence'
       # No npm project here: the gate is the ci-lint-canon bin of @companionintelligence/config,
       # pointed at the vendored canon (brand bundle) so it needs no tokens install.
-      - run: npx --yes --package @companionintelligence/config ci-lint-canon . --tokens public/assets/brand/tokens/tokens.json
+      - name: ci-lint-canon
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: scripts/vendor-brand.sh --check
+        run: |
+          set -o pipefail
+          log="$(mktemp)"
+          if npx --yes --package @companionintelligence/config ci-lint-canon . \
+               --tokens public/assets/brand/tokens/tokens.json 2>&1 | tee "$log"; then
+            exit 0
+          fi
+
+          # Distinguish "could not fetch the linter" from "the linter found
+          # violations". The first is a package-access problem and says nothing
+          # about the diff; failing on it taught everyone to ignore this check.
+          # The second is a real finding and still fails the build.
+          if grep -qE 'npm error code E40[13]|permission_denied: read_package' "$log"; then
+            echo "::warning title=Canon lint could not run::Cannot read @companionintelligence packages with this repository's GITHUB_TOKEN (403 read_package). Grant this repo access to the package, or set NODE_AUTH_TOKEN to a PAT with read:packages. Style canon was NOT checked for this commit; the brand-bundle job is unaffected."
+            exit 0
+          fi
+          exit 1
