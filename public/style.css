@@ -942,3 +942,25 @@ body {
   background: var(--accent-soft);
   color: var(--fg);
 }
+
+/* ── Backend selector ─────────────────────────────────────────────────
+   Shown only when someone opens it: the bundled appliance serves this page
+   itself, and a server field on that screen would be a question with one
+   possible answer. */
+.backend-form { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 12px; }
+.backend-label { font-size: 0.78rem; color: var(--fg-dim); }
+.backend-input {
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  padding: 8px 10px;
+  outline: none;
+  min-width: 0;
+}
+.backend-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.backend-input::placeholder { color: var(--fg-faint); }
+.backend-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+#st-backend { font-family: var(--mono); font-size: 0.8rem; overflow-wrap: anywhere; }

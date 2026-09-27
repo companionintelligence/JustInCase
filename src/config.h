@@ -101,9 +101,22 @@ inline int get_scan_interval_sec() {
 
 // Cross-origin access is disabled unless explicitly configured.
 // Set JIC_CORS_ORIGIN to an origin (or "*") to allow API calls from
-// other web origins.
+// other web origins. This governs who may call THIS server.
 inline std::string get_cors_origin() {
     return env_or("JIC_CORS_ORIGIN", "");
+}
+
+// The reverse direction: which servers the UI THIS instance serves is allowed
+// to call. The page's own Content-Security-Policy decides that, and it is
+// `connect-src 'self'` by default — so the bundled UI can only talk to the
+// server that served it, which is correct for an appliance and wrong for a
+// deployment where someone points the UI at a different backend.
+//
+// Space-separated origins, appended to connect-src. Empty (the default) keeps
+// the policy at 'self'. Note this is only needed when JIC serves the page: a
+// UI hosted on static hosting is governed by that host's policy instead.
+inline std::string get_connect_src() {
+    return env_or("JIC_CONNECT_SRC", "");
 }
 
 // ── Model paths (overridable via environment) ────────────────────────
