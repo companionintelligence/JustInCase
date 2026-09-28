@@ -947,7 +947,69 @@ body {
    Shown only when someone opens it: the bundled appliance serves this page
    itself, and a server field on that screen would be a question with one
    possible answer. */
-.backend-form { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 12px; }
+.backend-panel { margin-top: 12px; display: grid; gap: 10px; }
+
+/* Saved servers. "This device" is always the first row and cannot be
+   forgotten — it is the appliance's own origin, not a saved entry. */
+.backend-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.backend-row { display: flex; align-items: stretch; gap: 4px; }
+.backend-pick {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: "dot name" "dot hint";
+  align-items: center;
+  gap: 0 8px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--fg);
+  cursor: pointer;
+  padding: 7px 9px;
+  text-align: left;
+  font-family: var(--sans);
+}
+.backend-pick:hover { border-color: var(--accent); }
+.backend-row.is-active .backend-pick {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.backend-name { grid-area: name; font-size: 0.84rem; overflow-wrap: anywhere; }
+.backend-hint {
+  grid-area: hint;
+  font-size: 0.72rem;
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  overflow-wrap: anywhere;
+}
+
+/* Reachability. `unknown` until probed, so a row never claims a state it has
+   not checked. */
+.backend-dot {
+  grid-area: dot;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fg-faint);
+}
+.backend-dot[data-state="ok"]      { background: var(--ok, var(--accent)); }
+.backend-dot[data-state="err"]     { background: var(--err); }
+.backend-dot[data-state="probing"] { background: var(--warn, var(--fg-dim)); }
+
+.backend-del {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--fg-dim);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 9px;
+}
+.backend-del:hover { border-color: var(--err); color: var(--err); }
+
+.backend-form { display: grid; grid-template-columns: 1fr; gap: 8px; }
 .backend-label { font-size: 0.78rem; color: var(--fg-dim); }
 .backend-input {
   background: var(--bg2);

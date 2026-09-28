@@ -44,7 +44,13 @@
   // ── Backend origin ─────────────────────────────────────────────────
   // Empty means "same origin as this page", which is the bundled appliance
   // and the default. Anything else is a full origin the user pointed us at.
-  const BACKEND_KEY = 'jic.backendUrl';
+  //
+  // Two keys, because "which server am I using" and "which servers do I know
+  // about" are different questions: someone with a laptop, a box on the LAN
+  // and a tunnel switches between them, and retyping a URL to switch is the
+  // thing a saved list exists to avoid.
+  const BACKEND_KEY = 'jic.backendUrl';   // active origin ('' = this device)
+  const BACKENDS_KEY = 'jic.backends';    // [{label, url}], the saved list
 
   // Every access is guarded: localStorage throws in a private window and
   // returns null with site data blocked, and neither should stop the UI from
@@ -67,7 +73,51 @@
     }
   }
 
+  /**
+   * The saved list. Anything malformed is discarded rather than allowed to
+   * break the panel — this is parsed from storage a user (or a previous
+   * version) wrote, so it cannot be assumed well-formed.
+   */
+  function readBackends() {
+    let raw;
+    try {
+      raw = localStorage.getItem(BACKENDS_KEY);
+    } catch {
+      return [];
+    }
+    if (!raw) return [];
+    try {
+      const list = JSON.parse(raw);
+      if (!Array.isArray(list)) return [];
+      return list
+        .filter((e) => e && typeof e.url === 'string' && e.url)
+        .map((e) => ({
+          url: e.url.replace(/\/+$/, ''),
+          label: typeof e.label === 'string' ? e.label : '',
+        }));
+    } catch {
+      return [];
+    }
+  }
+
+  function writeBackends(list) {
+    try {
+      localStorage.setItem(BACKENDS_KEY, JSON.stringify(list));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   let backendBase = readBackend();
+  let backends = readBackends();
+
+  // An earlier version stored only the active URL. Seed the list from it so
+  // upgrading does not look like the setting was lost.
+  if (backendBase && !backends.some((e) => e.url === backendBase)) {
+    backends = [{ url: backendBase, label: '' }].concat(backends);
+    writeBackends(backends);
+  }
 
   /** Absolute URL for a server path, or the bare path when same-origin. */
   function api(path) {
@@ -712,12 +762,28 @@
   }
 
   // ── Backend selector ───────────────────────────────────────────────
+
+  /** A short human label for an origin when the user gave none. */
+  function backendLabel(entry) {
+    if (entry.label) return entry.label;
+    try {
+      const u = new URL(entry.url);
+      return u.port ? u.hostname + ':' + u.port : u.hostname;
+    } catch {
+      return entry.url;
+    }
+  }
+
   function renderBackend() {
     const el = $('st-backend');
     if (!el) return;
-    el.textContent = backendBase || 'this device';
-    const input = $('backend-url');
-    if (input) input.value = backendBase;
+    if (!backendBase) {
+      el.textContent = 'this device';
+      return;
+    }
+    const entry = backends.find((e) => e.url === backendBase);
+    el.textContent = entry ? backendLabel(entry) : backendBase;
+    el.title = backendBase;
   }
 
   function setBackendStatus(message, isError) {
@@ -729,34 +795,39 @@
   }
 
   /**
-   * Point the UI at a server. Rejects anything that is not an http(s) origin
-   * up front: the alternative is a silent stream of failed fetches that look
-   * like the server is down.
+   * Why a URL cannot be used, or '' when it can. Shared by the add form and
+   * by activating a saved entry, so a URL that was valid when saved but is not
+   * usable from this page (an http server from an https page) is caught in
+   * both paths rather than only the one that happened to check.
    */
+  function backendProblem(value) {
+    if (!value) return '';
+    let url;
+    try {
+      url = new URL(value);
+    } catch {
+      return 'That is not a valid URL. Include the scheme, e.g. http://localhost:8080';
+    }
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return 'Only http:// and https:// URLs work here.';
+    }
+    // An https page cannot call a plain-http server, with one exception the
+    // browsers carve out: loopback and local addresses are treated as
+    // trustworthy. Saying so now beats a blocked request later.
+    if (window.location.protocol === 'https:' && url.protocol === 'http:' && !isLocalHost(value)) {
+      return 'This page is served over https, so it cannot reach a plain-http server ' +
+             'unless it is on your own machine or local network. Use https for a remote server.';
+    }
+    return '';
+  }
+
+  /** Point the UI at a server ('' = this device). Does not touch the list. */
   function applyBackend(raw) {
     const value = (raw || '').trim().replace(/\/+$/, '');
-    if (value) {
-      let url;
-      try {
-        url = new URL(value);
-      } catch {
-        setBackendStatus('That is not a valid URL. Include the scheme, e.g. http://localhost:8080', true);
-        return;
-      }
-      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-        setBackendStatus('Only http:// and https:// URLs work here.', true);
-        return;
-      }
-      // An https page cannot call a plain-http server, with one exception the
-      // browsers carve out: loopback and local addresses are treated as
-      // trustworthy. Saying so now beats a blocked request later.
-      if (window.location.protocol === 'https:' && url.protocol === 'http:' && !isLocalHost(value)) {
-        setBackendStatus(
-          'This page is served over https, so it cannot reach a plain-http server ' +
-          'unless it is on your own machine or local network. Use https for a remote server.',
-          true);
-        return;
-      }
+    const problem = backendProblem(value);
+    if (problem) {
+      setBackendStatus(problem, true);
+      return false;
     }
 
     if (!writeBackend(value)) {
@@ -766,11 +837,141 @@
     }
     backendBase = value;
     renderBackend();
+    renderBackendList();
     // Prove it: the next status poll either answers or reports unreachable,
     // which is the real confirmation rather than a saved-settings message.
     state.statusFailures = 0;
     refreshStatus();
     refreshLibrary();
+    return true;
+  }
+
+  /** Save a server and switch to it. Re-adding a known URL just switches. */
+  function addBackend(name, raw) {
+    const value = (raw || '').trim().replace(/\/+$/, '');
+    if (!value) {
+      setBackendStatus('Enter the server URL.', true);
+      return;
+    }
+    const problem = backendProblem(value);
+    if (problem) {
+      setBackendStatus(problem, true);
+      return;
+    }
+    const label = (name || '').trim().slice(0, 40);
+    const existing = backends.find((e) => e.url === value);
+    if (existing) {
+      if (label) existing.label = label;
+    } else {
+      backends = backends.concat([{ url: value, label: label }]);
+    }
+    if (!writeBackends(backends)) {
+      setBackendStatus('Saved for this tab only — browser storage is blocked.', true);
+    }
+    if (applyBackend(value)) {
+      $('backend-name').value = '';
+      $('backend-url').value = '';
+      probeBackends();
+    }
+  }
+
+  /** Forget a server. Removing the active one falls back to this device. */
+  function removeBackend(url) {
+    backends = backends.filter((e) => e.url !== url);
+    writeBackends(backends);
+    if (backendBase === url) {
+      applyBackend('');
+    } else {
+      renderBackendList();
+    }
+  }
+
+  /**
+   * Ask each saved server whether it is up, so the picker says which of your
+   * machines is actually running rather than listing names. /status is the
+   * cheap endpoint; an abort keeps a dead host from hanging the row.
+   */
+  async function probeBackend(url) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 3000);
+    try {
+      const res = await fetch((url || '') + '/status', { signal: ctrl.signal });
+      return res.ok ? 'ok' : 'err';
+    } catch {
+      return 'err';
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  function probeBackends() {
+    const rows = document.querySelectorAll('#backend-list .backend-dot');
+    rows.forEach((dot) => {
+      const url = dot.getAttribute('data-for') || '';
+      dot.setAttribute('data-state', 'probing');
+      dot.title = 'Checking…';
+      probeBackend(url).then((stateName) => {
+        dot.setAttribute('data-state', stateName);
+        dot.title = stateName === 'ok' ? 'Answering' : 'Not reachable';
+      });
+    });
+  }
+
+  /**
+   * Built with createElement rather than innerHTML: labels and URLs come out
+   * of localStorage, and a name typed into a text field must never be able to
+   * inject markup into the sidebar.
+   */
+  function renderBackendList() {
+    const list = $('backend-list');
+    if (!list) return;
+    list.textContent = '';
+
+    const entries = [{ url: '', label: 'This device', hint: 'same origin' }].concat(
+      backends.map((e) => ({ url: e.url, label: backendLabel(e), hint: e.url })),
+    );
+
+    entries.forEach((entry) => {
+      const row = document.createElement('li');
+      row.className = 'backend-row' + (entry.url === backendBase ? ' is-active' : '');
+
+      const pick = document.createElement('button');
+      pick.type = 'button';
+      pick.className = 'backend-pick';
+      pick.setAttribute('data-pick', entry.url);
+      pick.setAttribute('aria-pressed', String(entry.url === backendBase));
+
+      const dot = document.createElement('span');
+      dot.className = 'backend-dot';
+      dot.setAttribute('data-for', entry.url);
+      dot.setAttribute('data-state', 'unknown');
+      dot.setAttribute('aria-hidden', 'true');
+
+      const name = document.createElement('span');
+      name.className = 'backend-name';
+      name.textContent = entry.label;
+
+      const hint = document.createElement('span');
+      hint.className = 'backend-hint';
+      hint.textContent = entry.hint;
+
+      pick.append(dot, name, hint);
+      row.append(pick);
+
+      // "This device" is not a saved entry, so there is nothing to forget.
+      if (entry.url) {
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'backend-del';
+        del.setAttribute('data-remove', entry.url);
+        del.setAttribute('aria-label', 'Forget ' + entry.label);
+        del.title = 'Forget this server';
+        del.textContent = '×';
+        row.append(del);
+      }
+
+      list.append(row);
+    });
   }
 
   function initTheme() {
@@ -823,19 +1024,35 @@
     });
 
     $('backend-btn').addEventListener('click', () => {
-      const form = $('backend-form');
-      const open = form.hidden;
-      form.hidden = !open;
+      const panel = $('backend-panel');
+      const open = panel.hidden;
+      panel.hidden = !open;
       $('backend-btn').setAttribute('aria-expanded', String(open));
-      if (open) $('backend-url').focus();
+      if (open) {
+        // Only probe when the panel is actually on screen: a background poll
+        // of every saved server would be traffic nobody asked for.
+        probeBackends();
+        $('backend-url').focus();
+      }
     });
 
     $('backend-form').addEventListener('submit', (e) => {
       e.preventDefault();
-      applyBackend($('backend-url').value);
+      addBackend($('backend-name').value, $('backend-url').value);
     });
 
-    $('backend-reset').addEventListener('click', () => applyBackend(''));
+    // Delegated: rows are rebuilt on every change, and per-row listeners would
+    // have to be rebound each time. Also keeps the markup free of inline
+    // handlers, which the CSP forbids.
+    $('backend-list').addEventListener('click', (e) => {
+      const pick = e.target.closest('[data-pick]');
+      if (pick) {
+        applyBackend(pick.getAttribute('data-pick'));
+        return;
+      }
+      const del = e.target.closest('[data-remove]');
+      if (del) removeBackend(del.getAttribute('data-remove'));
+    });
 
     $('sidebar-toggle').addEventListener('click', () => toggleSidebar());
     $('backdrop').addEventListener('click', () => toggleSidebar(false));
@@ -881,6 +1098,7 @@
     $('user-input').focus();
 
     renderBackend();
+    renderBackendList();
     refreshStatus();
     refreshLibrary();
     setInterval(refreshStatus, 8000);

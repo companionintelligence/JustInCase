@@ -19,7 +19,21 @@ Everything below is for splitting the two apart.
 
 ## Pointing the UI somewhere else
 
-Open the sidebar, press **Server** next to *System*, type the server's URL:
+Open the sidebar and press **Servers** next to *System*. The panel lists the
+servers this browser knows about, with **This device** always first:
+
+```
+● This device      same origin              ← the bundled appliance
+● laptop           http://localhost:8080
+● ci-hub           https://jic.ci.computer
+```
+
+Click a row to switch to it. Add one with a name and a URL; the **×** forgets
+it. The dot on each row is that server's answer to `/status`, refreshed each
+time the panel is opened — so the list says which of your machines is actually
+running rather than only what they are called.
+
+Typical entries:
 
 ```
 http://localhost:8080          a JIC on this machine
@@ -27,9 +41,14 @@ http://192.168.1.50:8080       a JIC on the LAN
 https://jic.ci.computer        a JIC behind the Cloudflare tunnel
 ```
 
-It is stored in `localStorage` under `jic.backendUrl`, per browser, and
-**This device** clears it. Nothing is sent anywhere: the setting only changes
-which host the page's own requests go to.
+Storage is per browser: `jic.backends` holds the list and `jic.backendUrl` the
+active one. Removing the server you are using falls back to **This device**
+rather than leaving the UI pointed at nothing. Nothing is sent anywhere — the
+setting only changes which host the page's own requests go to.
+
+A URL is checked when you add it *and* when you switch to it, because a server
+that was reachable when saved may not be usable from the page you are on now
+(a plain-http entry opened from an https page).
 
 ## What the browser allows
 
