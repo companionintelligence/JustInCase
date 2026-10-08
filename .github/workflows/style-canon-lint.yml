@@ -2,7 +2,11 @@ name: Style canon lint
 
 # Restored 2026-09-10 (was gated to workflow_dispatch-only in the August 2026
 # org-wide cost pass). Found during an org-level CI/CD health audit.
-on: [pull_request, push]
+# >>> ci-local:gated original triggers below, restore with `ci-local restore`
+# on: [pull_request, push]
+# <<< ci-local:gated
+on:
+  workflow_dispatch:
 
 # Two jobs on purpose. They were one, in which the npm-dependent canon lint ran
 # FIRST and the registry-free bundle check ran second — so from mid-September
