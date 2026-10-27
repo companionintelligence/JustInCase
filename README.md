@@ -2,9 +2,16 @@
 
 <p align="center"><strong>Offline emergency knowledge search.</strong></p>
 
-<p align="center"><a href="https://ci.computer/jic">Website</a> · <a href="LICENSE">License</a> · <a href="https://discord.gg/companion">Community</a> · <a href="https://docs.ci.computer/docs/reference/open-source-systems">Systems map</a></p>
+[![release](https://img.shields.io/badge/release-not%20published-757575?style=flat-square)](https://github.com/companionintelligence/JustInCase/releases)
+[![platform](https://img.shields.io/badge/platform-Docker%20%C2%B7%20Linux%20%C2%B7%20macOS%2FWindows%20hosts-0a6358?style=flat-square)](https://github.com/companionintelligence/JustInCase)
+[![License](https://img.shields.io/badge/license-MIT-2b7a3d?style=flat-square)](LICENSE)
+[![Discord](https://img.shields.io/badge/chat-Discord-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.com/invite/yQp9hwpzAa)
 
+<p align="center"><a href="https://ci.computer/jic">Website</a> · <a href="LICENSE">License</a> · <a href="https://discord.gg/companion">Community</a> · <a href="https://docs.ci.computer/docs/reference/open-source-systems">Systems map</a> · <a href="architecture.md">Documentation</a></p>
 
+<p align="center">
+  <a href="https://ci.computer/jic"><img src="https://img.shields.io/badge/Open%20JustInCase-Open%20JustInCase-0a6358?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Open JustInCase" height="30"></a>
+</p>
 
 JIC is a self-contained, LLM-powered conversational search engine that runs entirely offline on commodity hardware. You feed it emergency PDFs — survival guides, medical references, agricultural manuals, engineering resources — and it lets you ask questions in natural language and get grounded, source-attributed answers. No cloud, no network, no JVM, no Python. Just C++ and a few GGUF model files.
 
@@ -60,6 +67,21 @@ Background thinking on the problem space is in the [docs/](docs/) folder: [typic
 
 ---
 
+
+## How it fits together
+
+A separate ingestion process parses and chunks documents into a local SQLite hybrid index; the query service retrieves passages and sends only those passages to the local GGUF model.
+
+```mermaid
+flowchart LR
+  Sources[Local PDFs and optional fetched content] --> Ingest[Ingestion process]
+  Ingest --> Index[(SQLite FTS5 and vector index)]
+  Query[UI or API question] --> Retrieve[Hybrid retrieval]
+  Index --> Retrieve
+  Retrieve --> Model[Local llama.cpp model]
+  Model --> Answer[Grounded answer with citations]
+```
+
 ## How it works
 
 The system is written in C++17 and compiles to two binaries: a server and an ingestion worker. Both link against [llama.cpp](https://github.com/ggml-org/llama.cpp) for LLM inference and embeddings, [MuPDF](https://github.com/ArtifexSoftware/mupdf) for PDF text extraction, and SQLite with [sqlite-vec](https://github.com/asg017/sqlite-vec) and FTS5 for hybrid search. The server uses [cpp-httplib](https://github.com/yhirose/cpp-httplib) for HTTP. The default LLM is Google Gemma 4 E4B Mobile (Q4_0, ~4.3 GB, [Google AI Core](https://ai.google.dev/gemma/docs/core)); embeddings use Gemini Embedding 2 / EmbeddingGemma (768-dimensional, ~265 MB).
@@ -98,6 +120,17 @@ The full implementation reference — query/ingestion pipelines, ER diagram, API
 Docker is used only for packaging — there is no runtime dependency on it. You can build and run natively if you prefer.
 
 ---
+
+
+## Features
+
+| Feature | What it provides |
+|---|---|
+| **Local document ingestion** | Parse, chunk and index offline PDFs and knowledge packs. |
+| **Hybrid search** | Combine SQLite full-text search with vector similarity. |
+| **Grounded answers** | Use local GGUF models to answer from retrieved passages with citations. |
+| **Offline library** | Keep normal search and query local; network fetch is opt-in. |
+
 
 ## Quickstart
 
