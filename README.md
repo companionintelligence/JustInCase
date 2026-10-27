@@ -246,6 +246,14 @@ The library is intentionally layered so a small emergency reference set can be i
 | High-priority Kiwix ZIMs | 20 GB | Broader emergency and medical references |
 | Full encyclopedic ZIMs | 240 GB | Wikipedia, Project Gutenberg, and WikiHow collections |
 
+```mermaid
+xychart-beta
+    title "Approximate offline library download size (GB)"
+    x-axis ["Core PDFs", "Emergency/medical", "Full collections"]
+    y-axis "GB" 0 --> 250
+    bar [0.35, 20, 240]
+```
+
 Download only the tiers that fit your storage budget. The application grounds answers in the local library and reports when a backend/model is unavailable; see the interface examples above for that degraded state.
 
 ## Contributing
