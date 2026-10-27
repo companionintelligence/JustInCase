@@ -234,6 +234,20 @@ CI runs all of the above plus a Playwright screenshot gate before publishing the
 
 ---
 
+<!-- companion-hub-readme-deep-review -->
+
+## Offline library sizing
+
+The library is intentionally layered so a small emergency reference set can be installed before adding larger offline encyclopedias. Approximate sizes below are the values documented by this project; actual downloads vary by release.
+
+| Library tier | Approximate download | Use
+|---|---:|---|
+| Core emergency PDFs | 350 MB | Start here for essential reference material |
+| High-priority Kiwix ZIMs | 20 GB | Broader emergency and medical references |
+| Full encyclopedic ZIMs | 240 GB | Wikipedia, Project Gutenberg, and WikiHow collections |
+
+Download only the tiers that fit your storage budget. The application grounds answers in the local library and reports when a backend/model is unavailable; see the interface examples above for that degraded state.
+
 ## Contributing
 
 Work in progress — contributions welcome. See the [Discord](https://discord.gg/companion) for discussion. Content additions to [sources.yaml](sources.yaml) must be public-domain or explicitly redistributable, with the license recorded — see [docs/1400-sources.md](docs/1400-sources.md) for the research backlog (Project NOMAD, PrepperDisk, Kiwix and friends).
