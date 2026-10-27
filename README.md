@@ -2,7 +2,7 @@
 
 <p align="center"><strong>Offline emergency knowledge search.</strong></p>
 
-<p align="center"><a href="https://ci.computer/jic">Website</a> · <a href="LICENSE">License</a> · <a href="https://discord.gg/companion">Community</a></p>
+<p align="center"><a href="https://ci.computer/jic">Website</a> · <a href="LICENSE">License</a> · <a href="https://discord.gg/companion">Community</a> · <a href="https://docs.ci.computer/docs/reference/open-source-systems">Systems map</a></p>
 
 
 
