@@ -1,8 +1,10 @@
-# Just In Case
+<h1 align="center">Just In Case</h1>
 
-**Offline emergency knowledge search.**
+<p align="center"><strong>Offline emergency knowledge search.</strong></p>
 
-[Discord](https://discord.gg/companion)
+<p align="center"><a href="https://ci.computer/jic">Website</a> · <a href="LICENSE">License</a> · <a href="https://discord.gg/companion">Community</a></p>
+
+
 
 JIC is a self-contained, LLM-powered conversational search engine that runs entirely offline on commodity hardware. You feed it emergency PDFs — survival guides, medical references, agricultural manuals, engineering resources — and it lets you ask questions in natural language and get grounded, source-attributed answers. No cloud, no network, no JVM, no Python. Just C++ and a few GGUF model files.
 
