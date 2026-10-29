@@ -4,7 +4,6 @@ How to serve the web UI from one place and answer questions from another — a
 laptop, a box on the LAN, ci-hub — and which of those the browser will actually
 allow.
 
-> **Private & Confidential — Property of Lifescope Inc. Do not distribute.**
 
 ---
 

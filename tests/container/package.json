@@ -4,5 +4,6 @@
   "description": "Self-contained Playwright harness that screenshots the running container. Isolated from the app's own deps.",
   "devDependencies": {
     "@playwright/test": "^1.48.0"
-  }
+  },
+  "license": "PolyForm-Noncommercial-1.0.0"
 }

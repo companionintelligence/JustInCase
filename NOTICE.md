@@ -14,7 +14,38 @@ licence (MIT, Apache-2.0, ISC, BSD or similar).
 
 Except as noted above, the contents of this repository are
 Copyright © LifeScope INC, DBA Companion Intelligence (<https://ci.computer>),
-licensed under the terms in [LICENSE](LICENSE) / [LICENSE.md](LICENSE.md).
+licensed under the PolyForm Noncommercial License 1.0.0 — see [LICENSE](LICENSE).
+
+Required Notice: Copyright LifeScope INC, DBA Companion Intelligence (https://ci.computer)
+
+## Previous licence (MIT)
+
+Versions published before 2026-10-29 were MIT. That grant remains in force for
+those versions. Its text is preserved here:
+
+```text
+MIT License
+
+Copyright (c) 2025 Companion Intelligence
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
 ---
 

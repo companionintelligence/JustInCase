@@ -1,6 +1,5 @@
 # 1800 — Project NOMAD parity
 
-> **Private & Confidential — Property of Lifescope Inc. Do not distribute.**
 
 Comparison of **Just In Case** against **[Project NOMAD](https://www.projectnomad.us/)**
 (`Crosstalk-Solutions/project-nomad`, Apache-2.0), and what this repo has done about it.

@@ -4,7 +4,7 @@
 
 [![release](https://img.shields.io/badge/release-not%20published-757575?style=flat-square)](https://github.com/companionintelligence/JustInCase/releases)
 [![platform](https://img.shields.io/badge/platform-Docker%20%C2%B7%20Linux%20%C2%B7%20macOS%2FWindows%20hosts-0a6358?style=flat-square)](https://github.com/companionintelligence/JustInCase)
-[![License](https://img.shields.io/badge/license-MIT-2b7a3d?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-2b7a3d?style=flat-square)](LICENSE)
 [![Discord](https://img.shields.io/badge/chat-Discord-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.com/invite/yQp9hwpzAa)
 
 <p align="center"><a href="https://ci.computer/jic">Website</a> · <a href="LICENSE">License</a> · <a href="https://discord.gg/companion">Community</a> · <a href="https://docs.ci.computer/docs/reference/open-source-systems">Systems map</a> · <a href="architecture.md">Documentation</a></p>
@@ -295,7 +295,7 @@ Work in progress — contributions welcome. See the [Discord](https://discord.gg
 
 ## License
 
-See [LICENSE](LICENSE).
+Just In Case is free for noncommercial use under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0). The full text is in [LICENSE](LICENSE); common questions are answered in the [License FAQ](docs/License-FAQ.md). Versions published before 2026-10-29 were MIT-licensed; see [NOTICE.md](NOTICE.md).
 
 ## Brand
 
