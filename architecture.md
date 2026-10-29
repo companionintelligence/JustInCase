@@ -3,7 +3,7 @@
 > Implementation reference for **Just In Case**, the offline emergency knowledge
 > assistant. Design-history narrative lives in
 > [docs/1600-architecture.md](docs/1600-architecture.md); this document describes
-> the system as built. Private & Confidential — Property of Lifescope Inc.
+> the system as built.
 
 JIC is two C++17 binaries sharing one SQLite file, packaged as a single
 container image. **The image is code; the volumes are state.** Everything else

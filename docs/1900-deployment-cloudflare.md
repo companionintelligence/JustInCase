@@ -3,7 +3,6 @@
 How the offline assistant gets a public address without stopping being offline,
 and how a single box survives being on the internet.
 
-> **Private & Confidential — Property of Lifescope Inc. Do not distribute.**
 
 ---
 

@@ -1,6 +1,5 @@
 # Just In Case — product video
 
-> **Private & Confidential — Property of Lifescope Inc. Do not distribute.**
 
 Generates a **16:9 desktop cut** and a **9:16 mobile cut** of Just In Case's FTUE and major
 screens, from this repo's own UI. Both are produced from [`storyboard.json`](storyboard.json).
