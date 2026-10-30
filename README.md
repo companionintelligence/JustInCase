@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-2b7a3d?style=flat-square)](LICENSE)
 [![Discord](https://img.shields.io/badge/chat-Discord-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.com/invite/yQp9hwpzAa)
 
-<p align="center"><a href="https://ci.computer/jic">Website</a> · <a href="LICENSE">License</a> · <a href="https://discord.gg/companion">Community</a> · <a href="https://docs.ci.computer/docs/reference/open-source-systems">Systems map</a> · <a href="architecture.md">Documentation</a></p>
+<p align="center"><a href="https://ci.computer/jic">Website</a> · <a href="LICENSE">License</a> · <a href="https://discord.com/invite/yQp9hwpzAa">Community</a> · <a href="https://docs.ci.computer/docs/reference/open-source-systems">Systems map</a> · <a href="architecture.md">Documentation</a></p>
 
 <p align="center">
   <a href="https://ci.computer/jic"><img src="https://img.shields.io/badge/Open%20JustInCase-Open%20JustInCase-0a6358?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Open JustInCase" height="30"></a>
@@ -291,7 +291,7 @@ Download only the tiers that fit your storage budget. The application grounds an
 
 ## Contributing
 
-Work in progress — contributions welcome. See the [Discord](https://discord.gg/companion) for discussion. Content additions to [sources.yaml](sources.yaml) must be public-domain or explicitly redistributable, with the license recorded — see [docs/1400-sources.md](docs/1400-sources.md) for the research backlog (Project NOMAD, PrepperDisk, Kiwix and friends).
+Work in progress — contributions welcome. See the [Discord](https://discord.com/invite/yQp9hwpzAa) for discussion. Content additions to [sources.yaml](sources.yaml) must be public-domain or explicitly redistributable, with the license recorded — see [docs/1400-sources.md](docs/1400-sources.md) for the research backlog (Project NOMAD, PrepperDisk, Kiwix and friends).
 
 ## License
 
