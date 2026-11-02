@@ -7,7 +7,7 @@ Just In Case (JIC) runs on your own computer as a set of Docker containers. It a
 - **Docker with Docker Compose.** Docker Desktop on macOS and Windows, or Docker Engine with the Compose plugin on Linux. See [Get Docker](https://docs.docker.com/get-docker/).
 - **Git**, to get the source.
 - **About 4 GB** of free disk space for the two model files.
-- **Space for the library.** The core library is about 350 MB. The emergency ZIMs add about 20 GB, and the full encyclopedic ZIMs about 240 GB. See [Hardware](docs/1500-hardware.md) for drive sizes.
+- **Space for the library.** The core library is about 350 MB. The emergency ZIMs add about 20 GB, and the full encyclopedic ZIMs about 240 GB. See [Hardware](1500-hardware.md) for drive sizes.
 
 Models are not downloaded at runtime. You place them in `./gguf_models/` before you start Docker.
 
@@ -89,7 +89,7 @@ docker compose cp my-manual.pdf jic-server:/app/public/sources/100_Survival/
 2. Ask a question that the library should answer, for example about water purification.
 3. Check that the answer cites a document from the library.
 
-To open it from another device on your network, use `http://<this-computer's-address>:8080`. Only do this on a network you trust, and check the [security posture](README.md#security-posture) first.
+To open it from another device on your network, use `http://<this-computer's-address>:8080`. Only do this on a network you trust, and check the [security posture](../README.md#security-posture) first.
 
 ## Stop, start and update
 
@@ -114,4 +114,4 @@ docker compose up --build -d
 - **The build fails with out-of-memory errors.** Raise Docker's memory limit in Docker Desktop's settings, or on Linux free up memory and try again.
 - **Port 8080 is in use.** Stop the other program, or change the port in `docker-compose.yml`.
 
-For the design and the rest of the documentation, see [`docs/1000-index.md`](docs/1000-index.md).
+For the design and the rest of the documentation, see [`docs/1000-index.md`](1000-index.md).
