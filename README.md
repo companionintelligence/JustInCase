@@ -156,7 +156,7 @@ The multi-stage Docker build compiles everything from source, then starts the se
 
 ### 3. Load the library
 
-JIC does not bake data into the image. A curated, URL-verified manifest of 115 public-domain and freely-redistributable emergency documents lives in [sources.yaml](sources.yaml) — survival manuals, austere medicine, food preservation, water/power engineering, emergency comms, open textbooks, Kiwix ZIMs, and KA-Lite media packs.
+JIC does not bake data into the image. A curated, URL-verified manifest of 143 emergency documents, each tagged with its redistribution status (clean, local-only or unverified; see the header of sources.yaml) lives in [sources.yaml](sources.yaml) — survival manuals, austere medicine, food preservation, water/power engineering, emergency comms, open textbooks, Kiwix ZIMs, and KA-Lite media packs.
 
 Download content using tiered profiles:
 
@@ -227,10 +227,10 @@ To swap the LLM, set `LLM_GGUF_FILE` in the environment or edit `docker-compose.
 
 | Model | Parameters | RAM | Notes |
 |---|---|---|---|
-| **Llama 3.2 3B** (default) | 3B | ~3 GB | Fast, good quality, fits comfortably in 8 GB |
-| Phi-4-mini | 3.8B | ~3.5 GB | Strong reasoning for its size |
-| Gemma 3 4B | 4B | ~4 GB | Broad general knowledge |
-| Llama 3.1 8B | 8B | ~6 GB | Better answers, needs ≥16 GB RAM |
+| **Gemma 4 E4B** (default) | 4B effective | ~6 GB | State of the art instruction following & disaster reasoning |
+| Llama 3.2 3B | 3B | ~3 GB | Fast lightweight option for low-RAM appliances |
+| Gemma 2 2B | 2B | ~2.5 GB | Ultra-lightweight footprint |
+| Llama 3.1 8B | 8B | ~6 GB | Strong long-context synthesis |
 
 Additional environment knobs (all optional):
 
