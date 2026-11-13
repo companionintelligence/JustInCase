@@ -1,8 +1,17 @@
-# Just In Case
+<h1 align="center">Just In Case</h1>
 
-**Offline emergency knowledge search.**
+<p align="center"><strong>Offline emergency knowledge search.</strong></p>
 
-[Live demo](https://jic.companionintel.com) · [CompanionIntelligence.com/JIC](https://companionintelligence.com/JIC) · [Discord](https://discord.gg/companion)
+[![release](https://img.shields.io/badge/release-not%20published-757575?style=flat-square)](https://github.com/companionintelligence/JustInCase/releases)
+[![platform](https://img.shields.io/badge/platform-Docker%20%C2%B7%20Linux%20%C2%B7%20macOS%2FWindows%20hosts-0a6358?style=flat-square)](https://github.com/companionintelligence/JustInCase)
+[![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-2b7a3d?style=flat-square)](LICENSE)
+[![Discord](https://img.shields.io/badge/chat-Discord-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.com/invite/yQp9hwpzAa)
+
+<p align="center"><a href="https://ci.computer/jic">Website</a> · <a href="LICENSE">License</a> · <a href="https://discord.com/invite/yQp9hwpzAa">Community</a> · <a href="https://docs.ci.computer/docs/reference/open-source-systems">Systems map</a> · <a href="architecture.md">Documentation</a></p>
+
+<p align="center">
+  <a href="https://ci.computer/jic"><img src="https://img.shields.io/badge/Open%20JustInCase-Open%20JustInCase-0a6358?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Open JustInCase" height="30"></a>
+</p>
 
 JIC is a self-contained, LLM-powered conversational search engine that runs entirely offline on commodity hardware. You feed it emergency PDFs — survival guides, medical references, agricultural manuals, engineering resources — and it lets you ask questions in natural language and get grounded, source-attributed answers. No cloud, no network, no JVM, no Python. Just C++ and a few GGUF model files.
 
@@ -12,7 +21,7 @@ JIC is a self-contained, LLM-powered conversational search engine that runs enti
 
 ## Interface
 
-A single-page, fully-offline UI on the [Companion Intelligence design system](https://github.com/companionintelligence/CI-Common/tree/main/style) — CI teal accent (`--primary` `#0f717a` / `#abd4d8`), self-hosted fonts (no CDN), and a light + dark theme toggle persisted to `localStorage`. The whole front end is dependency-free vanilla JS in [`public/`](public/) (`index.html`, `app.js`, `style.css`); it talks to the C++ server over three endpoints — `GET /status`, `GET /api/library`, `POST /query`.
+A single-page, fully-offline UI on the [Companion Intelligence design system](https://github.com/companionintelligence/CI-Common/tree/main/styles) — CI phthalo-mist accent (`--primary` `#0a6358` / `#c5e8dc`), self-hosted fonts (no CDN), and a light + dark theme toggle persisted to `localStorage`. The whole front end is dependency-free vanilla JS in [`public/`](public/) (`index.html`, `app.js`, `style.css`); it talks to the C++ server over three endpoints — `GET /status`, `GET /api/library`, `POST /query`.
 
 Every screen below is a real headless render of `public/index.html` captured in **both themes**. Screens marked _(needs backend)_ are driven by the native `jic-server` responses (`/status`, `/api/library`, `/query`); their captures use representative response payloads so the genuine client render path is exercised — the layout, tokens, and formatting are real, the document counts and answer text are illustrative.
 
@@ -48,7 +57,7 @@ Narrow-viewport layout (≤ 920 px): the field library collapses into an off-can
 | --- | --- |
 | ![Mobile library drawer, dark theme](docs/ui/justincase-mobile-dark.png) | ![Mobile library drawer, light theme](docs/ui/justincase-mobile-light.png) |
 
-> The theme toggle, suggested-question chips, sidebar drawer, and welcome/empty state render with no backend — they are pure client-side UI. The populated system status, indexed document library, grounded answers, and citations require the native `jic-server` (C++ + llama.cpp); the captures above exercise the real render path with representative server payloads. Token/theme conformance is enforced in CI by [`scripts/lint-canon.mjs`](scripts/lint-canon.mjs) (the canon lint gate), so the teal `--primary` and dark/light contracts stay honest.
+> The theme toggle, suggested-question chips, sidebar drawer, and welcome/empty state render with no backend — they are pure client-side UI. The populated system status, indexed document library, grounded answers, and citations require the native `jic-server` (C++ + llama.cpp); the captures above exercise the real render path with representative server payloads. Token/theme conformance is enforced in CI by [`scripts/vendor-brand.sh --check`](scripts/vendor-brand.sh), which verifies the vendored `public/assets/brand/` bundle against CI-Common's published SHA256SUMS, so the phthalo `--primary` and dark/light contracts stay honest.
 
 ## Why
 
@@ -57,6 +66,21 @@ We lean heavily on ChatGPT, Claude, Google, and similar services for even simple
 Background thinking on the problem space is in the [docs/](docs/) folder: [typical emergency questions](docs/1100-questions.md), [user personas](docs/1200-persona.md), [data categorisation](docs/1300-categorization.md), [high-value sources](docs/1400-sources.md), [target hardware](docs/1500-hardware.md), and [architecture notes](docs/1600-architecture.md).
 
 ---
+
+
+## How it fits together
+
+A separate ingestion process parses and chunks documents into a local SQLite hybrid index; the query service retrieves passages and sends only those passages to the local GGUF model.
+
+```mermaid
+flowchart LR
+  Sources[Local PDFs and optional fetched content] --> Ingest[Ingestion process]
+  Ingest --> Index[(SQLite FTS5 and vector index)]
+  Query[UI or API question] --> Retrieve[Hybrid retrieval]
+  Index --> Retrieve
+  Retrieve --> Model[Local llama.cpp model]
+  Model --> Answer[Grounded answer with citations]
+```
 
 ## How it works
 
@@ -97,6 +121,17 @@ Docker is used only for packaging — there is no runtime dependency on it. You 
 
 ---
 
+
+## Features
+
+| Feature | What it provides |
+|---|---|
+| **Local document ingestion** | Parse, chunk and index offline PDFs and knowledge packs. |
+| **Hybrid search** | Combine SQLite full-text search with vector similarity. |
+| **Grounded answers** | Use local GGUF models to answer from retrieved passages with citations. |
+| **Offline library** | Keep normal search and query local; network fetch is opt-in. |
+
+
 ## Quickstart
 
 You need [Docker and Docker Compose](https://docs.docker.com/get-docker/), roughly 4 GB of disk for models, and whatever space your library requires (the full curated catalog is ~350 MB).
@@ -121,7 +156,7 @@ The multi-stage Docker build compiles everything from source, then starts the se
 
 ### 3. Load the library
 
-JIC does not bake data into the image. A curated, URL-verified manifest of 94 public-domain and freely-redistributable emergency documents lives in [sources.yaml](sources.yaml) — survival manuals, austere medicine, food preservation, water/power engineering, emergency comms, open textbooks, Kiwix ZIMs, and KA-Lite media packs.
+JIC does not bake data into the image. A curated, URL-verified manifest of 143 emergency documents, each tagged with its redistribution status (clean, local-only or unverified; see the header of sources.yaml) lives in [sources.yaml](sources.yaml) — survival manuals, austere medicine, food preservation, water/power engineering, emergency comms, open textbooks, Kiwix ZIMs, and KA-Lite media packs.
 
 Download content using tiered profiles:
 
@@ -232,10 +267,41 @@ CI runs all of the above plus a Playwright screenshot gate before publishing the
 
 ---
 
+<!-- companion-hub-readme-deep-review -->
+
+## Offline library sizing
+
+The library is intentionally layered so a small emergency reference set can be installed before adding larger offline encyclopedias. Approximate sizes below are the values documented by this project; actual downloads vary by release.
+
+| Library tier | Approximate download | Use
+|---|---:|---|
+| Core emergency PDFs | 350 MB | Start here for essential reference material |
+| High-priority Kiwix ZIMs | 20 GB | Broader emergency and medical references |
+| Full encyclopedic ZIMs | 240 GB | Wikipedia, Project Gutenberg, and WikiHow collections |
+
+```mermaid
+xychart-beta
+    title "Approximate offline library download size (GB)"
+    x-axis ["Core PDFs", "Emergency/medical", "Full collections"]
+    y-axis "GB" 0 --> 250
+    bar [0.35, 20, 240]
+```
+
+Download only the tiers that fit your storage budget. The application grounds answers in the local library and reports when a backend/model is unavailable; see the interface examples above for that degraded state.
+
 ## Contributing
 
-Work in progress — contributions welcome. See the [Discord](https://discord.gg/companion) for discussion. Content additions to [sources.yaml](sources.yaml) must be public-domain or explicitly redistributable, with the license recorded — see [docs/1400-sources.md](docs/1400-sources.md) for the research backlog (Project NOMAD, PrepperDisk, Kiwix and friends).
+Work in progress — contributions welcome. See the [Discord](https://discord.com/invite/yQp9hwpzAa) for discussion. Content additions to [sources.yaml](sources.yaml) must be public-domain or explicitly redistributable, with the license recorded — see [docs/1400-sources.md](docs/1400-sources.md) for the research backlog (Project NOMAD, PrepperDisk, Kiwix and friends).
 
 ## License
 
-See [LICENSE](LICENSE).
+Just In Case is free for noncommercial use under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0). The full text is in [LICENSE](LICENSE); common questions are answered in the [License FAQ](docs/License-FAQ.md). Versions published before 2026-10-29 were MIT-licensed; see [NOTICE.md](NOTICE.md).
+
+## Brand
+
+The UI's colours and type are the Companion Intelligence canon, vendored from CI-Common's
+brand bundle into `public/assets/brand/` (`tokens.css` / `tokens.json`, Manrope + JetBrains
+Mono). `scripts/vendor-brand.sh <version>` refreshes it from the
+`@companionintelligence/tokens@<version>` release; `scripts/vendor-brand.sh --check` (CI)
+verifies the files against the bundle's `SHA256SUMS`. Never edit the vendored files; see
+CI-Common `CONSUMING.md`, Route B.

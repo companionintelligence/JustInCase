@@ -86,6 +86,25 @@ public:
             END
         )");
 
+        // The matching DELETE trigger. `chunks_fts` is an EXTERNAL-CONTENT
+        // FTS5 table (content=chunks), which means it keeps its own copy of
+        // the terms and does NOT notice rows leaving the content table.
+        // Deleting a chunk without this leaves the term still indexed: BM25
+        // goes on matching text that no longer exists and returns a rowid
+        // that resolves to nothing, so a removed document keeps influencing
+        // retrieval and can still be cited.
+        //
+        // The `('delete', ...)` command form is FTS5's required way to
+        // retract a row, and it must be given the OLD column values —
+        // passing anything else corrupts the index rather than fixing it.
+        exec(R"(
+            CREATE TRIGGER IF NOT EXISTS chunks_ad AFTER DELETE ON chunks
+            BEGIN
+                INSERT INTO chunks_fts(chunks_fts, rowid, filename, chunk_text)
+                VALUES ('delete', old.id, old.filename, old.chunk_text);
+            END
+        )");
+
         exec(R"(
             CREATE TABLE IF NOT EXISTS processed_files (
                 filename     TEXT PRIMARY KEY,
@@ -94,8 +113,80 @@ public:
             )
         )");
 
-        std::cout << "SQLite index opened: " << db_path << std::endl;
+        exec(R"(
+            CREATE TABLE IF NOT EXISTS index_meta (
+                key   TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )
+        )");
+
+        // ── What built this index ───────────────────────────────────
+        //
+        // `vec_chunks` is created float[EMBEDDING_DIM] with IF NOT EXISTS,
+        // so an index built by an earlier model keeps its ORIGINAL width
+        // forever — changing the constant and rebuilding the binary does
+        // not migrate it. Worse, vectors from a different model are the
+        // same width but a different SPACE: cosine distance between them
+        // is meaningless, and nothing about that is visible at query time.
+        //
+        // Recording the width and the model name is what makes the
+        // mismatch detectable at all. It is only reported, never enforced
+        // here — deleting somebody's index is not this function's call.
+        const std::string want_dim = std::to_string(EMBEDDING_DIM);
+        const std::string want_model = get_embedding_model_name();
+        const std::string had_dim   = meta_get("embedding_dim");
+        const std::string had_model = meta_get("embedding_model");
+
+        if (had_dim.empty()) {
+            meta_set("embedding_dim", want_dim);
+            meta_set("embedding_model", want_model);
+        } else if (had_dim != want_dim || (!had_model.empty() && had_model != want_model)) {
+            std::cerr
+                << "\n  !! INDEX / MODEL MISMATCH — retrieval will be wrong, silently.\n"
+                << "     index built with : " << had_model << " (" << had_dim << "-dim)\n"
+                << "     now running      : " << want_model << " (" << want_dim << "-dim)\n"
+                << "     Embeddings from a different model are not comparable even at the\n"
+                << "     same width. Delete the jic-data volume and re-index:\n"
+                << "       docker compose down && docker volume rm jic_jic-data\n"
+                << std::endl;
+            meta_set("mismatch", had_model + " (" + had_dim + ") != " +
+                                 want_model + " (" + want_dim + ")");
+        } else {
+            meta_set("mismatch", "");
+        }
+
+        std::cout << "SQLite index opened: " << db_path
+                  << "  [" << want_model << ", " << want_dim << "-dim]" << std::endl;
         return true;
+    }
+
+    /// A row from index_meta, or "" when absent. Never throws.
+    std::string meta_get(const std::string& key) {
+        sqlite3_stmt* s = nullptr;
+        if (sqlite3_prepare_v2(db_, "SELECT value FROM index_meta WHERE key = ?", -1, &s, nullptr)
+                != SQLITE_OK)
+            return "";
+        sqlite3_bind_text(s, 1, key.c_str(), -1, SQLITE_TRANSIENT);
+        std::string out;
+        if (sqlite3_step(s) == SQLITE_ROW) {
+            const char* v = reinterpret_cast<const char*>(sqlite3_column_text(s, 0));
+            if (v) out = v;
+        }
+        sqlite3_finalize(s);
+        return out;
+    }
+
+    void meta_set(const std::string& key, const std::string& value) {
+        sqlite3_stmt* s = nullptr;
+        if (sqlite3_prepare_v2(db_,
+                "INSERT INTO index_meta(key, value) VALUES(?, ?) "
+                "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                -1, &s, nullptr) != SQLITE_OK)
+            return;
+        sqlite3_bind_text(s, 1, key.c_str(),   -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(s, 2, value.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_step(s);
+        sqlite3_finalize(s);
     }
 
     // ── Insert ────────────────────────────────────────────────────────
@@ -349,6 +440,88 @@ public:
         }
         sqlite3_finalize(s);
         return entries;
+    }
+
+    /**
+     * Remove every trace of one document: its vectors, its chunks (which
+     * retracts its FTS terms through the chunks_ad trigger) and its
+     * processed_files row.
+     *
+     * Until this existed the index was APPEND-ONLY. Deleting a PDF from the
+     * sources volume left its chunks behind forever, so `/query` went on
+     * retrieving from a document that is not there and citing it — and the
+     * citation link 404s, because the file it points at is gone. On an
+     * appliance whose entire promise is "answers cite their sources", a
+     * citation to a document the user deleted is the worst possible failure:
+     * it looks exactly like a working one.
+     *
+     * Returns the number of chunks removed.
+     *
+     * ORDER MATTERS. vec_chunks is keyed by chunk id and those ids are
+     * resolved from `chunks`, so the vectors must go FIRST — deleting the
+     * chunks first would strand every vector with no way left to find it.
+     */
+    int remove_file(const std::string& filename) {
+        std::lock_guard<std::mutex> lock(mu_);
+
+        int removed = 0;
+        {
+            sqlite3_stmt* s = nullptr;
+            sqlite3_prepare_v2(db_,
+                "SELECT COUNT(*) FROM chunks WHERE filename = ?", -1, &s, nullptr);
+            sqlite3_bind_text(s, 1, filename.c_str(), -1, SQLITE_TRANSIENT);
+            if (sqlite3_step(s) == SQLITE_ROW) removed = sqlite3_column_int(s, 0);
+            sqlite3_finalize(s);
+        }
+        if (removed == 0) return 0;
+
+        exec("BEGIN");
+
+        // 1. Vectors, while `chunks` can still resolve their ids.
+        {
+            sqlite3_stmt* s = nullptr;
+            sqlite3_prepare_v2(db_,
+                "DELETE FROM vec_chunks WHERE chunk_id IN "
+                "(SELECT id FROM chunks WHERE filename = ?)", -1, &s, nullptr);
+            sqlite3_bind_text(s, 1, filename.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_step(s);
+            sqlite3_finalize(s);
+        }
+
+        // 2. Chunks — the chunks_ad trigger retracts the FTS terms.
+        {
+            sqlite3_stmt* s = nullptr;
+            sqlite3_prepare_v2(db_, "DELETE FROM chunks WHERE filename = ?", -1, &s, nullptr);
+            sqlite3_bind_text(s, 1, filename.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_step(s);
+            sqlite3_finalize(s);
+        }
+
+        // 3. The library listing.
+        {
+            sqlite3_stmt* s = nullptr;
+            sqlite3_prepare_v2(db_, "DELETE FROM processed_files WHERE filename = ?", -1, &s, nullptr);
+            sqlite3_bind_text(s, 1, filename.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_step(s);
+            sqlite3_finalize(s);
+        }
+
+        exec("COMMIT");
+        return removed;
+    }
+
+    /** Every filename the index believes it holds. */
+    std::vector<std::string> indexed_filenames() {
+        std::lock_guard<std::mutex> lock(mu_);
+        std::vector<std::string> out;
+        sqlite3_stmt* s = nullptr;
+        sqlite3_prepare_v2(db_, "SELECT filename FROM processed_files", -1, &s, nullptr);
+        while (sqlite3_step(s) == SQLITE_ROW) {
+            const char* fn = reinterpret_cast<const char*>(sqlite3_column_text(s, 0));
+            if (fn) out.push_back(fn);
+        }
+        sqlite3_finalize(s);
+        return out;
     }
 
     int chunk_count() {

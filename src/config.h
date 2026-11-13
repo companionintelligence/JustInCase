@@ -9,6 +9,15 @@
 // ── Version ──────────────────────────────────────────────────────────
 #define JIC_VERSION "0.3.0"
 
+// ── GPU backend ──────────────────────────────────────────────────────
+// Set by CMake (jic_configure_gpu) to whatever llama.cpp was compiled with.
+// The fallback matters: a build path that forgets to define it must read as
+// "off" rather than fail to compile, because the only wrong answer here is a
+// binary that CLAIMS a GPU backend it does not have.
+#ifndef JIC_GPU_BACKEND
+#define JIC_GPU_BACKEND "off"
+#endif
+
 // ── Network ──────────────────────────────────────────────────────────
 const int PORT = 8080;
 
@@ -23,6 +32,24 @@ const int CHUNK_OVERLAP = 200;  // overlap between adjacent chunks
 const int MAX_CONTEXT_CHUNKS = 5;   // chunks sent to the LLM
 const int SEARCH_CANDIDATES  = 30;  // candidates pulled before re-ranking
 
+// ── ZIM library (kiwix-serve), optional ──────────────────────────────
+// A third retriever beside vector and BM25, enabled only when JIC_KIWIX_URL
+// points at a reachable kiwix-serve. See src/kiwix_client.h for why this is
+// spoken to over HTTP rather than linked (libzim is GPLv2+, JIC is MIT).
+//
+// The timeouts are the whole safety story: the library must never be able to
+// make the appliance feel broken, so a stalled container costs one query at
+// most and then gets cached as unhealthy for a minute.
+const int    KIWIX_CANDIDATES            = 10; // hits pulled into the RRF pool
+const int    KIWIX_CONNECT_TIMEOUT_SECONDS = 1;
+const int    KIWIX_READ_TIMEOUT_SECONDS    = 3;
+const int    KIWIX_PROBE_TTL_SECONDS       = 60;
+const int    KIWIX_MAX_BOOKS             = 50; // catalog entries read for /status
+const size_t KIWIX_MAX_RESPONSE_BYTES    = 4u * 1024u * 1024u;
+// A ZIM article is whole-page, not a pre-chunked passage, so it is truncated
+// to roughly one local chunk's worth before being handed to the LLM.
+const size_t KIWIX_MAX_ARTICLE_CHARS     = 4000;
+
 // ── LLM ──────────────────────────────────────────────────────────────
 const int LLM_CONTEXT_SIZE   = 8192;  // n_ctx — token window
 const int LLM_MAX_TOKENS     = 1024;  // max tokens in a generated response
@@ -33,6 +60,14 @@ const size_t MAX_REQUEST_BODY  = 1 * 1024 * 1024; // 1 MB JSON body cap
 const size_t MAX_QUERY_CHARS   = 8000;            // longest accepted question
 const size_t MAX_CONV_ID_CHARS = 128;
 const size_t MAX_CONVERSATIONS = 200;             // bounded history map
+
+// Largest single file accepted by POST /api/upload. cpp-httplib's payload
+// limit is global, so this also caps how much ANY request can buffer — kept
+// modest to bound that exposure. Large curated documents are pulled by the
+// server-side importer (curl), not through an upload body, so this only needs
+// to fit a user's own document; the /query and /api/import handlers separately
+// reject bodies over MAX_REQUEST_BODY.
+const size_t MAX_UPLOAD_BYTES  = 32u * 1024u * 1024u; // 32 MB per uploaded file
 
 // ── Ingestion ────────────────────────────────────────────────────────
 const size_t MAX_DOCUMENT_CHARS = 8u * 1000u * 1000u; // per-document text cap
@@ -66,9 +101,22 @@ inline int get_scan_interval_sec() {
 
 // Cross-origin access is disabled unless explicitly configured.
 // Set JIC_CORS_ORIGIN to an origin (or "*") to allow API calls from
-// other web origins.
+// other web origins. This governs who may call THIS server.
 inline std::string get_cors_origin() {
     return env_or("JIC_CORS_ORIGIN", "");
+}
+
+// The reverse direction: which servers the UI THIS instance serves is allowed
+// to call. The page's own Content-Security-Policy decides that, and it is
+// `connect-src 'self'` by default — so the bundled UI can only talk to the
+// server that served it, which is correct for an appliance and wrong for a
+// deployment where someone points the UI at a different backend.
+//
+// Space-separated origins, appended to connect-src. Empty (the default) keeps
+// the policy at 'self'. Note this is only needed when JIC serves the page: a
+// UI hosted on static hosting is governed by that host's policy instead.
+inline std::string get_connect_src() {
+    return env_or("JIC_CONNECT_SRC", "");
 }
 
 // ── Model paths (overridable via environment) ────────────────────────
@@ -166,4 +214,23 @@ inline std::string get_llm_model_name() {
 
 inline std::string get_embedding_model_name() {
     return env_or("EMBEDDING_MODEL", "gemini-embedding-2");
+}
+
+// ── Content import (catalog + upload) ─────────────────────────────────
+// The curated manifest the /api/catalog + /api/import endpoints read, and the
+// fetcher script they exec to download vetted catalog items. Both are baked
+// into the image (see Dockerfile); overridable for local runs and tests.
+inline std::string get_catalog_path() {
+    return env_or("JIC_CATALOG_PATH", "sources.yaml");
+}
+
+inline std::string get_fetcher_path() {
+    return env_or("JIC_FETCHER_PATH", "/app/bin/fetch-sources");
+}
+
+// Catalog import reaches out to the network. Allow locking it down for
+// air-gapped deployments (uploading local files stays available regardless).
+inline bool network_import_enabled() {
+    const char* v = getenv("JIC_DISABLE_NETWORK_IMPORT");
+    return !(v && *v);
 }

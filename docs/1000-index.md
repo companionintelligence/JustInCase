@@ -29,3 +29,9 @@ security model and failure modes, with diagrams (canonical, matches the code)
 
 [Error reporting (Sentry)](1700-error-reporting.md) — opt-out crash reporting,
 the kill switches, and why JIC ships no minidumps
+
+[Hosting at jic.ci.computer](1900-deployment-cloudflare.md) — Cloudflare Tunnel,
+Access email sign-in, and the monthly query cap that protects the box
+
+[Running the UI apart from the server](2000-hosting-the-ui-separately.md) —
+static UI + a backend on your own machine, and which topologies browsers allow

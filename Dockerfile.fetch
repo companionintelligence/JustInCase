@@ -1,0 +1,27 @@
+# ══════════════════════════════════════════════════════════════════════
+# JIC — ZIM fetch image
+#
+# A ~15 MB downloader for the `library` compose profile. Separate from the
+# appliance image on purpose: jic:latest runs `read_only` with `cap_drop:
+# ALL` and has no business carrying a BitTorrent client it uses once.
+#
+# Built from alpine + the distro's own aria2 rather than pulled from a
+# third-party "aria2 container" image, because this thing is given write
+# access to the content volume and its provenance should be one apt-line
+# long. aria2 is GPLv2+; it runs as its own process and nothing links it,
+# so it does not reach the MIT binaries — the same separation that keeps
+# kiwix-serve out of jic-ingestion (see src/kiwix_client.h).
+# ══════════════════════════════════════════════════════════════════════
+FROM alpine:3.21
+
+# aria2 1.37.0 in alpine 3.21, built with BitTorrent + Metalink + Message
+# Digest — verified with `aria2c --version`. All three are required: the
+# torrent for piece hashes and webseeds, metalink for multi-mirror, and
+# message digest for the published .sha256 check.
+RUN apk add --no-cache aria2 curl ca-certificates coreutils
+
+COPY helper-scripts/zim-fetch-entrypoint.sh /usr/local/bin/zim-fetch
+RUN chmod +x /usr/local/bin/zim-fetch
+
+# Runs as a normal user; the volume is chowned by compose's `user:` setting.
+ENTRYPOINT ["/usr/local/bin/zim-fetch"]

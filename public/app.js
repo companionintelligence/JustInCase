@@ -1,6 +1,11 @@
 // ── JIC web UI ───────────────────────────────────────────────────────
 // Vanilla JS, no dependencies, CSP-safe (no inline handlers/styles).
 // Talks to: POST /query · GET /status · GET /api/library
+//
+// The server normally serves this page, so every request is a relative path
+// and the browser's same-origin default is all that is needed. A deployment
+// that serves the UI from somewhere else — static hosting, a Pages project —
+// tells it where the server is; see backend() below.
 
 'use strict';
 
@@ -24,6 +29,7 @@
     '600_Education':   'Education',
     '700_Social':      'Civic & social',
     '800_Software':    'Software & technical',
+    '900_Transport':   'Transport & mobility',
   };
 
   const SUGGESTED_PROMPTS = [
@@ -34,6 +40,130 @@
     'Wire a solar panel to a battery',
     'Preserve food without refrigeration',
   ];
+
+  // ── Backend origin ─────────────────────────────────────────────────
+  // Empty means "same origin as this page", which is the bundled appliance
+  // and the default. Anything else is a full origin the user pointed us at.
+  //
+  // Two keys, because "which server am I using" and "which servers do I know
+  // about" are different questions: someone with a laptop, a box on the LAN
+  // and a tunnel switches between them, and retyping a URL to switch is the
+  // thing a saved list exists to avoid.
+  const BACKEND_KEY = 'jic.backendUrl';   // active origin ('' = this device)
+  const BACKENDS_KEY = 'jic.backends';    // [{label, url}], the saved list
+
+  // Every access is guarded: localStorage throws in a private window and
+  // returns null with site data blocked, and neither should stop the UI from
+  // rendering against its own origin.
+  function readBackend() {
+    try {
+      return (localStorage.getItem(BACKEND_KEY) || '').replace(/\/+$/, '');
+    } catch {
+      return '';
+    }
+  }
+
+  function writeBackend(value) {
+    try {
+      if (value) localStorage.setItem(BACKEND_KEY, value);
+      else localStorage.removeItem(BACKEND_KEY);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * The saved list. Anything malformed is discarded rather than allowed to
+   * break the panel — this is parsed from storage a user (or a previous
+   * version) wrote, so it cannot be assumed well-formed.
+   */
+  function readBackends() {
+    let raw;
+    try {
+      raw = localStorage.getItem(BACKENDS_KEY);
+    } catch {
+      return [];
+    }
+    if (!raw) return [];
+    try {
+      const list = JSON.parse(raw);
+      if (!Array.isArray(list)) return [];
+      return list
+        .filter((e) => e && typeof e.url === 'string' && e.url)
+        .map((e) => ({
+          url: e.url.replace(/\/+$/, ''),
+          label: typeof e.label === 'string' ? e.label : '',
+        }));
+    } catch {
+      return [];
+    }
+  }
+
+  function writeBackends(list) {
+    try {
+      localStorage.setItem(BACKENDS_KEY, JSON.stringify(list));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  let backendBase = readBackend();
+  let backends = readBackends();
+
+  // An earlier version stored only the active URL. Seed the list from it so
+  // upgrading does not look like the setting was lost.
+  if (backendBase && !backends.some((e) => e.url === backendBase)) {
+    backends = [{ url: backendBase, label: '' }].concat(backends);
+    writeBackends(backends);
+  }
+
+  /** Absolute URL for a server path, or the bare path when same-origin. */
+  function api(path) {
+    return backendBase ? backendBase + path : path;
+  }
+
+  /**
+   * True for a host the browser treats as local: loopback, a .local name, or
+   * an RFC1918 address. Used to warn about an https page reaching a plain-http
+   * server, which browsers permit for loopback and refuse for everything else.
+   */
+  function isLocalHost(origin) {
+    let host;
+    try {
+      host = new URL(origin).hostname.toLowerCase();
+    } catch {
+      return false;
+    }
+    if (host === 'localhost' || host.endsWith('.localhost')) return true;
+    if (host === '::1' || host === '[::1]') return true;
+    if (host.endsWith('.local')) return true;
+    if (/^127\./.test(host)) return true;
+    if (/^10\./.test(host)) return true;
+    if (/^192\.168\./.test(host)) return true;
+    return /^172\.(1[6-9]|2\d|3[01])\./.test(host);
+  }
+
+  /**
+   * fetch() against the configured server.
+   *
+   * Note what is deliberately NOT here: a `targetAddressSpace` annotation.
+   * Chrome's Local Network Access docs suggest declaring "local" so the
+   * destination is known before it is resolved, but tested against Chromium
+   * the option is not honoured as documented — the request is sent with a
+   * target space of `unknown`, Chrome compares that against the resource's
+   * actual `loopback` space, and BLOCKS it. That turns a working
+   * loopback-to-loopback request into a CORS failure, which is worse than the
+   * problem it was meant to solve.
+   *
+   * Without it: same-address-space requests work untouched, and a public page
+   * reaching a local server prompts the visitor for Local Network Access
+   * permission once (Chrome 142+) — which is the intended flow anyway.
+   */
+  function apiFetch(path, init) {
+    return fetch(api(path), init);
+  }
 
   // ── Helpers ────────────────────────────────────────────────────────
 
@@ -161,8 +291,18 @@
       const item = document.createElement('div');
       item.className = 'source-item';
       const score = m.score ? `<span class="source-score">match ${(m.score * 100).toFixed(0)}%</span>` : '';
+      // A ZIM citation names an ENCYCLOPEDIA ARTICLE, not a file in the
+      // sources volume, so it is deliberately not a link: /sources/<title>
+      // would 404, and a citation that 404s is worse than one that does not
+      // offer to open. It is labelled instead, so the reader can still see
+      // which claims came from the field manuals and which from the library.
+      const isZim = m.origin === 'zim';
+      const label = isZim
+        ? `<span class="source-name">${escapeHtml(m.filename)}</span>` +
+          `<span class="source-origin">encyclopedia</span>`
+        : `<a href="${escapeHtml(api('/sources/' + encodeURI(m.filename)))}" target="_blank" rel="noopener">${escapeHtml(m.filename)}</a>`;
       item.innerHTML =
-        `<a href="/sources/${encodeURI(m.filename)}" target="_blank" rel="noopener">${escapeHtml(m.filename)}</a>` +
+        label +
         score +
         `<p class="source-snippet">${escapeHtml(m.text || '')}</p>`;
       details.appendChild(item);
@@ -271,7 +411,7 @@
 
   async function refreshStatus() {
     try {
-      const res = await fetch('/status');
+      const res = await apiFetch('/status');
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const s = await res.json();
       state.statusFailures = 0;
@@ -291,6 +431,20 @@
       $('st-model').textContent = s.llm_model || '—';
       $('st-model').className = s.llm_loaded ? '' : 'idle';
       $('st-embed').textContent = s.embedding_model || '—';
+
+      // Optional ZIM library. `configured` and `reachable` are separate fields
+      // for a reason: the row appears only for a deployment that asked for a
+      // library, and then tells the truth about whether it answered.
+      const zim = s.zim_library || {};
+      const zimRow = $('st-zim-row');
+      if (zimRow) zimRow.hidden = !zim.configured;
+      if (zim.configured) {
+        const n = zim.book_count || 0;
+        $('st-zim').textContent = zim.reachable
+          ? `${formatCount(n)} archive${n === 1 ? '' : 's'}`
+          : 'not reachable';
+        $('st-zim').className = zim.reachable && n > 0 ? 'ok' : 'warn';
+      }
       $('st-version').textContent = 'v' + (s.version || '?');
       $('sidebar-footer').title = s.uptime_seconds
         ? 'Server up ' + formatUptime(s.uptime_seconds)
@@ -325,7 +479,7 @@
 
   async function refreshLibrary() {
     try {
-      const res = await fetch('/api/library');
+      const res = await apiFetch('/api/library');
       if (!res.ok) return;
       const lib = await res.json();
 
@@ -359,7 +513,7 @@
         files.forEach((f) => {
           const a = document.createElement('a');
           a.className = 'lib-file' + (f.status === 'skipped' ? ' skipped' : '');
-          a.href = '/sources/' + encodeURI(f.filename);
+          a.href = api('/sources/' + encodeURI(f.filename));
           a.target = '_blank';
           a.rel = 'noopener';
           a.title = f.filename + (f.size_bytes ? ` · ${formatSize(f.size_bytes)}` : '');
@@ -372,6 +526,152 @@
     } catch (err) {
       /* sidebar stays as-is on failure */
     }
+  }
+
+  // ── Add-content modal (catalog import + upload) ─────────────────────
+
+  let importPoll = null;
+
+  function openLibraryModal() {
+    $('library-modal').hidden = false;
+    populateUploadCategories();
+    loadCatalog();
+  }
+
+  function closeLibraryModal() {
+    $('library-modal').hidden = true;
+    if (importPoll) { clearInterval(importPoll); importPoll = null; }  // stop background polling
+  }
+
+  async function loadCatalog() {
+    const list = $('catalog-list');
+    list.textContent = 'Loading…';
+    try {
+      const res = await apiFetch('/api/catalog');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      renderCatalog(data);
+      if (data.importing) pollImport();   // resume progress polling if an import is already running
+    } catch (e) {
+      list.textContent = 'Could not load the catalog.';
+    }
+  }
+
+  function renderCatalog(data) {
+    const list = $('catalog-list');
+    list.innerHTML = '';
+    (data.collections || []).forEach((c) => {
+      const done = c.count > 0 && c.installed >= c.count;
+      const row = document.createElement('div');
+      row.className = 'catalog-row';
+
+      const meta = document.createElement('div');
+      meta.className = 'catalog-meta';
+      meta.innerHTML =
+        `<span class="catalog-name">${escapeHtml(c.name)}</span>` +
+        `<span class="catalog-desc">${escapeHtml(c.description)}</span>` +
+        `<span class="catalog-count">${c.installed}/${c.count} installed</span>`;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ghost-btn catalog-install' + (done ? ' is-done' : '');
+      btn.textContent = done ? 'Installed' : (data.importing ? 'Working…' : 'Install');
+      btn.disabled = done || data.importing || !data.import_enabled;
+      btn.addEventListener('click', () => importCollection(c.id, btn));
+
+      row.appendChild(meta);
+      row.appendChild(btn);
+      list.appendChild(row);
+    });
+
+    if (!data.import_enabled) {
+      const note = document.createElement('p');
+      note.className = 'modal-note';
+      note.textContent = 'Network import is disabled on this deployment — you can still upload your own files below.';
+      list.appendChild(note);
+    }
+  }
+
+  async function importCollection(id, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Starting…';
+    try {
+      const res = await apiFetch('/api/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collection: id }),
+      });
+      if (res.status === 202) {
+        pollImport();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        btn.textContent = 'Retry';
+        btn.disabled = false;
+        if (res.status === 409) pollImport();
+        console.warn('import:', d.error || res.status);
+      }
+    } catch (e) {
+      btn.textContent = 'Retry';
+      btn.disabled = false;
+    }
+  }
+
+  // While an import runs, refresh the catalog (install progress) and the
+  // sidebar library (docs appear as they download + index), until done.
+  function pollImport() {
+    if (importPoll) return;
+    importPoll = setInterval(async () => {
+      try {
+        const res = await apiFetch('/api/catalog');
+        if (res.ok) {
+          const data = await res.json();
+          renderCatalog(data);
+          refreshLibrary();
+          if (!data.importing) { clearInterval(importPoll); importPoll = null; }
+        }
+      } catch (e) { /* keep polling */ }
+    }, 3000);
+  }
+
+  function populateUploadCategories() {
+    const sel = $('upload-category');
+    if (sel.options.length) return;
+    Object.keys(CATEGORY_LABELS).forEach((cat) => {
+      const o = document.createElement('option');
+      o.value = cat;
+      o.textContent = CATEGORY_LABELS[cat];
+      sel.appendChild(o);
+    });
+  }
+
+  async function uploadFile(file) {
+    const status = $('upload-status');
+    status.hidden = false;
+    status.className = 'modal-status';
+    status.textContent = 'Uploading ' + file.name + '…';
+    const fd = new FormData();
+    fd.append('category', $('upload-category').value);
+    fd.append('file', file);
+    try {
+      const res = await apiFetch('/api/upload', { method: 'POST', body: fd });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) {
+        status.textContent = 'Uploaded ' + (d.filename || file.name) + ' — indexing shortly.';
+        resetUploadPicker();
+        refreshLibrary();
+      } else {
+        status.className = 'modal-status is-error';
+        status.textContent = 'Upload failed: ' + (d.error || ('HTTP ' + res.status));
+      }
+    } catch (e) {
+      status.className = 'modal-status is-error';
+      status.textContent = 'Upload failed.';
+    }
+  }
+
+  function resetUploadPicker() {
+    $('upload-file').value = '';
+    $('upload-drop-text').textContent = 'Choose a PDF or TXT file, or drop it here…';
   }
 
   // ── Query flow ─────────────────────────────────────────────────────
@@ -398,7 +698,7 @@
     addTyping();
 
     try {
-      const res = await fetch('/query', {
+      const res = await apiFetch('/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -415,9 +715,18 @@
 
       if (!res.ok) {
         const detail = data && data.error ? data.error : `server returned ${res.status}`;
-        addMessage('bot', res.status === 503
-          ? 'The language model is not loaded on this device yet — ' + detail
-          : 'Something went wrong: ' + detail, { error: true });
+        // 429 comes from the edge quota, not from jic-server: a hosted
+        // deployment meters questions per signed-in address. It is a plain
+        // limit, not a fault, so it must not read like one.
+        let text;
+        if (res.status === 429) {
+          text = detail;
+        } else if (res.status === 503) {
+          text = 'The language model is not loaded on this device yet — ' + detail;
+        } else {
+          text = 'Something went wrong: ' + detail;
+        }
+        addMessage('bot', text, { error: true });
         return;
       }
 
@@ -447,7 +756,222 @@
 
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
+    // The canon token layer (assets/brand/tokens/tokens.css) keys its dark block on .dark.
+    document.documentElement.classList.toggle('dark', theme !== 'light');
     try { localStorage.setItem('jic-theme', theme); } catch (e) { /* private mode */ }
+  }
+
+  // ── Backend selector ───────────────────────────────────────────────
+
+  /** A short human label for an origin when the user gave none. */
+  function backendLabel(entry) {
+    if (entry.label) return entry.label;
+    try {
+      const u = new URL(entry.url);
+      return u.port ? u.hostname + ':' + u.port : u.hostname;
+    } catch {
+      return entry.url;
+    }
+  }
+
+  function renderBackend() {
+    const el = $('st-backend');
+    if (!el) return;
+    if (!backendBase) {
+      el.textContent = 'this device';
+      return;
+    }
+    const entry = backends.find((e) => e.url === backendBase);
+    el.textContent = entry ? backendLabel(entry) : backendBase;
+    el.title = backendBase;
+  }
+
+  function setBackendStatus(message, isError) {
+    const el = $('backend-status');
+    if (!el) return;
+    el.hidden = !message;
+    el.textContent = message || '';
+    el.className = 'modal-status' + (isError ? ' is-error' : '');
+  }
+
+  /**
+   * Why a URL cannot be used, or '' when it can. Shared by the add form and
+   * by activating a saved entry, so a URL that was valid when saved but is not
+   * usable from this page (an http server from an https page) is caught in
+   * both paths rather than only the one that happened to check.
+   */
+  function backendProblem(value) {
+    if (!value) return '';
+    let url;
+    try {
+      url = new URL(value);
+    } catch {
+      return 'That is not a valid URL. Include the scheme, e.g. http://localhost:8080';
+    }
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return 'Only http:// and https:// URLs work here.';
+    }
+    // An https page cannot call a plain-http server, with one exception the
+    // browsers carve out: loopback and local addresses are treated as
+    // trustworthy. Saying so now beats a blocked request later.
+    if (window.location.protocol === 'https:' && url.protocol === 'http:' && !isLocalHost(value)) {
+      return 'This page is served over https, so it cannot reach a plain-http server ' +
+             'unless it is on your own machine or local network. Use https for a remote server.';
+    }
+    return '';
+  }
+
+  /** Point the UI at a server ('' = this device). Does not touch the list. */
+  function applyBackend(raw) {
+    const value = (raw || '').trim().replace(/\/+$/, '');
+    const problem = backendProblem(value);
+    if (problem) {
+      setBackendStatus(problem, true);
+      return false;
+    }
+
+    if (!writeBackend(value)) {
+      setBackendStatus('Could not save the setting — browser storage is blocked. It will apply to this tab only.', true);
+    } else {
+      setBackendStatus(value ? 'Connecting to ' + value + '…' : 'Using this device.', false);
+    }
+    backendBase = value;
+    renderBackend();
+    renderBackendList();
+    // Prove it: the next status poll either answers or reports unreachable,
+    // which is the real confirmation rather than a saved-settings message.
+    state.statusFailures = 0;
+    refreshStatus();
+    refreshLibrary();
+    return true;
+  }
+
+  /** Save a server and switch to it. Re-adding a known URL just switches. */
+  function addBackend(name, raw) {
+    const value = (raw || '').trim().replace(/\/+$/, '');
+    if (!value) {
+      setBackendStatus('Enter the server URL.', true);
+      return;
+    }
+    const problem = backendProblem(value);
+    if (problem) {
+      setBackendStatus(problem, true);
+      return;
+    }
+    const label = (name || '').trim().slice(0, 40);
+    const existing = backends.find((e) => e.url === value);
+    if (existing) {
+      if (label) existing.label = label;
+    } else {
+      backends = backends.concat([{ url: value, label: label }]);
+    }
+    if (!writeBackends(backends)) {
+      setBackendStatus('Saved for this tab only — browser storage is blocked.', true);
+    }
+    if (applyBackend(value)) {
+      $('backend-name').value = '';
+      $('backend-url').value = '';
+      probeBackends();
+    }
+  }
+
+  /** Forget a server. Removing the active one falls back to this device. */
+  function removeBackend(url) {
+    backends = backends.filter((e) => e.url !== url);
+    writeBackends(backends);
+    if (backendBase === url) {
+      applyBackend('');
+    } else {
+      renderBackendList();
+    }
+  }
+
+  /**
+   * Ask each saved server whether it is up, so the picker says which of your
+   * machines is actually running rather than listing names. /status is the
+   * cheap endpoint; an abort keeps a dead host from hanging the row.
+   */
+  async function probeBackend(url) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 3000);
+    try {
+      const res = await fetch((url || '') + '/status', { signal: ctrl.signal });
+      return res.ok ? 'ok' : 'err';
+    } catch {
+      return 'err';
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  function probeBackends() {
+    const rows = document.querySelectorAll('#backend-list .backend-dot');
+    rows.forEach((dot) => {
+      const url = dot.getAttribute('data-for') || '';
+      dot.setAttribute('data-state', 'probing');
+      dot.title = 'Checking…';
+      probeBackend(url).then((stateName) => {
+        dot.setAttribute('data-state', stateName);
+        dot.title = stateName === 'ok' ? 'Answering' : 'Not reachable';
+      });
+    });
+  }
+
+  /**
+   * Built with createElement rather than innerHTML: labels and URLs come out
+   * of localStorage, and a name typed into a text field must never be able to
+   * inject markup into the sidebar.
+   */
+  function renderBackendList() {
+    const list = $('backend-list');
+    if (!list) return;
+    list.textContent = '';
+
+    const entries = [{ url: '', label: 'This device', hint: 'same origin' }].concat(
+      backends.map((e) => ({ url: e.url, label: backendLabel(e), hint: e.url })),
+    );
+
+    entries.forEach((entry) => {
+      const row = document.createElement('li');
+      row.className = 'backend-row' + (entry.url === backendBase ? ' is-active' : '');
+
+      const pick = document.createElement('button');
+      pick.type = 'button';
+      pick.className = 'backend-pick';
+      pick.setAttribute('data-pick', entry.url);
+      pick.setAttribute('aria-pressed', String(entry.url === backendBase));
+
+      const dot = document.createElement('span');
+      dot.className = 'backend-dot';
+      dot.setAttribute('data-for', entry.url);
+      dot.setAttribute('data-state', 'unknown');
+      dot.setAttribute('aria-hidden', 'true');
+
+      const name = document.createElement('span');
+      name.className = 'backend-name';
+      name.textContent = entry.label;
+
+      const hint = document.createElement('span');
+      hint.className = 'backend-hint';
+      hint.textContent = entry.hint;
+
+      pick.append(dot, name, hint);
+      row.append(pick);
+
+      // "This device" is not a saved entry, so there is nothing to forget.
+      if (entry.url) {
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'backend-del';
+        del.setAttribute('data-remove', entry.url);
+        del.setAttribute('aria-label', 'Forget ' + entry.label);
+        del.title = 'Forget this server';
+        del.textContent = '×';
+        row.append(del);
+      }
+
+      list.append(row);
+    });
   }
 
   function initTheme() {
@@ -499,11 +1023,82 @@
       state.useContext = e.target.checked;
     });
 
+    $('backend-btn').addEventListener('click', () => {
+      const panel = $('backend-panel');
+      const open = panel.hidden;
+      panel.hidden = !open;
+      $('backend-btn').setAttribute('aria-expanded', String(open));
+      if (open) {
+        // Only probe when the panel is actually on screen: a background poll
+        // of every saved server would be traffic nobody asked for.
+        probeBackends();
+        $('backend-url').focus();
+      }
+    });
+
+    $('backend-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      addBackend($('backend-name').value, $('backend-url').value);
+    });
+
+    // Delegated: rows are rebuilt on every change, and per-row listeners would
+    // have to be rebound each time. Also keeps the markup free of inline
+    // handlers, which the CSP forbids.
+    $('backend-list').addEventListener('click', (e) => {
+      const pick = e.target.closest('[data-pick]');
+      if (pick) {
+        applyBackend(pick.getAttribute('data-pick'));
+        return;
+      }
+      const del = e.target.closest('[data-remove]');
+      if (del) removeBackend(del.getAttribute('data-remove'));
+    });
+
     $('sidebar-toggle').addEventListener('click', () => toggleSidebar());
     $('backdrop').addEventListener('click', () => toggleSidebar(false));
 
+    // ── Add-content modal wiring ──────────────────────────────────
+    $('library-add-btn').addEventListener('click', openLibraryModal);
+    $('library-modal-close').addEventListener('click', closeLibraryModal);
+    $('library-modal-backdrop').addEventListener('click', closeLibraryModal);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !$('library-modal').hidden) closeLibraryModal();
+    });
+
+    const fileInput = $('upload-file');
+    const drop = $('upload-drop');
+    drop.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) $('upload-drop-text').textContent = fileInput.files[0].name;
+    });
+    ['dragover', 'dragenter'].forEach((ev) =>
+      drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('dragover'); }));
+    ['dragleave', 'dragend'].forEach((ev) =>
+      drop.addEventListener(ev, () => drop.classList.remove('dragover')));
+    drop.addEventListener('drop', (e) => {
+      e.preventDefault();
+      drop.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        $('upload-drop-text').textContent = e.dataTransfer.files[0].name;
+      }
+    });
+    $('upload-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (fileInput.files.length) {
+        uploadFile(fileInput.files[0]);
+      } else {
+        const s = $('upload-status');
+        s.hidden = false;
+        s.className = 'modal-status';
+        s.textContent = 'Pick a file first.';
+      }
+    });
+
     $('user-input').focus();
 
+    renderBackend();
+    renderBackendList();
     refreshStatus();
     refreshLibrary();
     setInterval(refreshStatus, 8000);

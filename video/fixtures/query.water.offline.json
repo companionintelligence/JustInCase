@@ -1,0 +1,24 @@
+{
+  "conversation_id": "conv-video-fixture",
+  "answer": "**Boil, filter, or treat — in that order of reliability.**\n\n- **Boil** — one minute at a rolling boil; three minutes above 2,000 m.\n- **Filter** — 0.2 micron removes protozoa and bacteria, not viruses.\n- **Chemical** — 2 drops of unscented bleach per litre, then wait 30 minutes.\n\nLet cloudy water settle and pre-filter it through cloth first — turbidity defeats chemical treatment.",
+  "matches": [
+    {
+      "filename": "100_Survival/FM21-76-US-Army-Survival.pdf",
+      "text": "Water from any natural source must be treated before drinking. Boiling is the most dependable method available in the field; chemical treatment and filtration are alternatives when fuel is limited...",
+      "score": 0.0328,
+      "origin": "library"
+    },
+    {
+      "filename": "400_Engineering/Handbook-Of-Gravity-Flow-Water-Systems.pdf",
+      "text": "Sedimentation and slow sand filtration remove suspended solids and much of the biological load before any disinfection step, and reduce the chemical dose a system needs to stay safe...",
+      "score": 0.0246,
+      "origin": "library"
+    },
+    {
+      "filename": "wikipedia_en_simple_all_nopic — Boiling",
+      "text": "Boiling is the rapid vaporization of a liquid. At sea level water boils at 100 degrees Celsius; the boiling point falls by about one degree for every 285 metres of altitude, which is why a longer hold time is needed at height...",
+      "score": 0.0164,
+      "origin": "zim"
+    }
+  ]
+}

@@ -27,16 +27,53 @@ ARG SENTRY_NATIVE_VERSION=0.16.1
 # The DSN is NOT baked in here; it is supplied at runtime via SENTRY_DSN.
 ARG JIC_SENTRY=0
 
+# GPU offload for llama.cpp. `off` (the default) is byte-for-byte the CPU-only
+# build this image has always produced — no new packages, no new layers.
+#
+#   docker build --build-arg JIC_GPU=vulkan .
+#
+# VULKAN, NOT CUDA, is the one bundled. CUDA and ROCm each need a vendor
+# toolchain that only exists in a different base image (nvidia/cuda:*-devel,
+# rocm/dev-ubuntu-*), so supporting them here would mean templating FROM and
+# doubling the build matrix. Vulkan installs from Ubuntu's own archive and
+# covers NVIDIA, AMD and Intel with one artifact — the right trade for an
+# appliance that does not know what silicon it will land on. Project NOMAD
+# solves the same problem by swapping the whole Ollama image per vendor,
+# which it can do because it ships no inference code of its own.
+#
+# Setting JIC_N_GPU_LAYERS on a CPU-only image is NOT an error and NOT a
+# warning from llama.cpp — it is silently ignored. `/status` therefore reports
+# the backend that was actually compiled in, so the difference is visible.
+ARG JIC_GPU=off
+
 # ═══════════════════════ Stage 1: llama.cpp ══════════════════════════
 FROM ubuntu:24.04 AS llama-builder
 
 ARG LLAMA_CPP_TAG
+ARG JIC_GPU
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     build-essential cmake git ca-certificates libcurl4-openssl-dev \
     --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
+# Vulkan SDK bits, only when asked for. glslc (glslang-tools) is required:
+# ggml compiles its Vulkan kernels at build time and the cmake configure step
+# fails without it.
+RUN if [ "${JIC_GPU}" = "vulkan" ]; then \
+        apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            libvulkan-dev glslang-tools --no-install-recommends && \
+        rm -rf /var/lib/apt/lists/*; \
+    fi
+
 WORKDIR /build
-RUN git clone --depth 1 --recurse-submodules --shallow-submodules --branch ${LLAMA_CPP_TAG} \
+RUN case "${JIC_GPU}" in \
+      off|"")  GPU_FLAGS="" ;; \
+      vulkan)  GPU_FLAGS="-DGGML_VULKAN=ON" ;; \
+      cuda)    GPU_FLAGS="-DGGML_CUDA=ON" ;; \
+      hip)     GPU_FLAGS="-DGGML_HIP=ON" ;; \
+      *)       echo "JIC_GPU must be one of: off vulkan cuda hip (got '${JIC_GPU}')" >&2; exit 1 ;; \
+    esac && \
+    echo "GPU backend: ${JIC_GPU:-off}  ${GPU_FLAGS}" && \
+    git clone --depth 1 --recurse-submodules --shallow-submodules --branch ${LLAMA_CPP_TAG} \
         https://github.com/ggml-org/llama.cpp.git && \
     cd llama.cpp && \
     cmake -B build \
@@ -51,6 +88,7 @@ RUN git clone --depth 1 --recurse-submodules --shallow-submodules --branch ${LLA
         -DLLAMA_CURL=OFF \
         -DGGML_STATIC=ON \
         -DGGML_CPU_BACKEND=ON \
+        ${GPU_FLAGS} \
         . && \
     cmake --build build -- -j$(nproc) && \
     mkdir -p /llama-install/lib /llama-install/include && \
@@ -168,6 +206,14 @@ COPY CMakeLists.txt ./
 
 # Build
 ARG JIC_SENTRY
+ARG JIC_GPU
+# The Vulkan loader is linked dynamically by CMakeLists (find_library(vulkan)),
+# so the dev package has to exist in THIS stage too, not only where ggml's
+# kernels were compiled.
+RUN if [ "${JIC_GPU}" = "vulkan" ]; then \
+        apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            libvulkan-dev --no-install-recommends && rm -rf /var/lib/apt/lists/*; \
+    fi
 RUN if [ "$JIC_SENTRY" = "1" ]; then JIC_SENTRY_FLAG=ON; else JIC_SENTRY_FLAG=OFF; fi && \
     cmake -B build \
         -DCMAKE_BUILD_TYPE=Release \
@@ -175,6 +221,7 @@ RUN if [ "$JIC_SENTRY" = "1" ]; then JIC_SENTRY_FLAG=ON; else JIC_SENTRY_FLAG=OF
         -DCMAKE_VERBOSE_MAKEFILE=ON \
         -DJIC_SENTRY=$JIC_SENTRY_FLAG \
         -DJIC_SENTRY_PREFIX=/sentry-install \
+        -DJIC_GPU="${JIC_GPU:-off}" \
         . && \
     cmake --build build -- -j$(nproc)
 
@@ -188,6 +235,16 @@ LABEL org.opencontainers.image.title="JIC — Just In Case" \
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     libopenblas0 libgomp1 libcurl4 curl ca-certificates \
     --no-install-recommends && rm -rf /var/lib/apt/lists/*
+
+# Vulkan runtime, only for a Vulkan image. mesa-vulkan-drivers supplies the
+# AMD/Intel ICDs; an NVIDIA card uses the ICD from the host driver, which
+# arrives with the device passthrough rather than from apt.
+ARG JIC_GPU
+RUN if [ "${JIC_GPU}" = "vulkan" ]; then \
+        apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            libvulkan1 mesa-vulkan-drivers --no-install-recommends && \
+        rm -rf /var/lib/apt/lists/*; \
+    fi
 
 # Non-root runtime user — the appliance never needs root
 RUN groupadd -g 10001 jic && \

@@ -52,8 +52,48 @@ public:
                       << get_embedding_model_path() << std::endl;
             return false;
         }
+
+        // ── The dimension must match, and a mismatch must be FATAL ──────
+        //
+        // get_embedding() below clamps whatever the model returns to
+        // EMBEDDING_DIM: it truncates a longer vector and zero-pads a
+        // shorter one. That is fine as a defensive clamp and catastrophic
+        // as a silent policy — swap in a 1024-dim model (bge-m3) or a
+        // 384-dim one and every embedding written to the index is quietly
+        // wrong. The blob is still 768 floats, so sqlite-vec accepts it,
+        // the insert succeeds, `/status` still says "model loaded", and the
+        // only symptom is that answers get worse.
+        //
+        // An offline emergency appliance must not degrade invisibly. So a
+        // model whose width is not EMBEDDING_DIM is REFUSED here: the app
+        // then runs in exactly the state it already knows how to explain —
+        // library browsable, retrieval unavailable, and a banner saying so
+        // — instead of pretending to work.
+        const int n_embd = llama_model_n_embd(model);
+        if (n_embd != EMBEDDING_DIM) {
+            std::cerr << "Embedding model width mismatch: "
+                      << get_embedding_model_path() << " produces " << n_embd
+                      << "-dimensional vectors, but this build indexes "
+                      << EMBEDDING_DIM << ".\n"
+                      << "  Refusing to load rather than truncate/pad every vector.\n"
+                      << "  To change models: set EMBEDDING_DIM in src/config.h to "
+                      << n_embd << ", rebuild, and RE-INDEX from scratch — an existing\n"
+                      << "  vec_chunks table is created float[" << EMBEDDING_DIM
+                      << "] and will not be migrated." << std::endl;
+            llama_model_free(model);
+            model = nullptr;
+            return false;
+        }
+
         reset_context();
         return ctx != nullptr;
+    }
+
+    /// Native width of the loaded model, or 0 when nothing is loaded.
+    /// Reported on /status so an operator can see what is actually running
+    /// rather than what the build constant claims.
+    int embedding_width() const {
+        return model ? llama_model_n_embd(model) : 0;
     }
 
     // Returns an EMBEDDING_DIM-length vector on success, or an EMPTY vector if

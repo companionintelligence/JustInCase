@@ -18,7 +18,9 @@
 #     --profile PROF    only fetch profile: core | emergency-zims | full-zims | kalite | all
 #                                                  (default: core)
 #     --category CAT    only fetch one category    (e.g. 200_Medical, Zims_Medical)
+#     --collection ID   only fetch one collection  (e.g. austere-medicine)
 #     --list            print the manifest and exit
+#     --list-collections print the declared collections and exit
 #     --validate        lint the manifest (no network) and exit
 #     --force           re-download files that already exist
 #     --strict          exit non-zero if any download failed
@@ -34,6 +36,7 @@ DEST="public/sources"
 SEED=""
 ONLY_CATEGORY=""
 ONLY_PROFILE="core"
+ONLY_COLLECTION=""
 MODE="fetch"
 FORCE=0
 STRICT=0
@@ -45,7 +48,9 @@ while [[ $# -gt 0 ]]; do
         --seed)     SEED="$2";     shift 2 ;;
         --profile)  ONLY_PROFILE="$2"; shift 2 ;;
         --category) ONLY_CATEGORY="$2"; shift 2 ;;
+        --collection) ONLY_COLLECTION="$2"; shift 2 ;;
         --list)     MODE="list";     shift ;;
+        --list-collections) MODE="list-collections"; shift ;;
         --validate) MODE="validate"; shift ;;
         --force)    FORCE=1;  shift ;;
         --strict)   STRICT=1; shift ;;
@@ -61,7 +66,7 @@ fi
 
 # ── Parse the manifest ───────────────────────────────────────────────
 # Emits one record per entry, fields joined by ASCII unit separator:
-#   url \037 category \037 filename \037 sha256 \037 title \037 profile
+#   url \037 category \037 filename \037 sha256 \037 title \037 profile \037 collection
 US=$'\037'
 
 parse_manifest() {
@@ -77,17 +82,41 @@ parse_manifest() {
         function emit() {
             if (url != "") {
                 if (prof == "") prof = "core"
-                printf "%s\037%s\037%s\037%s\037%s\037%s\n", url, cat, fn, sha, title, prof
+                printf "%s\037%s\037%s\037%s\037%s\037%s\037%s\n", url, cat, fn, sha, title, prof, coll
             }
-            url = cat = fn = sha = title = prof = ""
+            url = cat = fn = sha = title = prof = coll = ""
         }
         /^[[:space:]]*#/ { next }
         /^[[:space:]]*-[[:space:]]*url:/      { emit(); url   = val($0); next }
         /^[[:space:]]+filename:/              { fn    = val($0); next }
         /^[[:space:]]+category:/              { cat   = val($0); next }
         /^[[:space:]]+profile:/               { prof  = val($0); next }
+        /^[[:space:]]+collection:/            { coll  = val($0); next }
         /^[[:space:]]+sha256:/                { sha   = val($0); next }
         /^[[:space:]]+title:/                 { title = val($0); next }
+        END { emit() }
+    ' "$MANIFEST"
+}
+
+# Emits one record per collection definition:  id \037 name \037 description
+parse_collections() {
+    awk '
+        function val(line) {
+            sub(/^[^:]*:[[:space:]]*/, "", line)
+            sub(/[[:space:]]+#.*$/, "", line)
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+            gsub(/^"|"$/, "", line)
+            return line
+        }
+        function emit() {
+            if (id != "") printf "%s\037%s\037%s\n", id, name, desc
+            id = name = desc = ""
+        }
+        /^collections:[[:space:]]*$/          { incoll = 1; next }
+        /^sources:[[:space:]]*$/              { if (incoll) { emit(); incoll = 0 } }
+        incoll && /^[[:space:]]*-[[:space:]]*id:/ { emit(); id = val($0); next }
+        incoll && /^[[:space:]]+name:/            { name = val($0); next }
+        incoll && /^[[:space:]]+description:/     { desc = val($0); next }
         END { emit() }
     ' "$MANIFEST"
 }
@@ -97,7 +126,14 @@ validate_manifest() {
     local errors=0 count=0
     local nl=$'\n'
     local seen="$nl"
-    while IFS="$US" read -r url cat fn sha title prof; do
+    # Collections declared in the top-level `collections:` block. Kept as a
+    # newline-delimited string rather than an associative array: this script
+    # runs under macOS's system bash 3.2, which has no `declare -A`.
+    local defined="$nl"
+    while IFS="$US" read -r id name desc; do
+        [[ -n "$id" ]] && defined="$defined$id$nl"
+    done < <(parse_collections)
+    while IFS="$US" read -r url cat fn sha title prof coll; do
         count=$((count + 1))
         local where="entry #$count (${fn:-$url})"
         if [[ ! "$url" =~ ^https?:// && ! "$url" =~ ^magnet:\? ]]; then
@@ -121,6 +157,17 @@ validate_manifest() {
         if [[ -z "$title" ]]; then
             echo "  ✗ $where: missing title"; errors=$((errors+1))
         fi
+        if [[ -z "$coll" ]]; then
+            # Not every entry belongs to a curated collection — the ZIM and
+            # KA-Lite tiers are reached by --profile, not by the library UI's
+            # collection grouping. An absent collection is therefore a
+            # degradation (the entry simply does not appear in a group), not a
+            # defect. A collection that does not exist IS a defect, and stays
+            # an error below.
+            echo "  ⚠ $where: no collection — will not appear in the library UI"
+        elif [[ "$defined" != *"$nl$coll$nl"* ]]; then
+            echo "  ✗ $where: collection '$coll' not declared in the collections: block"; errors=$((errors+1))
+        fi
         if [[ -n "$sha" && ! "$sha" =~ ^[0-9a-fA-F]{64}$ ]]; then
             echo "  ✗ $where: sha256 must be 64 hex chars"; errors=$((errors+1))
         fi
@@ -138,15 +185,30 @@ validate_manifest() {
 
 # ── List ─────────────────────────────────────────────────────────────
 list_manifest() {
-    printf '%-15s %-18s %-45s %s\n' "PROFILE" "CATEGORY" "FILENAME" "TITLE"
-    while IFS="$US" read -r url cat fn sha title prof; do
-        printf '%-15s %-18s %-45s %s\n' "$prof" "$cat" "$fn" "$title"
+    printf '%-15s %-22s %-18s %-45s %s\n' "PROFILE" "COLLECTION" "CATEGORY" "FILENAME" "TITLE"
+    while IFS="$US" read -r url cat fn sha title prof coll; do
+        printf '%-15s %-22s %-18s %-45s %s\n' "$prof" "$coll" "$cat" "$fn" "$title"
     done < <(parse_manifest | sort)
 }
 
+# Print the declared collections with a live item count for each.
+list_collections() {
+    # bash 3.2: no associative arrays, so collect the collection of every
+    # entry and count each declared id out of that list.
+    local all_colls
+    all_colls=$(parse_manifest | cut -d"$US" -f7)
+    printf '%-24s %-6s %s\n' "ID" "ITEMS" "NAME"
+    while IFS="$US" read -r id name desc; do
+        local n
+        n=$(printf '%s\n' "$all_colls" | grep -cxF "$id" || true)
+        printf '%-24s %-6s %s\n' "$id" "$n" "$name"
+    done < <(parse_collections)
+}
+
 case "$MODE" in
-    validate) echo "Validating $MANIFEST ..."; validate_manifest; exit $? ;;
-    list)     list_manifest; exit 0 ;;
+    validate)         echo "Validating $MANIFEST ..."; validate_manifest; exit $? ;;
+    list)             list_manifest; exit 0 ;;
+    list-collections) list_collections; exit 0 ;;
 esac
 
 # ── Fetch ────────────────────────────────────────────────────────────
@@ -173,9 +235,10 @@ echo "── Fetching manifest ($ONLY_PROFILE profile): $MANIFEST → $DEST"
 ok=0; skipped=0; failed=0
 failed_list=""
 
-while IFS="$US" read -r url cat fn sha title prof; do
+while IFS="$US" read -r url cat fn sha title prof coll; do
     [[ "$ONLY_PROFILE" != "all" && "$prof" != "$ONLY_PROFILE" ]] && continue
-    [[ -n "$ONLY_CATEGORY" && "$cat" != "$ONLY_CATEGORY" ]] && continue
+    [[ -n "$ONLY_CATEGORY"   && "$cat"  != "$ONLY_CATEGORY"   ]] && continue
+    [[ -n "$ONLY_COLLECTION" && "$coll" != "$ONLY_COLLECTION" ]] && continue
 
     dir="$DEST/$cat"
     out="$dir/$fn"

@@ -59,10 +59,37 @@
 
 sources:
 
-  # ── 100 Survival & Preparedness ───────────────────────────────────
+collections:
+  - id: core-survival
+    name: "Core Survival & Preparedness"
+    description: "Field survival, shelter, navigation, weather, and disaster-readiness checklists."
+  - id: austere-medicine
+    name: "Austere & Emergency Medicine"
+    description: "First aid, field surgery, dentistry, and health care where there is no doctor."
+  - id: food-and-water
+    name: "Food & Water"
+    description: "Growing, canning, and preserving food; safe water, gravity-flow systems, solar disinfection."
+  - id: power-and-engineering
+    name: "Power & Engineering"
+    description: "Off-grid solar power and appropriate-technology village engineering."
+  - id: comms-and-radio
+    name: "Communications & Radio"
+    description: "Amateur/emergency radio and interoperable field communications."
+  - id: education
+    name: "Education & Textbooks"
+    description: "Open textbooks and foundational learning material."
+  - id: civics-and-culture
+    name: "Civics & Culture"
+    description: "Founding civic documents and enduring public-domain texts."
+  - id: software-and-tech
+    name: "Software & Technical Reference"
+    description: "Programming, operating systems, and version control references."
+
+sources:
   - url: https://www.ready.gov/sites/default/files/2021-02/ready_checklist.pdf
     filename: FEMA-Emergency-Checklist.pdf
     category: 100_Survival
+    collection: core-survival
     title: "FEMA — Emergency Supply Checklist"
     license: PD (US Government)
     redistribution: clean
@@ -71,6 +98,7 @@ sources:
   - url: https://www.ready.gov/sites/default/files/2020-03/ready_emergency-financial-first-aid-toolkit.pdf
     filename: FEMA-Financial-First-Aid-Kit.pdf
     category: 100_Survival
+    collection: core-survival
     title: "FEMA — Emergency Financial First Aid Kit"
     license: PD (US Government)
     redistribution: clean
@@ -79,6 +107,7 @@ sources:
   - url: https://archive.org/download/Fm21-76SurvivalManual/FM21-76_SurvivalManual.pdf
     filename: FM21-76-US-Army-Survival.pdf
     category: 100_Survival
+    collection: core-survival
     title: "US Army Survival Manual FM 21-76 (shelter, water, foraging, trapping)"
     license: PD (US Government)
     redistribution: clean
@@ -87,6 +116,7 @@ sources:
   - url: https://archive.org/download/milmanual-fm-3-25.26-map-reading-and-land-navigation/fm_3-25.26_map_reading_and_land_navigation.pdf
     filename: FM3-25-26-Map-Reading-Land-Navigation.pdf
     category: 100_Survival
+    collection: core-survival
     title: "US Army FM 3-25.26 — Map Reading and Land Navigation"
     license: PD (US Government)
     redistribution: clean
@@ -95,6 +125,7 @@ sources:
   - url: https://archive.org/download/pdfy-ULdTVDxCZR1mXh25/Nuclear%20War%20Survival%20Skills%20-%20Cresson%20H%20Kearney.pdf
     filename: NuclearWarSurvivalSkills-CressonHKearney.pdf
     category: 100_Survival
+    collection: core-survival
     title: "Nuclear War Survival Skills (Kearney, Oak Ridge National Laboratory)"
     license: PD (US Government research; author authorized free reproduction)
     redistribution: clean
@@ -103,6 +134,7 @@ sources:
   - url: https://www.weather.gov/media/owlie/SGJune6-11.pdf
     filename: NWS-Weather-Spotters-Field-Guide.pdf
     category: 100_Survival
+    collection: core-survival
     title: "NOAA/NWS — Weather Spotter's Field Guide"
     license: PD (US Government)
     redistribution: clean
@@ -111,6 +143,7 @@ sources:
   - url: https://www.gutenberg.org/cache/epub/17093/pg17093.txt
     filename: Camp-Life-In-The-Woods-Trapping.txt
     category: 100_Survival
+    collection: core-survival
     title: "Camp Life in the Woods and the Tricks of Trapping (Gibson, 1881)"
     license: PD (Project Gutenberg #17093)
     redistribution: clean
@@ -119,12 +152,14 @@ sources:
   - url: https://www.gutenberg.org/cache/epub/28255/pg28255.txt
     filename: Shelters-Shacks-And-Shanties.txt
     category: 100_Survival
+    collection: core-survival
     title: "Shelters, Shacks and Shanties (D.C. Beard, 1914)"
     license: PD (Project Gutenberg #28255)
     redistribution: clean
     size: ~400 KB
 
   # ── added 2026-08-09: see PR notes ──
+
   - url: https://www.epa.gov/sites/default/files/2017-09/documents/emergency_disinfection_of_drinking_water_sept2017.pdf
     filename: EPA-Emergency-Disinfection-Drinking-Water.pdf
     category: 100_Survival
@@ -133,6 +168,7 @@ sources:
     redistribution: clean
     basis: work of the US federal government (17 USC 105), from the issuing agency
     size: ~1 MB
+
   - url: https://www.epa.gov/sites/default/files/2015-10/documents/2003_06_03_privatewells_pdfs_household_wells.pdf
     filename: EPA-Drinking-Water-From-Household-Wells.pdf
     category: 100_Survival
@@ -143,9 +179,11 @@ sources:
     size: ~2 MB
 
   # ── 200 Medical ───────────────────────────────────────────────────
+
   - url: https://archive.org/download/where-there-is-no-doctor/Where%20There%20Is%20No%20Doctor.pdf
     filename: Where-There-Is-No-Doctor.pdf
     category: 200_Medical
+    collection: austere-medicine
     title: "Where There Is No Doctor (Hesperian)"
     license: Hesperian open copyright (free non-commercial reproduction)
     redistribution: local-only
@@ -154,6 +192,7 @@ sources:
   - url: https://archive.org/download/where-there-is-no-dentist-hesperian-2010/Where_there_is_no_dentist_-_Hesperian_2010.pdf
     filename: Where-There-Is-No-Dentist.pdf
     category: 200_Medical
+    collection: austere-medicine
     title: "Where There Is No Dentist (Hesperian)"
     license: Hesperian open copyright (free non-commercial reproduction)
     redistribution: local-only
@@ -162,6 +201,7 @@ sources:
   - url: https://archive.org/download/WhereWomenHaveNoDoctor/18.HersperianFoundation-WhereWomenHaveNoDoctor.pdf
     filename: Where-Women-Have-No-Doctor.pdf
     category: 200_Medical
+    collection: austere-medicine
     title: "Where Women Have No Doctor (Hesperian)"
     license: Hesperian open copyright (free non-commercial reproduction)
     redistribution: local-only
@@ -170,6 +210,7 @@ sources:
   - url: https://archive.org/download/UsArmyFirstAidManualFm4-25.11/UsArmyFirstAidManual.pdf
     filename: FM4-25-11-First-Aid.pdf
     category: 200_Medical
+    collection: austere-medicine
     title: "US Army FM 4-25.11 — First Aid"
     license: PD (US Government)
     redistribution: clean
@@ -178,6 +219,7 @@ sources:
   - url: https://archive.org/download/emergency-war-surgery-5th-edition/Emergency%20War%20Surgery%205th%20Edition.pdf
     filename: Emergency-War-Surgery-5th-Edition.pdf
     category: 200_Medical
+    collection: austere-medicine
     title: "Emergency War Surgery, 5th Edition (Borden Institute)"
     license: PD (US Government)
     redistribution: clean
@@ -186,6 +228,7 @@ sources:
   - url: https://archive.org/download/survival-and-austere-medicine-3rd-ed-2017/Survival%20and%20Austere%20Medicine%203rd%20Ed%20%282017%29.pdf
     filename: Survival-And-Austere-Medicine-3rd-Ed.pdf
     category: 200_Medical
+    collection: austere-medicine
     title: "Survival and Austere Medicine: An Introduction (3rd ed., 2017)"
     license: Free distribution (authors permit non-commercial copying)
     redistribution: local-only
@@ -194,12 +237,14 @@ sources:
   - url: https://www.nctsn.org/sites/default/files/resources/pfa_field_operations_guide.pdf
     filename: PFA-Field-Operations-Guide.pdf
     category: 200_Medical
+    collection: austere-medicine
     title: "Psychological First Aid — Field Operations Guide (NCTSN/NCPTSD)"
     license: Free distribution (US Government funded)
     redistribution: unverified
     size: ~3.4 MB
 
   # ── added 2026-08-09: see PR notes ──
+
   - url: https://archive.org/download/FM21-10_2000/FM21-10_2000.pdf
     filename: FM21-10-Field-Hygiene-And-Sanitation.pdf
     category: 200_Medical
@@ -208,6 +253,7 @@ sources:
     redistribution: clean
     basis: Internet Archive Public Domain Mark on the item
     size: ~3 MB
+
   - url: https://archive.org/download/field-hygiene-and-sanitation-tc-4-02.3-may-2015/Field%20Hygiene%20and%20Sanitation%20-%20TC-4-02.3%20%28May%202015%29.pdf
     filename: TC4-02-3-Field-Hygiene-And-Sanitation.pdf
     category: 200_Medical
@@ -218,9 +264,11 @@ sources:
     size: ~1 MB
 
   # ── 300 Food & Agriculture ────────────────────────────────────────
+
   - url: https://archive.org/download/usda-guide-home-canning/USDA-Complete-Guide-to-Home-Canning-2015-revision.pdf
     filename: USDA-Complete-Guide-Home-Canning.pdf
     category: 300_Food
+    collection: food-and-water
     title: "USDA Complete Guide to Home Canning (2015 revision, all 7 guides)"
     license: PD (US Government)
     redistribution: clean
@@ -229,12 +277,14 @@ sources:
   - url: https://www.gutenberg.org/cache/epub/9550/pg9550.txt
     filename: Manual-Of-Gardening-Bailey.txt
     category: 300_Food
+    collection: food-and-water
     title: "Manual of Gardening, 2nd ed. (L.H. Bailey)"
     license: PD (Project Gutenberg #9550)
     redistribution: clean
     size: ~900 KB
 
   # ── added 2026-08-09: see PR notes ──
+
   - url: https://files.eric.ed.gov/fulltext/ED241773.pdf
     filename: PeaceCorps-Traditional-Field-Crops.pdf
     category: 300_Food
@@ -243,6 +293,7 @@ sources:
     redistribution: local-only
     basis: Peace Corps ICE under contract 79-043-0129 - contractor-produced, so 17 USC 105 does not attach - and acknowledges reused third-party material
     size: ~5 MB
+
   - url: https://files.eric.ed.gov/fulltext/ED241778.pdf
     filename: PeaceCorps-Soils-Crops-Fertilizer-Use.pdf
     category: 300_Food
@@ -251,6 +302,7 @@ sources:
     redistribution: clean
     basis: federal authorship (17 USC 105); hosted on ERIC, which is an archive not the author
     size: ~3 MB
+
   - url: https://files.eric.ed.gov/fulltext/ED241766.pdf
     filename: PeaceCorps-Small-Farm-Grain-Storage.pdf
     category: 300_Food
@@ -259,6 +311,7 @@ sources:
     redistribution: unverified
     basis: VITA Publications Manual Series 35E, sibling of the VITA-copyrighted 36E; ERIC lists the institution as Burton International School, not a federal agency
     size: ~6 MB
+
   - url: https://files.eric.ed.gov/fulltext/ED241772.pdf
     filename: PeaceCorps-Animal-Traction.pdf
     category: 300_Food
@@ -267,6 +320,7 @@ sources:
     redistribution: local-only
     basis: contract 79-043-0129, contractor-produced; reproduces material by permission of the publishers, Hastings House
     size: ~3 MB
+
   - url: https://files.eric.ed.gov/fulltext/ED242565.pdf
     filename: PeaceCorps-Freshwater-Fish-Pond-Culture.pdf
     category: 300_Food
@@ -275,6 +329,7 @@ sources:
     redistribution: local-only
     basis: title page reads (C) VITA 1976, may be reproduced without royalty for official U.S. Government purposes - a privately held copyright under a government-purpose-only licence, NOT public domain
     size: ~5 MB
+
   - url: https://files.eric.ed.gov/fulltext/ED242921.pdf
     filename: PeaceCorps-Small-Scale-Beekeeping.pdf
     category: 300_Food
@@ -283,6 +338,7 @@ sources:
     redistribution: local-only
     basis: authored by CHP International Inc. under contract PC-282-1011 - a contractor, so 17 USC 105 does not attach
     size: ~8 MB
+
   - url: https://www.ars.usda.gov/ARSUserFiles/oc/np/CommercialStorage/CommercialStorage.pdf
     filename: USDA-Storage-Of-Fruits-Vegetables.pdf
     category: 300_Food
@@ -291,14 +347,17 @@ sources:
     redistribution: clean
     basis: work of the US federal government (17 USC 105), from the issuing agency
     size: ~4 MB
+
   - url: https://www.gutenberg.org/cache/epub/59977/pg59977.txt
     filename: USDA-Canning-Freezing-Storing-Garden-Produce.txt
     category: 300_Food
+    collection: food-and-water
     title: "USDA — Canning, Freezing, Storing Garden Produce (1977)"
     license: PD (US Government)
     redistribution: clean
     basis: USDA bulletin, PD as a US Government work; text from Project Gutenberg
     size: <1 MB
+
   - url: https://www.gutenberg.org/cache/epub/63056/pg63056.txt
     filename: USDA-Home-Canning-Of-Meat-And-Poultry.txt
     category: 300_Food
@@ -314,9 +373,11 @@ sources:
   # address — a delegation problem rather than a 404, so it may be
   # transient. Re-check before deleting; if it persists, source from an
   # NREL mirror or the Internet Archive.
+
   - url: https://www.nrel.gov/docs/fy04osti/36178.pdf
     filename: NREL-PV-Solar-Systems.pdf
     category: 400_Engineering
+    collection: power-and-engineering
     title: "NREL — Photovoltaic Solar Resource of the United States"
     license: PD (US Government)
     redistribution: clean
@@ -325,6 +386,7 @@ sources:
   - url: https://archive.org/download/VillageTechnologyHandbook/Village%20Technology%20Handbook.pdf
     filename: VITA-Village-Technology-Handbook.pdf
     category: 400_Engineering
+    collection: power-and-engineering
     title: "VITA — Village Technology Handbook (water, agriculture, construction)"
     license: PD / freely distributed (USAID-funded)
     redistribution: unverified
@@ -333,6 +395,7 @@ sources:
   - url: https://archive.org/download/fa_Handbook_of_Gravity-Flow_Water_Systems/Handbook_of_Gravity-Flow_Water_Systems.pdf
     filename: Handbook-Of-Gravity-Flow-Water-Systems.pdf
     category: 400_Engineering
+    collection: food-and-water
     title: "A Handbook of Gravity-Flow Water Systems (Jordan)"
     license: Freely distributed (Appropriate Technology Library)
     redistribution: unverified
@@ -341,12 +404,14 @@ sources:
   - url: https://archive.org/download/fa_Solar_Disinfection_of_Water/Solar_Disinfection_of_Water.pdf
     filename: Solar-Disinfection-Of-Water.pdf
     category: 400_Engineering
+    collection: food-and-water
     title: "Solar Disinfection of Water (SODIS)"
     license: Freely distributed (Appropriate Technology Library)
     redistribution: unverified
     size: ~13 MB
 
   # ── added 2026-08-09: see PR notes ──
+
   - url: https://archive.org/download/TM9-243/TM9-243.pdf
     filename: TM9-243-Use-And-Care-Of-Hand-Tools.pdf
     category: 400_Engineering
@@ -355,6 +420,7 @@ sources:
     redistribution: clean
     basis: Internet Archive Public Domain Mark on the item
     size: ~11 MB
+
   - url: https://archive.org/download/TM9-237/TM9-237.pdf
     filename: TM9-237-Welding-Theory-And-Application.pdf
     category: 400_Engineering
@@ -363,6 +429,7 @@ sources:
     redistribution: local-only
     basis: federal work, BUT carries an explicit copyright notice reprinting American Welding Society material by permission - permission ran to the Army, not to downstream redistributors
     size: ~28 MB
+
   - url: https://archive.org/download/tc9-524/tc9_524.pdf
     filename: TC9-524-Fundamentals-Of-Machine-Tools.pdf
     category: 400_Engineering
@@ -371,6 +438,7 @@ sources:
     redistribution: clean
     basis: Internet Archive Public Domain Mark on the item
     size: ~7 MB
+
   - url: https://archive.org/download/fm-5-499-hydraulics-1997/FM%205-499%20Hydraulics%20%201997.pdf
     filename: FM5-499-Hydraulics.pdf
     category: 400_Engineering
@@ -379,6 +447,7 @@ sources:
     redistribution: local-only
     basis: ACKNOWLEDGEMENTS reproduces Deere & Company material (c) 1997, all rights reserved, plus the Vickers Industrial Hydraulics Manual
     size: ~2 MB
+
   - url: https://archive.org/download/fm-5-424-theater-of-operations-electrical-systems-1997/FM%205-424%20Theater%20Of%20Operations%20Electrical%20Systems%20%201997.pdf
     filename: FM5-424-Electrical-Systems.pdf
     category: 400_Engineering
@@ -387,6 +456,7 @@ sources:
     redistribution: local-only
     basis: contains material used with permission from Basic Home Wiring (c) 1987 Sunset Publishing Corporation, and other third-party figures
     size: ~4 MB
+
   - url: https://archive.org/download/FM5-426/FM5-426.pdf
     filename: FM5-426-Carpentry.pdf
     category: 400_Engineering
@@ -395,6 +465,7 @@ sources:
     redistribution: clean
     basis: federal authorship (17 USC 105); the Internet Archive item carries NO licence declaration
     size: ~4 MB
+
   - url: https://archive.org/download/ost-military-engineering-tm5_685/tm5_685.pdf
     filename: TM5-685-Generators-And-Switchgear.pdf
     category: 400_Engineering
@@ -403,6 +474,7 @@ sources:
     redistribution: clean
     basis: federal authorship (17 USC 105); the Internet Archive item carries NO licence declaration
     size: ~4 MB
+
   - url: https://archive.org/download/fm-5-34-engineer-field-data-w-change-3-1999/FM%205-34%20Engineer%20Field%20Data%20w-change%203%20%201999.pdf
     filename: FM5-34-Engineer-Field-Data.pdf
     category: 400_Engineering
@@ -411,6 +483,7 @@ sources:
     redistribution: clean
     basis: Internet Archive Public Domain Mark on the item
     size: ~9 MB
+
   - url: https://archive.org/download/fm-5-125-rigging-techniques-procedures-and-applications-1995/FM%205-125%20Rigging%20Techniques%2C%20Procedures%2C%20And%20Applications%20%201995.pdf
     filename: FM5-125-Rigging-Techniques.pdf
     category: 400_Engineering
@@ -419,6 +492,7 @@ sources:
     redistribution: clean
     basis: Internet Archive Public Domain Mark on the item
     size: ~4 MB
+
   - url: https://files.eric.ed.gov/fulltext/ED132362.pdf
     filename: Navy-Tools-And-Their-Uses.pdf
     category: 400_Engineering
@@ -427,6 +501,7 @@ sources:
     redistribution: local-only
     basis: CREDITS page licenses figures from Buckingham Mfg, General Motors, Imperial Brass, Rockwell and Ingersoll-Rand to the Navy, not downstream
     size: ~5 MB
+
   - url: https://files.eric.ed.gov/fulltext/ED132306.pdf
     filename: Navy-Construction-Electrician-3-2.pdf
     category: 400_Engineering
@@ -435,6 +510,7 @@ sources:
     redistribution: local-only
     basis: CREDITS page licenses figures from Associated Research, Daystrom Weston, Multi-Amp, Bacharach and others to the Navy, not downstream
     size: ~14 MB
+
   - url: https://www.usbr.gov/power/data/fist/fist3_30/fist3_30.pdf
     filename: USBR-FIST-3-30-Transformer-Maintenance.pdf
     category: 400_Engineering
@@ -443,6 +519,7 @@ sources:
     redistribution: clean
     basis: work of the US federal government (17 USC 105), from the issuing agency
     size: ~3 MB
+
   - url: https://www.epa.gov/sites/default/files/2015-09/documents/guide_smallsystems_pou-poe_june6-2006.pdf
     filename: EPA-Point-Of-Use-Water-Treatment.pdf
     category: 400_Engineering
@@ -451,6 +528,7 @@ sources:
     redistribution: clean
     basis: work of the US federal government (17 USC 105), from the issuing agency
     size: ~1 MB
+
   - url: https://www.energy.gov/sites/prod/files/2013/12/f5/small_wind_guide.pdf
     filename: DOE-Small-Wind-Electric-Systems.pdf
     category: 400_Engineering
@@ -461,9 +539,11 @@ sources:
     size: ~2 MB
 
   # ── 500 Communications ────────────────────────────────────────────
+
   - url: https://www.arrl.org/files/file/Technology/tis/info/pdf/0209038.pdf
     filename: ARRL-Emergency-Comms.pdf
     category: 500_Comms
+    collection: comms-and-radio
     title: "ARRL — Emergency Communications"
     license: Freely distributed (ARRL)
     redistribution: unverified
@@ -472,12 +552,14 @@ sources:
   - url: https://archive.org/download/national-interoperability-field-operations-guide-nifog-version-2.02/National%20Interoperability%20Field%20Operations%20Guide%20%28NIFOG%29%20Version%202.02.pdf
     filename: CISA-NIFOG-2.02.pdf
     category: 500_Comms
+    collection: comms-and-radio
     title: "CISA — National Interoperability Field Operations Guide (NIFOG) v2.02"
     license: PD (US Government)
     redistribution: clean
     size: ~6.7 MB
 
   # ── added 2026-08-09: see PR notes ──
+
   - url: https://www.cisa.gov/sites/default/files/publications/AUXFOG%20June%202016%20-%20508%20Reviewed%20-%20Final%20(2-16-17).pdf
     filename: CISA-AUXFOG-Auxiliary-Comms.pdf
     category: 500_Comms
@@ -486,6 +568,7 @@ sources:
     redistribution: clean
     basis: work of the US federal government (17 USC 105), from the issuing agency
     size: ~3 MB
+
   - url: https://www.govinfo.gov/content/pkg/CFR-2023-title47-vol5/pdf/CFR-2023-title47-vol5-part97.pdf
     filename: FCC-47CFR97-Amateur-Radio-Service.pdf
     category: 500_Comms
@@ -496,18 +579,22 @@ sources:
     size: <1 MB
 
   # ── 600 Education ─────────────────────────────────────────────────
+
   - url: https://assets.openstax.org/oscms-prodcms/media/documents/ElementaryAlgebra2e-WEB.pdf
     filename: OpenStax-Elementary-Algebra-2e.pdf
     category: 600_Education
+    collection: education
     title: "OpenStax — Elementary Algebra 2e"
     license: CC BY 4.0
     redistribution: clean
     size: ~45 MB
 
   # ── 700 Social, Civic & Resilience ────────────────────────────────
+
   - url: https://www.un.org/sites/un2.un.org/files/2021/03/udhr.pdf
     filename: UN-Universal-Declaration-Human-Rights.pdf
     category: 700_Social
+    collection: civics-and-culture
     title: "Universal Declaration of Human Rights"
     license: PD (United Nations)
     redistribution: clean
@@ -516,6 +603,7 @@ sources:
   - url: https://www.govinfo.gov/content/pkg/CDOC-110hdoc50/pdf/CDOC-110hdoc50.pdf
     filename: US-Constitution.pdf
     category: 700_Social
+    collection: civics-and-culture
     title: "The Constitution of the United States (pocket edition)"
     license: PD (US Government)
     redistribution: clean
@@ -524,6 +612,7 @@ sources:
   - url: https://www.gutenberg.org/cache/epub/1404/pg1404.txt
     filename: Federalist-Papers.txt
     category: 700_Social
+    collection: civics-and-culture
     title: "The Federalist Papers"
     license: PD (Project Gutenberg #1404)
     redistribution: clean
@@ -532,15 +621,18 @@ sources:
   - url: https://www.gutenberg.org/cache/epub/10/pg10.txt
     filename: KJV-Bible.txt
     category: 700_Social
+    collection: civics-and-culture
     title: "King James Bible"
     license: PD (Project Gutenberg #10)
     redistribution: clean
     size: ~4.4 MB
 
   # ── 800 Software / Technical Reference ────────────────────────────
+
   - url: https://greenteapress.com/thinkpython2/thinkpython2.pdf
     filename: ThinkPython2.pdf
     category: 800_Software
+    collection: software-and-tech
     title: "Think Python, 2nd Edition (Downey)"
     license: CC BY-NC
     redistribution: local-only
@@ -549,6 +641,7 @@ sources:
   - url: https://greenteapress.com/thinkos/thinkos.pdf
     filename: ThinkOS.pdf
     category: 800_Software
+    collection: software-and-tech
     title: "Think OS: A Brief Introduction to Operating Systems (Downey)"
     license: CC BY-NC
     redistribution: local-only
@@ -557,6 +650,7 @@ sources:
   - url: https://eloquentjavascript.net/Eloquent_JavaScript.pdf
     filename: Eloquent-JavaScript.pdf
     category: 800_Software
+    collection: software-and-tech
     title: "Eloquent JavaScript, 3rd Edition (Haverbeke)"
     license: CC BY-NC
     redistribution: local-only
@@ -565,6 +659,7 @@ sources:
   - url: https://github.com/progit/progit2/releases/download/2.1.426/progit.pdf
     filename: Pro-Git-2.pdf
     category: 800_Software
+    collection: software-and-tech
     title: "Pro Git, 2nd Edition (Chacon & Straub)"
     license: CC BY-NC-SA
     redistribution: local-only
@@ -583,6 +678,7 @@ sources:
     redistribution: clean
     basis: federal authorship (17 USC 105); the Internet Archive item carries NO licence declaration
     size: ~17 MB
+
   - url: https://archive.org/download/fm-21-305-manual-for-the-wheeled-vehicle-driver-1993/FM%2021-305%20Manual%20For%20The%20Wheeled%20Vehicle%20Driver%20%201993.pdf
     filename: FM21-305-Wheeled-Vehicle-Driver.pdf
     category: 900_Transport
@@ -591,6 +687,7 @@ sources:
     redistribution: clean
     basis: Internet Archive Public Domain Mark on the item
     size: ~4 MB
+
   - url: https://archive.org/download/Fm20-22VehicleRecoveryOperations/Fm20-22VehicleRecoveryOperations.pdf
     filename: FM20-22-Vehicle-Recovery-Operations.pdf
     category: 900_Transport
@@ -599,6 +696,7 @@ sources:
     redistribution: clean
     basis: Internet Archive Public Domain Mark on the item
     size: ~3 MB
+
   - url: https://archive.org/download/navedtra-14050-construction-mechanic-advanced-1992/NAVEDTRA14050_Construction_mechanic_advanced_1992.pdf
     filename: NAVEDTRA-14050-Construction-Mechanic.pdf
     category: 900_Transport
@@ -607,6 +705,7 @@ sources:
     redistribution: clean
     basis: federal authorship (17 USC 105); the Internet Archive item carries NO licence declaration
     size: ~10 MB
+
   - url: https://archive.org/download/boat-crew-handbook-seamanship-fundamentals/Boat%20Crew%20Handbook%20-%20Seamanship%20Fundamentals.pdf
     filename: USCG-Boat-Crew-Seamanship.pdf
     category: 900_Transport
@@ -615,6 +714,7 @@ sources:
     redistribution: clean
     basis: Internet Archive Public Domain Mark on the item
     size: ~13 MB
+
   - url: https://archive.org/download/boat-crew-handbook-navigation-and-piloting/Boat%20Crew%20Handbook%20-%20Navigation%20and%20Piloting.pdf
     filename: USCG-Boat-Crew-Navigation.pdf
     category: 900_Transport
@@ -623,6 +723,7 @@ sources:
     redistribution: clean
     basis: Internet Archive Public Domain Mark on the item
     size: ~11 MB
+
   - url: https://archive.org/download/bicyclerepairing00burr/bicyclerepairing00burr.pdf
     filename: Bicycle-Repairing-Burr-1896.pdf
     category: 900_Transport
@@ -633,6 +734,7 @@ sources:
     size: ~13 MB
 
   # ── 100 Survival (Additional Curated) ─────────────────────────────
+
   - url: https://archive.org/download/milmanual-fm-5-103-survivability/fm_5-103_survivability.pdf
     filename: FM5-103-Survivability.pdf
     category: 100_Survival
@@ -652,6 +754,7 @@ sources:
     size: ~8.5 MB
 
   # ── 200 Medical (Additional Curated) ──────────────────────────────
+
   - url: https://archive.org/download/SpecialOperationsForcesMedicalHandbook/SOF_Medical_Handbook.pdf
     filename: Special-Operations-Forces-Medical-Handbook.pdf
     category: 200_Medical
@@ -671,6 +774,7 @@ sources:
     size: ~2.1 MB
 
   # ── 400 Engineering (Additional Curated) ──────────────────────────
+
   - url: https://archive.org/download/milmanual-fm-5-420-plumbing-and-pipefitting/fm_5-420_plumbing_and_pipefitting.pdf
     filename: FM5-420-Plumbing-And-Pipefitting.pdf
     category: 400_Engineering
@@ -690,6 +794,7 @@ sources:
     size: ~18 MB
 
   # ── 500 Communications (Additional Curated) ───────────────────────
+
   - url: https://archive.org/download/milmanual-fm-24-18-tactical-single-channel-radio-communications-techniques/fm_24-18_tactical_single-channel_radio_communications_techniques.pdf
     filename: FM24-18-Tactical-Radio-Comms.pdf
     category: 500_Comms
@@ -702,6 +807,7 @@ sources:
   - url: https://archive.org/download/milmanual-fm-24-19-radio-operators-handbook/fm_24-19_radio_operators_handbook.pdf
     filename: FM24-19-Radio-Operators-Handbook.pdf
     category: 500_Comms
+    collection: comms-and-radio
     title: "FM 24-19 — Radio Operator's Handbook (US Army)"
     license: PD (US Government)
     redistribution: clean
@@ -709,6 +815,7 @@ sources:
     size: ~7 MB
 
   # ── 600 Education (Additional Curated) ────────────────────────────
+
   - url: https://assets.openstax.org/oscms-prodcms/media/documents/AnatomyandPhysiology2e-WEB.pdf
     filename: OpenStax-Anatomy-And-Physiology-2e.pdf
     category: 600_Education
@@ -734,6 +841,7 @@ sources:
     size: ~85 MB
 
   # ── Zims_Medical (Kiwix Emergency & Medical ZIMs) ─────────────────
+
   - url: https://download.kiwix.org/zim/other/mdwiki_en_all_2024-06.zim.torrent
     filename: mdwiki_en_all_2024-06.zim.torrent
     category: Zims_Medical
@@ -775,6 +883,7 @@ sources:
     size: ~70 MB
 
   # ── Zims_Survival (Kiwix Emergency & Survival ZIMs) ───────────────
+
   - url: https://download.kiwix.org/zim/other/www.ready.gov_en_2024-09.zim.torrent
     filename: www.ready.gov_en_2024-09.zim.torrent
     category: Zims_Survival
@@ -792,6 +901,7 @@ sources:
     size: ~560 MB
 
   # ── Zims_Engineering (Kiwix Repair & Sustainability ZIMs) ────────
+
   - url: https://download.kiwix.org/zim/ifixit/ifixit_en_all_2024-09.zim.torrent
     filename: ifixit_en_all_2024-09.zim.torrent
     category: Zims_Engineering
@@ -817,6 +927,7 @@ sources:
     size: ~932 MB
 
   # ── Zims_Encyclopedia (Kiwix Full Knowledge ZIMs) ─────────────────
+
   - url: https://download.kiwix.org/zim/wikipedia/wikipedia_en_all_maxi_2024-01.zim.torrent
     filename: wikipedia_en_all_maxi_2024-01.zim.torrent
     category: Zims_Encyclopedia
@@ -850,6 +961,7 @@ sources:
     size: ~746 MB
 
   # ── Videos_KALite (KA-Lite Educational Media Archive) ─────────────
+
   - url: https://archive.org/details/kalite_content_pack.torrent
     filename: kalite_content_pack.torrent
     category: Videos_KALite
@@ -859,6 +971,7 @@ sources:
     size: ~40 GB
 
   # ── 100 Survival & Disaster Ops (Expanded Curated) ────────────────
+
   - url: https://archive.org/download/milmanual-fm-21-76-1-survival-evasion-and-recovery/fm_21-76-1_survival_evasion_and_recovery.pdf
     filename: FM21-76-1-Survival-Evasion-Recovery.pdf
     category: 100_Survival
@@ -896,6 +1009,39 @@ sources:
     size: ~9.2 MB
 
   # ── 200 Medical & CBRN Countermeasures (Expanded Curated) ────────
+
+  - url: https://archive.org/download/milmanual-fm-31-70-basic-cold-weather-survival-manual/fm_31-70_basic_cold_weather_survival_manual.pdf
+    filename: FM31-70-Cold-Weather-Survival.pdf
+    category: 100_Survival
+    collection: core-survival
+    title: "US Army FM 31-70 — Basic Cold Weather Survival Manual"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105)
+    size: ~18.3 MB
+
+  - url: https://www.gutenberg.org/cache/epub/24579/pg24579.txt
+    filename: Woodcraft-Nessmuk.txt
+    category: 100_Survival
+    collection: core-survival
+    title: "Woodcraft (George W. \"Nessmuk\" Sears, 1884/1920 ed.)"
+    license: "PD (Project Gutenberg #24579)"
+    redistribution: clean
+    basis: published 1884/1920 — US copyright expired
+    size: ~224 KB
+
+  - url: https://www.gutenberg.org/cache/epub/23066/pg23066.txt
+    filename: The-Prairie-Traveler-Marcy.txt
+    category: 100_Survival
+    collection: core-survival
+    title: "The Prairie Traveler: A Hand-book for Overland Expeditions (Marcy, 1859)"
+    license: "PD (Project Gutenberg #23066)"
+    redistribution: clean
+    basis: published 1859 — US copyright expired
+    size: ~485 KB
+
+  # ── 200 Medical ───────────────────────────────────────────────────
+
   - url: https://archive.org/download/milmanual-fm-8-51-combat-stress-control-in-a-theater-of-operations-tact/fm_8-51_combat_stress_control_in_a_theater_of_operations_tactics_techniques_and_procedures.pdf
     filename: FM8-51-Combat-Stress-Control.pdf
     category: 200_Medical
@@ -933,6 +1079,39 @@ sources:
     size: ~26 MB
 
   # ── 300 Food & Agriculture (Expanded Curated) ─────────────────────
+
+  - url: https://archive.org/download/FM21-10_2000/FM21-10_2000.pdf
+    filename: FM21-10-Field-Hygiene-Sanitation.pdf
+    category: 200_Medical
+    collection: austere-medicine
+    title: "FM 21-10 / MCRP 4-11.1D — Field Hygiene and Sanitation (US Army & Marine Corps, 2000)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105)
+    size: ~2.9 MB
+
+  - url: https://archive.org/download/shipsmedicineche00unit/shipsmedicineche00unit.pdf
+    filename: Ships-Medicine-Chest-First-Aid-At-Sea.pdf
+    category: 200_Medical
+    collection: austere-medicine
+    title: "Ship's Medicine Chest and First Aid at Sea (US Public Health Service, 1929)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105)
+    size: ~15.7 MB
+
+  - url: https://archive.org/download/A_Community_Guide_to_Environmental_Health/A_Community_Guide_to_Environmental_Health.pdf
+    filename: Hesperian-Community-Guide-Environmental-Health.pdf
+    category: 200_Medical
+    collection: austere-medicine
+    title: "A Community Guide to Environmental Health (Hesperian)"
+    license: Hesperian open copyright (free non-commercial reproduction)
+    redistribution: local-only
+    basis: Hesperian open copyright permits free NON-COMMERCIAL reproduction only
+    size: ~15.8 MB
+
+  # ── 300 Food & Agriculture ────────────────────────────────────────
+
   - url: https://archive.org/download/fao-field-guide-edible-plants/fao_edible_wild_plants.pdf
     filename: FAO-Edible-Wild-Plants.pdf
     category: 300_Food
@@ -960,6 +1139,49 @@ sources:
     size: ~12 MB
 
   # ── 400 Engineering, Water & Off-Grid Power (Expanded Curated) ────
+
+  - url: https://files.peacecorps.gov/documents/R0006_New-Crop-Production-Handbook.pdf
+    filename: PeaceCorps-New-Crop-Production-Handbook.pdf
+    category: 300_Food
+    collection: food-and-water
+    title: "New Crop Production Handbook (Peace Corps)"
+    license: PD (US Government)
+    redistribution: unverified
+    basis: Peace Corps handbooks are contractor-produced; PD status needs the imprint checked
+    size: ~1.3 MB
+
+  - url: https://www.gutenberg.org/cache/epub/62859/pg62859.txt
+    filename: USDA-Pork-Slaughtering-Curing-Preserving-Farm.txt
+    category: 300_Food
+    collection: food-and-water
+    title: "Pork Slaughtering, Cutting, Preserving, and Cooking on the Farm — USDA Farmers' Bulletin 2265"
+    license: "PD (US Government; Project Gutenberg #62859)"
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105)
+    size: ~94 KB
+
+  - url: https://www.gutenberg.org/cache/epub/34175/pg34175.txt
+    filename: Allen-Domestic-Animals-Livestock-Husbandry.txt
+    category: 300_Food
+    collection: food-and-water
+    title: "Domestic Animals: horse, cattle, sheep, swine, poultry husbandry (Richard L. Allen)"
+    license: "PD (Project Gutenberg #34175)"
+    redistribution: clean
+    basis: pre-1929 publication — US copyright expired
+    size: ~520 KB
+
+  - url: https://openknowledge.fao.org/server/api/core/bitstreams/2ca21047-390f-42cd-bd1d-0c2ebc9c1df2/content
+    filename: FAO-Small-Scale-Aquaponic-Food-Production.pdf
+    category: 300_Food
+    collection: food-and-water
+    title: "Small-scale Aquaponic Food Production (FAO Fisheries and Aquaculture Technical Paper 589, 2014)"
+    license: Freely reproducible for non-commercial use with attribution (FAO standard permission, not formal PD/CC)
+    redistribution: local-only
+    basis: FAO standard permission is non-commercial with attribution, not PD/CC
+    size: ~59 MB
+
+  # ── 400 Engineering, Water & Power ────────────────────────────────
+
   - url: https://archive.org/download/milmanual-fm-5-480-field-water-supply/fm_5-480_field_water_supply.pdf
     filename: FM5-480-Field-Water-Supply.pdf
     category: 400_Engineering
@@ -987,6 +1209,89 @@ sources:
     size: ~7.3 MB
 
   # ── 500 Emergency Communications (Expanded Curated) ───────────────
+
+  - url: https://archive.org/download/ERIC_ED241769/ERIC_ED241769.pdf
+    filename: PeaceCorps-SelfHelp-Construction-1Story-Buildings.pdf
+    category: 400_Engineering
+    collection: power-and-engineering
+    title: "Self-Help Construction of One-Story Buildings (Peace Corps, 1977)"
+    license: PD (US Government)
+    redistribution: unverified
+    basis: Peace Corps handbooks are contractor-produced; PD status needs the imprint checked
+    size: ~2.9 MB
+
+  - url: https://archive.org/download/WoodFrameHouseConstruction/WoodFrameHouseConstruction.pdf
+    filename: USDA-Wood-Frame-House-Construction.pdf
+    category: 400_Engineering
+    collection: power-and-engineering
+    title: "Wood-Frame House Construction (USDA Forest Service, Agriculture Handbook No. 73)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105)
+    size: ~12.8 MB
+
+  - url: https://archive.org/download/fe_Microhydropower_Handbook_1/Microhydropower_Handbook_1.pdf
+    filename: DOE-Microhydropower-Handbook-Vol1.pdf
+    category: 400_Engineering
+    collection: power-and-engineering
+    title: "Microhydropower Handbook, Volume 1 (EG&G Idaho for US Dept. of Energy, 1983)"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105)
+    size: ~26.8 MB
+
+  - url: https://archive.org/download/micro_IA41153461_0607/micro_IA41153461_0607.pdf
+    filename: PeaceCorps-Biogas-Biofertilizer-Business-Handbook.pdf
+    category: 400_Engineering
+    collection: power-and-engineering
+    title: "The Biogas/Biofertilizer Business Handbook, 3rd Ed. (Peace Corps ICE)"
+    license: PD (US Government)
+    redistribution: unverified
+    basis: Peace Corps handbooks are contractor-produced; PD status needs the imprint checked
+    size: ~42.4 MB
+
+  - url: https://archive.org/download/micro_IA41152934_0616/micro_IA41152934_0616.pdf
+    filename: VITA-Small-Scale-Energy-Projects-Guidelines.pdf
+    category: 400_Engineering
+    collection: power-and-engineering
+    title: "Environmentally Sound Small-Scale Energy Projects: Guidelines for Planning (VITA/CODEL for USAID, 1985)"
+    license: PD / freely distributed (USAID-funded)
+    redistribution: unverified
+    basis: USAID-funded but VITA asserts its own copyright in the front matter
+    size: ~18 MB
+
+  - url: https://archive.org/download/micro_IA41152934_0614/micro_IA41152934_0614.pdf
+    filename: VITA-Small-Scale-Water-Projects-Guidelines.pdf
+    category: 400_Engineering
+    collection: power-and-engineering
+    title: "Environmentally Sound Small-Scale Water Projects: Guidelines for Planning (VITA/CODEL for USAID, 1981)"
+    license: PD / freely distributed (USAID-funded)
+    redistribution: unverified
+    basis: USAID-funded but VITA asserts its own copyright in the front matter
+    size: ~16.6 MB
+
+  - url: https://www.govinfo.gov/content/pkg/GOVPUB-PE1-PURL-gpo174254/pdf/GOVPUB-PE1-PURL-gpo174254.pdf
+    filename: PeaceCorps-Wells-Construction-Hand-Dug-Hand-Drilled.pdf
+    category: 400_Engineering
+    collection: food-and-water
+    title: "Wells Construction: Hand Dug and Hand Drilled (Peace Corps, 1980)"
+    license: PD (US Government)
+    redistribution: unverified
+    basis: Peace Corps handbooks are contractor-produced; PD status needs the imprint checked
+    size: ~1.4 MB
+
+  - url: https://wedc-knowledge.lboro.ac.uk/resources/booklets/G025-Simple-pit-latrines-booklet.pdf
+    filename: WEDC-Simple-Pit-Latrines-Guide25.pdf
+    category: 400_Engineering
+    collection: food-and-water
+    title: "Simple Pit Latrines — WEDC Guide 25 (Loughborough University, 2014)"
+    license: Freely distributed for non-commercial use with attribution (WEDC)
+    redistribution: local-only
+    basis: WEDC permits non-commercial redistribution with attribution only
+    size: ~612 KB
+
+  # ── 500 Communications ────────────────────────────────────────────
+
   - url: https://archive.org/download/navedtra-14168-basic-electricity/NAVEDTRA_14168_Basic_Electricity.pdf
     filename: NAVEDTRA-14168-Basic-Electricity.pdf
     category: 500_Comms
@@ -1014,6 +1319,59 @@ sources:
     size: ~4.2 MB
 
   # ── 600 Foundational Sciences & Mathematics (Expanded Curated) ────
+
+  - url: https://www.govinfo.gov/content/pkg/CFR-2024-title47-vol5/pdf/CFR-2024-title47-vol5-part97.pdf
+    filename: FCC-Part97-Amateur-Radio-Rules.pdf
+    category: 500_Comms
+    collection: comms-and-radio
+    title: "FCC — 47 CFR Part 97, Amateur Radio Service (2024 Annual Edition)"
+    license: PD (US Federal Regulation)
+    redistribution: clean
+    basis: US federal regulation — edict of government, uncopyrightable
+    size: ~356 KB
+
+  - url: https://archive.org/download/milmanual-fm-24-18-tactical-single-channel-radio-communications-techni/fm_24-18_tactical_single_channel_radio_communications_techniques.pdf
+    filename: FM24-18-Tactical-Radio-Communications.pdf
+    category: 500_Comms
+    collection: comms-and-radio
+    title: "US Army FM 24-18 — Tactical Single-Channel Radio Communications Techniques"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105)
+    size: ~9.9 MB
+
+  - url: https://www.cisa.gov/sites/default/files/publications/Operational%20Guide%20for%20the%20Interoperability%20Continuum.pdf
+    filename: CISA-Interoperability-Continuum-Guide.pdf
+    category: 500_Comms
+    collection: comms-and-radio
+    title: "CISA — Operational Guide for the Interoperability Continuum"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105)
+    size: ~2.7 MB
+
+  - url: https://www.cisa.gov/sites/default/files/publications/AUXFOG%20June%202016%20-%20508%20Reviewed%20-%20Final%20(2-16-17).pdf
+    filename: CISA-AUXFOG-2016.pdf
+    category: 500_Comms
+    collection: comms-and-radio
+    title: "CISA — Auxiliary Communications Field Operations Guide (AUXFOG), June 2016"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105)
+    size: ~3.4 MB
+
+  - url: https://www.weather.gov/media/lot/nwr/NWR-FactSheet.pdf
+    filename: NOAA-NWR-Fact-Sheet.pdf
+    category: 500_Comms
+    collection: comms-and-radio
+    title: "NOAA — Weather Radio All Hazards (NWR) Fact Sheet"
+    license: PD (US Government)
+    redistribution: clean
+    basis: work of the US federal government (17 USC 105)
+    size: ~84 KB
+
+  # ── 600 Education ─────────────────────────────────────────────────
+
   - url: https://assets.openstax.org/oscms-prodcms/media/documents/UniversityPhysicsVolume1-WEB.pdf
     filename: OpenStax-University-Physics-Volume-1.pdf
     category: 600_Education
@@ -1039,6 +1397,59 @@ sources:
     size: ~65 MB
 
   # ── 900 Transport & Vehicle Maintenance (Expanded Curated) ────────
+
+  - url: https://assets.openstax.org/oscms-prodcms/media/documents/prealgebra-2e_-_WEB.pdf
+    filename: OpenStax-Prealgebra-2e.pdf
+    category: 600_Education
+    collection: education
+    title: "OpenStax — Prealgebra 2e"
+    license: "CC BY-NC-SA 4.0 (verified from OpenStax's book-detail API + PDF colophon)"
+    redistribution: local-only
+    basis: CC BY-NC-SA 4.0 — the NC term bars a product Lifescope sells
+    size: ~60 MB
+
+  - url: https://assets.openstax.org/oscms-prodcms/media/documents/college-algebra-2e_-_WEB.pdf
+    filename: OpenStax-College-Algebra-2e.pdf
+    category: 600_Education
+    collection: education
+    title: "OpenStax — College Algebra 2e"
+    license: "CC BY-NC-SA 4.0 (verified from OpenStax's book-detail API + PDF colophon)"
+    redistribution: local-only
+    basis: CC BY-NC-SA 4.0 — the NC term bars a product Lifescope sells
+    size: ~80 MB
+
+  - url: https://assets.openstax.org/oscms-prodcms/media/documents/introductory-statistics-2e_-_WEB.pdf
+    filename: OpenStax-Introductory-Statistics-2e.pdf
+    category: 600_Education
+    collection: education
+    title: "OpenStax — Introductory Statistics 2e"
+    license: "CC BY-NC-SA 4.0 (verified from OpenStax's book-detail API + PDF colophon)"
+    redistribution: local-only
+    basis: CC BY-NC-SA 4.0 — the NC term bars a product Lifescope sells
+    size: ~22 MB
+
+  - url: https://assets.openstax.org/oscms-prodcms/media/documents/Psychology2e_WEB.pdf
+    filename: OpenStax-Psychology-2e.pdf
+    category: 600_Education
+    collection: education
+    title: "OpenStax — Psychology 2e"
+    license: "CC BY-NC-SA 4.0 (verified from OpenStax's book-detail API + PDF colophon)"
+    redistribution: local-only
+    basis: CC BY-NC-SA 4.0 — the NC term bars a product Lifescope sells
+    size: ~55 MB
+
+  - url: https://assets.openstax.org/oscms-prodcms/media/documents/introduction-sociology-3e_-_WEB.pdf
+    filename: OpenStax-Introduction-to-Sociology-3e.pdf
+    category: 600_Education
+    collection: education
+    title: "OpenStax — Introduction to Sociology 3e"
+    license: "CC BY-NC-SA 4.0 (verified from OpenStax's book-detail API + PDF colophon)"
+    redistribution: local-only
+    basis: CC BY-NC-SA 4.0 — the NC term bars a product Lifescope sells
+    size: ~46 MB
+
+  # ── 700 Social, Civic & Resilience ────────────────────────────────
+
   - url: https://archive.org/download/milmanual-fm-55-30-army-motor-transport-units-and-operations/fm_55-30_army_motor_transport_units_and_operations.pdf
     filename: FM55-30-Army-Motor-Transport-Operations.pdf
     category: 900_Transport
